@@ -55,3 +55,7 @@ lxml_html_clean             # Fix for lxml.html.clean ImportError in newer lxml 
 fastapi>=0.109.0            # 现代 Python Web 框架
 uvicorn[standard]>=0.27.0   # ASGI 服务器
 python-multipart>=0.0.6     # FastAPI File/Form upload support
+
+# 量化交易系统（quant/）
+# optional: futu broker（富途 OpenD 真实下单，需本地运行 OpenD 客户端）
+# futu-api>=9.0.0

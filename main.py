@@ -184,6 +184,27 @@ def parse_arguments() -> argparse.Namespace:
         help='不保存分析上下文快照'
     )
 
+    # === Quant Trading ===
+    parser.add_argument(
+        '--quant',
+        action='store_true',
+        help='启动量化下单 Agent 系统（触发完整量化流程）'
+    )
+
+    parser.add_argument(
+        '--quant-dry-run',
+        action='store_true',
+        help='量化模式：仅分析信号，不实际下单（与 --quant 配合使用）'
+    )
+
+    parser.add_argument(
+        '--quant-broker',
+        type=str,
+        default='paper',
+        choices=['paper', 'futu'],
+        help='量化模式：券商类型 paper(模拟盘)/futu(富途，默认 paper)'
+    )
+
     # === Backtest ===
     parser.add_argument(
         '--backtest',
@@ -571,6 +592,49 @@ def main() -> int:
         return 0
 
     try:
+        # 模式0b: 量化下单 Agent 系统
+        if getattr(args, 'quant', False):
+            logger.info("模式: 量化下单 Agent 系统")
+            try:
+                from quant.config import QuantConfig
+                from quant.orchestrator import QuantOrchestrator
+                from quant.broker.paper_broker import PaperBroker
+
+                quant_cfg = QuantConfig.from_env()
+                quant_cfg.broker_type = getattr(args, 'quant_broker', 'paper')
+                quant_dry_run = getattr(args, 'quant_dry_run', False)
+
+                broker = PaperBroker(
+                    account_path=quant_cfg.paper_account_path,
+                    initial_capital=quant_cfg.initial_capital,
+                    max_positions=quant_cfg.max_positions,
+                    risk_per_trade_pct=quant_cfg.risk_per_trade_pct,
+                )
+                orchestrator = QuantOrchestrator(broker=broker, config=quant_cfg)
+
+                quant_stocks = stock_codes or config.stock_list or []
+                if not quant_stocks:
+                    logger.warning("量化模式：未指定股票池，请通过 --stocks 参数或配置文件指定")
+                    return 1
+
+                logger.info(
+                    f"量化流程启动: stocks={quant_stocks}, "
+                    f"dry_run={quant_dry_run}, broker={quant_cfg.broker_type}"
+                )
+                report = orchestrator.run(stock_codes=quant_stocks, dry_run=quant_dry_run)
+
+                buy_count = len(report.get('buy_signals', []))
+                sell_count = len(report.get('sell_signals', []))
+                trade_count = len(report.get('executed_trades', []))
+                logger.info(
+                    f"量化流程完成: 买入信号={buy_count}, 卖出信号={sell_count}, "
+                    f"实际交易={trade_count}, 耗时={report.get('elapsed_seconds', 0)}s"
+                )
+            except Exception as exc:
+                logger.error(f"量化下单系统运行失败: {exc}", exc_info=True)
+                return 1
+            return 0
+
         # 模式0: 回测
         if getattr(args, 'backtest', False):
             logger.info("模式: 回测")
