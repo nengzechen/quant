@@ -17,6 +17,7 @@ from src.screening.screener import (
     run_strategy1_batch,
     run_strategy2_batch,
 )
+from src.screening.notify import run_and_notify_screening
 
 __all__ = [
     "Strategy1",
@@ -25,4 +26,5 @@ __all__ = [
     "DimResult",
     "run_strategy1_batch",
     "run_strategy2_batch",
+    "run_and_notify_screening",
 ]

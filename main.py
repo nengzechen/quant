@@ -331,6 +331,34 @@ def run_full_analysis(
             save_context_snapshot=save_context_snapshot
         )
 
+        # ============================================================
+        # 步骤一：量化选股（开盘前预判候选票）
+        # ============================================================
+        screening_results = {}
+        if getattr(config, 'screening_enabled', True) and stock_codes:
+            try:
+                logger.info("=" * 40)
+                logger.info("步骤一：量化选股")
+                logger.info("=" * 40)
+                from src.screening.notify import run_and_notify_screening
+                screening_results = run_and_notify_screening(
+                    stock_codes=stock_codes,
+                    notifier=pipeline.notifier,
+                    send_notification=not args.no_notify,
+                    s1_min_score=getattr(config, 'screening_s1_min_score', 7),
+                    s2_min_score=getattr(config, 'screening_s2_min_score', 3),
+                    save_report=True,
+                )
+            except Exception as e:
+                logger.warning(f"量化选股失败（已忽略，不影响后续流程）: {e}")
+
+        # ============================================================
+        # 步骤二：个股分析（LLM 深度分析）
+        # ============================================================
+        logger.info("=" * 40)
+        logger.info("步骤二：个股分析")
+        logger.info("=" * 40)
+
         # 1. 运行个股分析
         results = pipeline.run(
             stock_codes=stock_codes,
@@ -350,7 +378,14 @@ def run_full_analysis(
             logger.info(f"等待 {analysis_delay} 秒后执行大盘复盘（避免API限流）...")
             time.sleep(analysis_delay)
 
-        # 2. 运行大盘复盘（如果启用且不是仅个股模式）
+        # ============================================================
+        # 步骤三：大盘复盘（收盘后 LLM 生成复盘报告）
+        # ============================================================
+        logger.info("=" * 40)
+        logger.info("步骤三：大盘复盘")
+        logger.info("=" * 40)
+
+        # 3. 运行大盘复盘（如果启用且不是仅个股模式）
         market_report = ""
         if (
             config.market_review_enabled
@@ -432,6 +467,28 @@ def run_full_analysis(
 
         except Exception as e:
             logger.error(f"飞书文档生成失败: {e}")
+
+        # ============================================================
+        # 步骤四：量化交易引擎（实盘/模拟盘信号执行）
+        # ============================================================
+        if getattr(config, 'quant_enabled', False):
+            try:
+                logger.info("=" * 40)
+                logger.info("步骤四：量化交易引擎")
+                logger.info("=" * 40)
+                from quant.orchestrator import QuantOrchestrator
+                quant = QuantOrchestrator(config=config)
+                # 把选股结果作为信号输入
+                if screening_results.get("strategy1"):
+                    top_codes = [r.code for r in screening_results["strategy1"][:5]]
+                    logger.info(f"[量化引擎] 策略一候选票: {top_codes}")
+                    quant.run(candidate_codes=top_codes)
+                else:
+                    quant.run()
+            except ImportError:
+                logger.debug("量化引擎未安装或未启用，跳过")
+            except Exception as e:
+                logger.warning(f"量化交易引擎执行失败（已忽略）: {e}")
 
         # === Auto backtest ===
         try:

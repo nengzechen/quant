@@ -231,6 +231,14 @@ class Config:
 
     # === 回测配置 ===
     backtest_enabled: bool = True
+
+    # === 量化选股配置 ===
+    screening_enabled: bool = True          # 是否启用量化选股（步骤一）
+    screening_s1_min_score: int = 7         # 策略一最低门槛（满分18）
+    screening_s2_min_score: int = 3         # 策略二最低门槛（满分6）
+
+    # === 量化交易引擎配置 ===
+    quant_enabled: bool = False             # 是否启用量化交易引擎（步骤四，默认关闭）
     backtest_eval_window_days: int = 10
     backtest_min_age_days: int = 14
     backtest_engine_version: str = "v1"
@@ -645,6 +653,10 @@ class Config:
             database_path=os.getenv('DATABASE_PATH', './data/stock_analysis.db'),
             save_context_snapshot=os.getenv('SAVE_CONTEXT_SNAPSHOT', 'true').lower() == 'true',
             backtest_enabled=os.getenv('BACKTEST_ENABLED', 'true').lower() == 'true',
+            screening_enabled=os.getenv('SCREENING_ENABLED', 'true').lower() == 'true',
+            screening_s1_min_score=int(os.getenv('SCREENING_S1_MIN_SCORE', '7')),
+            screening_s2_min_score=int(os.getenv('SCREENING_S2_MIN_SCORE', '3')),
+            quant_enabled=os.getenv('QUANT_ENABLED', 'false').lower() == 'true',
             backtest_eval_window_days=int(os.getenv('BACKTEST_EVAL_WINDOW_DAYS', '10')),
             backtest_min_age_days=int(os.getenv('BACKTEST_MIN_AGE_DAYS', '14')),
             backtest_engine_version=os.getenv('BACKTEST_ENGINE_VERSION', 'v1'),
