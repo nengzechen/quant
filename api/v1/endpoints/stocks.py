@@ -110,51 +110,53 @@ def extract_from_image(
 
 
 @router.get(
-    "/screen",
-    summary="多维度选股筛选",
-    description=(
-        "对指定股票列表进行10维度打分筛选，返回总分≥min_score的结果。\n\n"
-        "10个维度：缠论MACD、板块前五、前五板块涨停、形态识别、博弈长阳、"
-        "强分时、基本面、资金流入、均线多头、量能放大。每维度1分，满分10分。"
-    ),
+    "/screen/strategy1",
+    summary="策略一：强势多头突破/接力",
+    description="基本面+板块前五→均线多头+底分型→MACD+KDJ+DMI→博弈长阳+量能→高开+强分时+量比+换手率+资金流入",
 )
-def screen_stocks(
+def screen_strategy1(
     codes: str = Query(..., description="逗号分隔的股票代码，例如：600519,000858,300750"),
-    min_score: int = Query(6, ge=0, le=10, description="最低总分门槛（0-10），默认6"),
+    min_score: int = Query(9, ge=0, le=15, description="最低总分门槛，默认9（满分15）"),
 ):
-    """
-    多维度选股筛选接口
-
-    Args:
-        codes: 逗号分隔的股票代码（如 600519,000858）
-        min_score: 最低总分门槛
-
-    Returns:
-        符合条件的股票评分结果列表
-    """
-    from src.screener import StockScreener
-
+    from src.screener import run_strategy1_batch
     code_list = [c.strip() for c in codes.split(",") if c.strip()]
     if not code_list:
-        raise HTTPException(status_code=400, detail={"error": "bad_request", "message": "codes 参数不能为空"})
+        raise HTTPException(status_code=400, detail={"error": "bad_request", "message": "codes不能为空"})
     if len(code_list) > 50:
-        raise HTTPException(status_code=400, detail={"error": "too_many", "message": "单次最多筛选50支股票"})
-
+        raise HTTPException(status_code=400, detail={"error": "too_many", "message": "单次最多50支"})
     try:
-        screener = StockScreener()
-        results = screener.screen_batch(code_list, min_score=min_score)
-        return {
-            "total_input": len(code_list),
-            "total_passed": len(results),
-            "min_score": min_score,
-            "results": [r.to_dict() for r in results],
-        }
+        results = run_strategy1_batch(code_list, min_score=min_score)
+        return {"strategy": "策略一：强势多头突破/接力", "total_input": len(code_list),
+                "total_passed": len(results), "min_score": min_score,
+                "results": [r.to_dict() for r in results]}
     except Exception as e:
-        logger.error(f"选股筛选失败: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=500,
-            detail={"error": "internal_error", "message": f"选股筛选失败: {str(e)}"},
-        )
+        logger.error(f"策略一筛选失败: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail={"error": "internal_error", "message": str(e)})
+
+
+@router.get(
+    "/screen/strategy2",
+    summary="策略二：缠论深度抄底",
+    description="日线/周线MACD底背离 + CYS<-15 + CD40<-20 + 底分型确认 + 资金流入",
+)
+def screen_strategy2(
+    codes: str = Query(..., description="逗号分隔的股票代码，例如：600519,000858,300750"),
+    min_score: int = Query(3, ge=0, le=6, description="最低总分门槛，默认3（满分6）"),
+):
+    from src.screener import run_strategy2_batch
+    code_list = [c.strip() for c in codes.split(",") if c.strip()]
+    if not code_list:
+        raise HTTPException(status_code=400, detail={"error": "bad_request", "message": "codes不能为空"})
+    if len(code_list) > 50:
+        raise HTTPException(status_code=400, detail={"error": "too_many", "message": "单次最多50支"})
+    try:
+        results = run_strategy2_batch(code_list, min_score=min_score)
+        return {"strategy": "策略二：缠论深度抄底", "total_input": len(code_list),
+                "total_passed": len(results), "min_score": min_score,
+                "results": [r.to_dict() for r in results]}
+    except Exception as e:
+        logger.error(f"策略二筛选失败: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail={"error": "internal_error", "message": str(e)})
 
 
 @router.get(

@@ -1,0 +1,707 @@
+# -*- coding: utf-8 -*-
+"""
+===================================
+量化指标模块池 (Indicators Pool)
+===================================
+
+所有指标函数统一返回格式：
+    {
+        "passed": bool,      # 是否通过该指标
+        "value": any,        # 计算出的核心数值
+        "detail": str,       # 可读描述
+    }
+
+模块分类：
+    1. 市场情绪模块   - KDJ、涨跌家数比
+    2. 板块轮动模块   - Top5板块、板块涨停
+    3. 基本面过滤模块 - PE、净利润连续增长
+    4. 资金盘口模块   - 高开、强分时、量比、换手率、大单净流入、量能放大
+    5. 传统技术模块   - 均线多头、MACD金叉>MA20、KDJ>50、DMI手拉手、头肩底
+    6. 缠论特征模块   - 底分型、MACD底背离
+    7. 特色主力模块   - 博弈长阳、九五之尊、CYS、CD40
+"""
+
+import logging
+import time
+from typing import Optional, Dict, Any, List, Tuple
+
+import numpy as np
+import pandas as pd
+
+logger = logging.getLogger(__name__)
+
+# ============================================================
+# 类型别名
+# ============================================================
+IndicatorResult = Dict[str, Any]  # {"passed": bool, "value": any, "detail": str}
+
+
+def _ok(value=None, detail="") -> IndicatorResult:
+    return {"passed": True, "value": value, "detail": detail}
+
+
+def _fail(value=None, detail="") -> IndicatorResult:
+    return {"passed": False, "value": value, "detail": detail}
+
+
+def _skip(detail="数据不足或接口失败") -> IndicatorResult:
+    return {"passed": None, "value": None, "detail": detail}
+
+
+# ============================================================
+# 辅助函数
+# ============================================================
+
+def _sleep(s: float = 0.5):
+    time.sleep(s)
+
+
+def get_daily_df(code: str, days: int = 100) -> Optional[pd.DataFrame]:
+    """获取日线数据，统一列名：date/open/high/low/close/volume/amount/pct_change"""
+    try:
+        import akshare as ak
+        df = ak.stock_zh_a_hist(symbol=code, period="daily", adjust="qfq")
+        if df is None or df.empty:
+            return None
+        df = df.rename(columns={
+            "日期": "date", "开盘": "open", "最高": "high",
+            "最低": "low", "收盘": "close", "成交量": "volume",
+            "成交额": "amount", "涨跌幅": "pct_change", "换手率": "turnover",
+        })
+        df["date"] = pd.to_datetime(df["date"])
+        df = df.sort_values("date").reset_index(drop=True)
+        return df.tail(days)
+    except Exception as e:
+        logger.warning(f"获取{code}日线数据失败: {e}")
+        return None
+
+
+def get_realtime_info(code: str) -> Optional[Dict]:
+    """获取实时行情（PE、换手率、量比等）"""
+    try:
+        import akshare as ak
+        df = ak.stock_individual_info_em(symbol=code)
+        if df is None or df.empty:
+            return None
+        result = {}
+        for _, row in df.iterrows():
+            key = str(row.iloc[0])
+            val = row.iloc[1]
+            result[key] = val
+        return result
+    except Exception as e:
+        logger.debug(f"获取{code}实时信息失败: {e}")
+        return None
+
+
+def _calc_macd(close: pd.Series, fast=12, slow=26, signal=9) -> Tuple[pd.Series, pd.Series, pd.Series]:
+    """返回 DIF, DEA, BAR"""
+    ema_fast = close.ewm(span=fast, adjust=False).mean()
+    ema_slow = close.ewm(span=slow, adjust=False).mean()
+    dif = ema_fast - ema_slow
+    dea = dif.ewm(span=signal, adjust=False).mean()
+    bar = (dif - dea) * 2
+    return dif, dea, bar
+
+
+def _calc_kdj(df: pd.DataFrame, n=9, m1=3, m2=3) -> Tuple[pd.Series, pd.Series, pd.Series]:
+    """返回 K, D, J"""
+    low_n = df["low"].rolling(n).min()
+    high_n = df["high"].rolling(n).max()
+    rsv = (df["close"] - low_n) / (high_n - low_n).replace(0, np.nan) * 100
+    K = rsv.ewm(com=m1 - 1, adjust=False).mean()
+    D = K.ewm(com=m2 - 1, adjust=False).mean()
+    J = 3 * K - 2 * D
+    return K, D, J
+
+
+def _calc_dmi(df: pd.DataFrame, n=14, m=6) -> Tuple[pd.Series, pd.Series, pd.Series]:
+    """返回 PDI(DI+), MDI(DI-), ADX"""
+    high, low, close = df["high"], df["low"], df["close"]
+    tr = pd.concat([
+        high - low,
+        (high - close.shift()).abs(),
+        (low - close.shift()).abs()
+    ], axis=1).max(axis=1)
+    atr = tr.rolling(n).mean()
+
+    up_move = high - high.shift()
+    down_move = low.shift() - low
+    pdm = np.where((up_move > down_move) & (up_move > 0), up_move, 0.0)
+    mdm = np.where((down_move > up_move) & (down_move > 0), down_move, 0.0)
+
+    pdi = pd.Series(pdm, index=df.index).rolling(n).mean() / atr * 100
+    mdi = pd.Series(mdm, index=df.index).rolling(n).mean() / atr * 100
+    dx = (pdi - mdi).abs() / (pdi + mdi).replace(0, np.nan) * 100
+    adx = dx.rolling(m).mean()
+    return pdi, mdi, adx
+
+
+# ============================================================
+# 1. 市场情绪与环境模块
+# ============================================================
+
+def check_kdj_market(df: pd.DataFrame) -> IndicatorResult:
+    """
+    大盘KDJ判断市场情绪：
+    K>50且J>50为多头情绪
+    """
+    if df is None or len(df) < 9:
+        return _skip("数据不足")
+    try:
+        K, D, J = _calc_kdj(df)
+        k_val, d_val, j_val = K.iloc[-1], D.iloc[-1], J.iloc[-1]
+        passed = k_val > 50 and j_val > 50
+        return (
+            _ok({"K": round(k_val, 1), "D": round(d_val, 1), "J": round(j_val, 1)},
+                f"KDJ: K={k_val:.1f} D={d_val:.1f} J={j_val:.1f}，{'多头情绪' if passed else '偏弱'}")
+            if passed else
+            _fail({"K": round(k_val, 1), "D": round(d_val, 1), "J": round(j_val, 1)},
+                  f"KDJ: K={k_val:.1f} D={d_val:.1f} J={j_val:.1f}，偏弱")
+        )
+    except Exception as e:
+        return _skip(str(e))
+
+
+def check_market_breadth() -> IndicatorResult:
+    """
+    涨跌家数比：上涨家数/下跌家数 > 1 为多头市场
+    """
+    try:
+        import akshare as ak
+        df = ak.stock_zh_a_spot_em()
+        if df is None or df.empty:
+            return _skip("市场行情获取失败")
+        up = int((df["涨跌幅"] > 0).sum()) if "涨跌幅" in df.columns else 0
+        down = int((df["涨跌幅"] < 0).sum()) if "涨跌幅" in df.columns else 1
+        ratio = up / max(down, 1)
+        passed = ratio > 1.2  # 上涨家数是下跌家数1.2倍以上
+        detail = f"上涨{up}家/下跌{down}家，比值{ratio:.2f}"
+        return _ok(ratio, detail) if passed else _fail(ratio, detail)
+    except Exception as e:
+        return _skip(str(e))
+
+
+# ============================================================
+# 2. 板块轮动模块
+# ============================================================
+
+# 缓存
+_SECTOR_CACHE: Dict = {"top5": [], "limitup": "", "ts": 0, "ttl": 3600}
+
+
+def get_top5_sectors() -> List[str]:
+    """获取今日涨幅前5行业板块"""
+    if time.time() - _SECTOR_CACHE["ts"] < _SECTOR_CACHE["ttl"] and _SECTOR_CACHE["top5"]:
+        return _SECTOR_CACHE["top5"]
+    try:
+        import akshare as ak
+        df = ak.stock_board_industry_name_em()
+        if df is None or df.empty:
+            return []
+        col = next((c for c in ["涨跌幅", "change_pct"] if c in df.columns), None)
+        if col:
+            df = df.sort_values(col, ascending=False)
+        name_col = next((c for c in ["板块名称", "name"] if c in df.columns), df.columns[0])
+        top5 = [str(v) for v in df[name_col].head(5).tolist()]
+        _SECTOR_CACHE["top5"] = top5
+        _SECTOR_CACHE["ts"] = time.time()
+        return top5
+    except Exception as e:
+        logger.warning(f"板块数据失败: {e}")
+        return []
+
+
+def get_limitup_sector() -> str:
+    """前5板块中涨停家数最多的板块"""
+    if time.time() - _SECTOR_CACHE["ts"] < _SECTOR_CACHE["ttl"] and _SECTOR_CACHE["limitup"]:
+        return _SECTOR_CACHE["limitup"]
+    try:
+        import akshare as ak
+        top5 = get_top5_sectors()
+        best, best_cnt = "", -1
+        for name in top5:
+            try:
+                _sleep(0.3)
+                df = ak.stock_board_industry_cons_em(symbol=name)
+                col = next((c for c in ["涨跌幅", "change_pct"] if c in df.columns), None)
+                cnt = int((df[col] >= 9.9).sum()) if col else 0
+                if cnt > best_cnt:
+                    best_cnt, best = cnt, name
+            except Exception:
+                continue
+        _SECTOR_CACHE["limitup"] = best
+        return best
+    except Exception as e:
+        return ""
+
+
+def get_stock_sector(code: str) -> str:
+    """获取股票所属行业"""
+    try:
+        info = get_realtime_info(code)
+        if info:
+            for k in ["所属行业", "行业", "板块"]:
+                if k in info:
+                    return str(info[k])
+    except Exception:
+        pass
+    return ""
+
+
+def check_sector_top5(code: str, sector: str = "") -> IndicatorResult:
+    """是否属于今日涨幅前五板块"""
+    top5 = get_top5_sectors()
+    if not top5:
+        return _skip("板块数据获取失败")
+    if not sector:
+        sector = get_stock_sector(code)
+    for s in top5:
+        if s in sector or sector in s:
+            return _ok(sector, f"所属板块'{sector}'在前五：{top5}")
+    return _fail(sector, f"板块'{sector}'不在前五")
+
+
+def check_sector_limitup(code: str, sector: str = "") -> IndicatorResult:
+    """是否属于前五中涨停家数最多的板块"""
+    best = get_limitup_sector()
+    if not best:
+        return _skip("涨停板块获取失败")
+    if not sector:
+        sector = get_stock_sector(code)
+    passed = best in sector or sector in best
+    return (
+        _ok(best, f"属于涨停最多板块'{best}'")
+        if passed else
+        _fail(best, f"不属于涨停最多板块'{best}'")
+    )
+
+
+# ============================================================
+# 3. 基本面过滤模块
+# ============================================================
+
+def check_pe(code: str, pe_max: float = 100) -> IndicatorResult:
+    """PE在合理区间 (0, pe_max)"""
+    try:
+        info = get_realtime_info(code)
+        pe = None
+        if info:
+            for k in ["市盈率(动态)", "市盈率", "PE", "pe"]:
+                if k in info:
+                    try:
+                        pe = float(str(info[k]).replace(",", "").replace("--", "nan"))
+                    except Exception:
+                        pass
+                    break
+        if pe is None or np.isnan(pe):
+            return _skip(f"PE数据获取失败")
+        passed = 0 < pe < pe_max
+        return (
+            _ok(pe, f"PE={pe:.1f}，在合理区间(0,{pe_max})")
+            if passed else
+            _fail(pe, f"PE={pe:.1f}，超出范围")
+        )
+    except Exception as e:
+        return _skip(str(e))
+
+
+def check_profit_growth(code: str) -> IndicatorResult:
+    """净利润连续增长（近两期同比均为正，最新期降幅不超过50%）"""
+    try:
+        import akshare as ak
+        _sleep(0.5)
+        df = ak.stock_profit_sheet_by_quarterly_em(symbol=code)
+        if df is None or df.empty:
+            return _skip("财务数据获取失败")
+        growth_col = next((c for c in df.columns if "净利润" in str(c) and "同比" in str(c)), None)
+        if not growth_col:
+            return _skip("未找到净利润同比列")
+        vals = df[growth_col].dropna().head(3).tolist()
+        if len(vals) < 2:
+            return _skip("数据期数不足")
+        growths = []
+        for v in vals[:2]:
+            try:
+                growths.append(float(str(v).replace("%", "").replace(",", "")))
+            except Exception:
+                growths.append(0.0)
+        both_positive = all(g > 0 for g in growths)
+        no_crash = growths[0] > -50
+        passed = both_positive and no_crash
+        detail = f"近两期净利润增速: {growths[0]:.1f}%/{growths[1]:.1f}%"
+        return _ok(growths, detail) if passed else _fail(growths, detail)
+    except Exception as e:
+        return _skip(str(e))
+
+
+# ============================================================
+# 4. 资金与盘口模块
+# ============================================================
+
+def check_high_open(df: pd.DataFrame) -> IndicatorResult:
+    """高开：今日开盘价高于昨日收盘价0.5%以上"""
+    if df is None or len(df) < 2:
+        return _skip()
+    try:
+        today = df.iloc[-1]
+        yesterday_close = df.iloc[-2]["close"]
+        open_pct = (today["open"] - yesterday_close) / yesterday_close * 100
+        passed = open_pct >= 0.5
+        return (
+            _ok(open_pct, f"高开{open_pct:.2f}%")
+            if passed else
+            _fail(open_pct, f"开盘涨跌{open_pct:.2f}%，未高开")
+        )
+    except Exception as e:
+        return _skip(str(e))
+
+
+def check_intraday_strong(code: str) -> IndicatorResult:
+    """
+    强分时：开盘30分钟涨幅>1%，且当前价格高于均价
+    """
+    try:
+        import akshare as ak
+        df_min = ak.stock_intraday_em(symbol=code)
+        if df_min is None or df_min.empty:
+            return _skip("分时数据获取失败")
+        # 找价格列
+        price_col = next((c for c in ["收盘", "close", "price", "最新价"] if c in df_min.columns), None)
+        if price_col is None:
+            num_cols = df_min.select_dtypes(include=[float, int]).columns
+            price_col = num_cols[0] if len(num_cols) > 0 else None
+        if price_col is None:
+            return _skip("无法识别价格列")
+        prices = df_min[price_col].dropna().values
+        if len(prices) < 30:
+            return _skip("分时数据不足")
+        open_p = prices[0]
+        rise_30 = (prices[:30].max() - open_p) / open_p * 100
+        avg_p = np.mean(prices)
+        above_avg = prices[-1] >= avg_p
+        passed = rise_30 >= 1.0 and above_avg
+        detail = f"开盘30分涨幅{rise_30:.1f}%，当前{'高于' if above_avg else '低于'}均价"
+        return _ok(rise_30, detail) if passed else _fail(rise_30, detail)
+    except Exception as e:
+        return _skip(str(e))
+
+
+def check_volume_ratio(df: pd.DataFrame, threshold: float = 1.0) -> IndicatorResult:
+    """量比：当日成交量/5日均量 > threshold"""
+    if df is None or len(df) < 6:
+        return _skip()
+    try:
+        vol_ma5 = df["volume"].iloc[-6:-1].mean()
+        today_vol = df["volume"].iloc[-1]
+        ratio = today_vol / vol_ma5 if vol_ma5 > 0 else 0
+        passed = ratio > threshold
+        detail = f"量比={ratio:.2f}（阈值>{threshold}）"
+        return _ok(ratio, detail) if passed else _fail(ratio, detail)
+    except Exception as e:
+        return _skip(str(e))
+
+
+def check_turnover(df: pd.DataFrame, threshold: float = 3.0) -> IndicatorResult:
+    """换手率 > threshold%"""
+    if df is None or len(df) < 1:
+        return _skip()
+    try:
+        if "turnover" not in df.columns:
+            return _skip("无换手率数据")
+        turnover = df["turnover"].iloc[-1]
+        passed = turnover >= threshold
+        detail = f"换手率={turnover:.2f}%（阈值>{threshold}%）"
+        return _ok(turnover, detail) if passed else _fail(turnover, detail)
+    except Exception as e:
+        return _skip(str(e))
+
+
+def check_fund_flow(code: str) -> IndicatorResult:
+    """近5日主力净流入为正"""
+    try:
+        import akshare as ak
+        market = "sh" if code.startswith("6") else "sz"
+        df = ak.stock_individual_fund_flow(stock=code, market=market)
+        if df is None or df.empty:
+            return _skip("资金流向获取失败")
+        col = next((c for c in df.columns if "主力" in str(c) and "净" in str(c)), None)
+        if col is None:
+            return _skip("未找到主力净流入列")
+        vals = df[col].dropna().head(5).tolist()
+        total = sum(float(str(v).replace(",", "")) for v in vals if str(v) not in ["", "nan"])
+        passed = total > 0
+        detail = f"近5日主力净流入: {total/1e8:.2f}亿"
+        return _ok(total, detail) if passed else _fail(total, detail)
+    except Exception as e:
+        return _skip(str(e))
+
+
+def check_volume_expand(df: pd.DataFrame, days: int = 5, min_days: int = 4) -> IndicatorResult:
+    """近N日成交量连续放大（至少min_days天递增）"""
+    if df is None or len(df) < days + 1:
+        return _skip()
+    try:
+        vols = df["volume"].tail(days).values
+        inc = sum(1 for i in range(1, len(vols)) if vols[i] > vols[i - 1])
+        passed = inc >= min_days
+        detail = f"近{days}日量能递增{inc}/{days - 1}天"
+        return _ok(inc, detail) if passed else _fail(inc, detail)
+    except Exception as e:
+        return _skip(str(e))
+
+
+# ============================================================
+# 5. 传统技术与形态模块
+# ============================================================
+
+def check_ma_bull(df: pd.DataFrame) -> IndicatorResult:
+    """均线多头排列：MA5 > MA10 > MA20 > MA60"""
+    if df is None or len(df) < 60:
+        return _skip("数据不足60日")
+    try:
+        c = df["close"]
+        ma5 = c.rolling(5).mean().iloc[-1]
+        ma10 = c.rolling(10).mean().iloc[-1]
+        ma20 = c.rolling(20).mean().iloc[-1]
+        ma60 = c.rolling(60).mean().iloc[-1]
+        passed = ma5 > ma10 > ma20 > ma60
+        detail = f"MA5={ma5:.2f} MA10={ma10:.2f} MA20={ma20:.2f} MA60={ma60:.2f}"
+        return (
+            _ok({"ma5": ma5, "ma10": ma10, "ma20": ma20, "ma60": ma60}, detail)
+            if passed else
+            _fail({"ma5": ma5, "ma10": ma10, "ma20": ma20, "ma60": ma60}, detail)
+        )
+    except Exception as e:
+        return _skip(str(e))
+
+
+def check_macd_golden_above_ma20(df: pd.DataFrame) -> IndicatorResult:
+    """
+    MACD金叉且价格>MA20：
+    - DIF上穿DEA（金叉）
+    - 当前收盘价 > MA20
+    """
+    if df is None or len(df) < 26:
+        return _skip()
+    try:
+        c = df["close"]
+        dif, dea, bar = _calc_macd(c)
+        ma20 = c.rolling(20).mean().iloc[-1]
+        golden = dif.iloc[-1] > dea.iloc[-1] and dif.iloc[-2] <= dea.iloc[-2]
+        above_ma20 = c.iloc[-1] > ma20
+        passed = golden and above_ma20
+        detail = (f"MACD{'金叉' if golden else '未金叉'}，"
+                  f"收盘{'>' if above_ma20 else '<'}MA20({ma20:.2f})")
+        return _ok({"dif": round(dif.iloc[-1], 4), "dea": round(dea.iloc[-1], 4)}, detail) \
+            if passed else _fail(None, detail)
+    except Exception as e:
+        return _skip(str(e))
+
+
+def check_kdj_above50(df: pd.DataFrame) -> IndicatorResult:
+    """KDJ三线均>50"""
+    if df is None or len(df) < 9:
+        return _skip()
+    try:
+        K, D, J = _calc_kdj(df)
+        k, d, j = K.iloc[-1], D.iloc[-1], J.iloc[-1]
+        passed = k > 50 and d > 50 and j > 50
+        detail = f"K={k:.1f} D={d:.1f} J={j:.1f}"
+        return _ok({"K": k, "D": d, "J": j}, detail) if passed else _fail({"K": k, "D": d, "J": j}, detail)
+    except Exception as e:
+        return _skip(str(e))
+
+
+def check_dmi(df: pd.DataFrame) -> IndicatorResult:
+    """
+    DMI手拉手：
+    - PDI > MDI（多头占优）
+    - ADX > 20（趋势确立）
+    - PDI和ADX均在上升
+    """
+    if df is None or len(df) < 20:
+        return _skip()
+    try:
+        pdi, mdi, adx = _calc_dmi(df)
+        p, m, a = pdi.iloc[-1], mdi.iloc[-1], adx.iloc[-1]
+        p_prev, a_prev = pdi.iloc[-2], adx.iloc[-2]
+        hand_in_hand = p > m and a > 20 and p > p_prev and a > a_prev
+        detail = f"PDI={p:.1f} MDI={m:.1f} ADX={a:.1f}，{'手拉手↑' if hand_in_hand else '未达标'}"
+        return _ok({"pdi": p, "mdi": m, "adx": a}, detail) if hand_in_hand else _fail(None, detail)
+    except Exception as e:
+        return _skip(str(e))
+
+
+def check_head_shoulder_bottom(df: pd.DataFrame) -> IndicatorResult:
+    """头肩底形态：左肩→头（最低）→右肩，右肩后突破颈线"""
+    if df is None or len(df) < 30:
+        return _skip()
+    try:
+        window = df["close"].tail(60).values
+        lows = [(i, window[i]) for i in range(2, len(window) - 2)
+                if window[i] < window[i-1] and window[i] < window[i-2]
+                and window[i] < window[i+1] and window[i] < window[i+2]]
+        if len(lows) < 3:
+            return _fail(None, "低点不足，未识别头肩底")
+        ls, head, rs = lows[-3], lows[-2], lows[-1]
+        head_lowest = head[1] < ls[1] and head[1] < rs[1]
+        shoulders_close = abs(ls[1] - rs[1]) / ls[1] < 0.05
+        neckline = (ls[1] + rs[1]) / 2
+        breakout = window[rs[0]:].max() > neckline * 1.02 if rs[0] < len(window) - 1 else False
+        passed = head_lowest and shoulders_close and breakout
+        detail = f"{'头肩底已突破颈线' if passed else '未完整识别头肩底'}"
+        return _ok(neckline, detail) if passed else _fail(None, detail)
+    except Exception as e:
+        return _skip(str(e))
+
+
+# ============================================================
+# 6. 缠论特征模块
+# ============================================================
+
+def check_chan_bottom_pattern(df: pd.DataFrame) -> IndicatorResult:
+    """
+    底分型：三根K线，中间K线的最低价低于两侧（底分型结构）
+    近期5根K线中出现底分型即通过
+    """
+    if df is None or len(df) < 5:
+        return _skip()
+    try:
+        highs = df["high"].tail(10).values
+        lows = df["low"].tail(10).values
+        found = False
+        for i in range(1, len(lows) - 1):
+            if (lows[i] < lows[i-1] and lows[i] < lows[i+1]
+                    and highs[i] < highs[i-1] and highs[i] < highs[i+1]):
+                found = True
+        detail = "近期出现底分型" if found else "近期无底分型"
+        return _ok(True, detail) if found else _fail(False, detail)
+    except Exception as e:
+        return _skip(str(e))
+
+
+def check_macd_divergence(df: pd.DataFrame, use_weekly: bool = False) -> IndicatorResult:
+    """
+    MACD底背离：价格创新低但MACD绿柱面积缩小（底背驰）
+    use_weekly=True时判断是否也有周线背离（取日线最后30根模拟周线）
+    """
+    if df is None or len(df) < 30:
+        return _skip()
+    try:
+        close = df["close"]
+        dif, dea, bar = _calc_macd(close)
+        n = 20
+        close_r = close.tail(n).values
+        bar_r = bar.tail(n).values
+
+        # 找低点
+        lows = [(i, close_r[i], bar_r[i])
+                for i in range(1, len(close_r) - 1)
+                if close_r[i] < close_r[i-1] and close_r[i] < close_r[i+1]]
+
+        if len(lows) < 2:
+            return _fail(None, "低点不足，无法判断背离")
+
+        p1, p2 = lows[-2], lows[-1]
+        price_new_low = p2[1] < p1[1]
+        bar_shrink = (p1[2] < 0 and p2[2] < 0 and abs(p2[2]) < abs(p1[2]))
+        passed = price_new_low and bar_shrink
+        detail = (f"{'底背驰' if passed else '无背离'}：价格{'新低' if price_new_low else '未新低'}，"
+                  f"MACD绿柱{'收缩' if bar_shrink else '未收缩'}")
+        return _ok(True, detail) if passed else _fail(False, detail)
+    except Exception as e:
+        return _skip(str(e))
+
+
+# ============================================================
+# 7. 特色主力控盘模块
+# ============================================================
+
+def check_battle_long(df: pd.DataFrame) -> IndicatorResult:
+    """
+    博弈长阳：下跌末期出现大阳线（涨幅>5%）且量比>2倍
+    """
+    if df is None or len(df) < 15:
+        return _skip()
+    try:
+        close = df["close"].values
+        volume = df["volume"].values
+        n = len(close)
+        found = False
+        detail = "近期未出现博弈长阳"
+        for i in range(max(0, n - 20) + 5, n):
+            pct = (close[i] - close[i-1]) / close[i-1] * 100
+            if pct < 5.0:
+                continue
+            vol_ma5 = np.mean(volume[max(0, i-5):i])
+            if vol_ma5 <= 0 or volume[i] < vol_ma5 * 2:
+                continue
+            prev = close[max(0, i-10):i]
+            if len(prev) >= 5 and (prev[-1] - prev[0]) / prev[0] * 100 < -3:
+                found = True
+                detail = f"博弈长阳：涨幅{pct:.1f}%，量比{volume[i]/vol_ma5:.1f}倍"
+                break
+        return _ok(True, detail) if found else _fail(False, detail)
+    except Exception as e:
+        return _skip(str(e))
+
+
+def check_jiuyu_zhizun(df: pd.DataFrame) -> IndicatorResult:
+    """
+    九五之尊：价格站上MA9和MA5，且近期连续3根阳线
+    （主力拉升初期特征）
+    """
+    if df is None or len(df) < 9:
+        return _skip()
+    try:
+        c = df["close"]
+        o = df["open"]
+        ma5 = c.rolling(5).mean().iloc[-1]
+        ma9 = c.rolling(9).mean().iloc[-1]
+        above = c.iloc[-1] > ma5 and c.iloc[-1] > ma9
+        # 近3根阳线
+        yang3 = all(c.iloc[i] > o.iloc[i] for i in [-3, -2, -1])
+        passed = above and yang3
+        detail = (f"价格{'高于' if above else '低于'}MA5({ma5:.2f})/MA9({ma9:.2f})，"
+                  f"近3根{'均为阳线' if yang3 else '非全阳'}")
+        return _ok(True, detail) if passed else _fail(False, detail)
+    except Exception as e:
+        return _skip(str(e))
+
+
+def check_cys(df: pd.DataFrame, threshold: float = -15.0) -> IndicatorResult:
+    """
+    CYS市场盈亏指标（近似）：
+    (收盘价 - MA40) / MA40 * 100 < threshold 视为深度超跌
+    CYS < -15 → 价格比40日均线低15%以上，极度超跌
+    """
+    if df is None or len(df) < 40:
+        return _skip("数据不足40日")
+    try:
+        c = df["close"]
+        ma40 = c.rolling(40).mean().iloc[-1]
+        cys = (c.iloc[-1] - ma40) / ma40 * 100
+        passed = cys < threshold
+        detail = f"CYS={cys:.2f}（阈值<{threshold}，{'深度超跌' if passed else '未超跌'}）"
+        return _ok(cys, detail) if passed else _fail(cys, detail)
+    except Exception as e:
+        return _skip(str(e))
+
+
+def check_cd40(df: pd.DataFrame, threshold: float = -20.0) -> IndicatorResult:
+    """
+    CD40动量指标（近似）：
+    40日价格变化率 = (今日收盘 - 40日前收盘) / 40日前收盘 * 100
+    CD40 < -20 → 40日内跌幅超过20%，处于深度下跌动量区
+    """
+    if df is None or len(df) < 41:
+        return _skip("数据不足41日")
+    try:
+        c = df["close"]
+        cd40 = (c.iloc[-1] - c.iloc[-41]) / c.iloc[-41] * 100
+        passed = cd40 < threshold
+        detail = f"CD40={cd40:.2f}%（阈值<{threshold}%，{'深度下跌动量' if passed else '未达标'}）"
+        return _ok(cd40, detail) if passed else _fail(cd40, detail)
+    except Exception as e:
+        return _skip(str(e))
