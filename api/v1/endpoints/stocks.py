@@ -118,7 +118,7 @@ def screen_strategy1(
     codes: str = Query(..., description="逗号分隔的股票代码，例如：600519,000858,300750"),
     min_score: int = Query(9, ge=0, le=15, description="最低总分门槛，默认9（满分15）"),
 ):
-    from src.screener import run_strategy1_batch
+    from src.screening import run_strategy1_batch
     code_list = [c.strip() for c in codes.split(",") if c.strip()]
     if not code_list:
         raise HTTPException(status_code=400, detail={"error": "bad_request", "message": "codes不能为空"})
@@ -143,7 +143,7 @@ def screen_strategy2(
     codes: str = Query(..., description="逗号分隔的股票代码，例如：600519,000858,300750"),
     min_score: int = Query(3, ge=0, le=6, description="最低总分门槛，默认3（满分6）"),
 ):
-    from src.screener import run_strategy2_batch
+    from src.screening import run_strategy2_batch
     code_list = [c.strip() for c in codes.split(",") if c.strip()]
     if not code_list:
         raise HTTPException(status_code=400, detail={"error": "bad_request", "message": "codes不能为空"})

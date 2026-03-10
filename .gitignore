@@ -76,3 +76,7 @@ CLAUDE.md
 static/
 /apps/dsa-desktop/dist/
 /apps/dsa-desktop/node_modules/
+
+# OpenClaw 本地配置文件
+AGENTS.md
+SKILL.md
