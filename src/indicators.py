@@ -31,6 +31,32 @@ import pandas as pd
 logger = logging.getLogger(__name__)
 
 # ============================================================
+# 数据缓存（批量分析时同一股票不重复拉取数据）
+# ============================================================
+_DF_CACHE: Dict[str, Any] = {}       # key: "code_days", value: {"df": df, "ts": timestamp}
+_RT_CACHE: Dict[str, Any] = {}       # key: code, value: {"data": dict, "ts": timestamp}
+_CACHE_TTL = 1800                     # 30分钟有效期（日内复用）
+
+def _df_cache_key(code: str, days: int) -> str:
+    return f"{code}_{days}"
+
+def _cache_get(cache: dict, key: str) -> Optional[Any]:
+    """从缓存读取，过期返回 None"""
+    entry = cache.get(key)
+    if entry and time.time() - entry["ts"] < _CACHE_TTL:
+        return entry["data"]
+    return None
+
+def _cache_set(cache: dict, key: str, data: Any):
+    cache[key] = {"data": data, "ts": time.time()}
+
+def clear_data_cache():
+    """手动清空缓存（批次结束后可调用）"""
+    _DF_CACHE.clear()
+    _RT_CACHE.clear()
+    logger.debug("数据缓存已清空")
+
+# ============================================================
 # 类型别名
 # ============================================================
 IndicatorResult = Dict[str, Any]  # {"passed": bool, "value": any, "detail": str}
@@ -57,7 +83,12 @@ def _sleep(s: float = 0.5):
 
 
 def get_daily_df(code: str, days: int = 100) -> Optional[pd.DataFrame]:
-    """获取日线数据，统一列名：date/open/high/low/close/volume/amount/pct_change"""
+    """获取日线数据（带缓存，批量分析时同一股票不重复拉取）"""
+    cache_key = _df_cache_key(code, days)
+    cached = _cache_get(_DF_CACHE, cache_key)
+    if cached is not None:
+        logger.debug(f"[cache hit] {code} 日线数据")
+        return cached
     try:
         import akshare as ak
         df = ak.stock_zh_a_hist(symbol=code, period="daily", adjust="qfq")
@@ -70,14 +101,20 @@ def get_daily_df(code: str, days: int = 100) -> Optional[pd.DataFrame]:
         })
         df["date"] = pd.to_datetime(df["date"])
         df = df.sort_values("date").reset_index(drop=True)
-        return df.tail(days)
+        result = df.tail(days)
+        _cache_set(_DF_CACHE, cache_key, result)
+        return result
     except Exception as e:
         logger.warning(f"获取{code}日线数据失败: {e}")
         return None
 
 
 def get_realtime_info(code: str) -> Optional[Dict]:
-    """获取实时行情（PE、换手率、量比等）"""
+    """获取实时行情（带缓存，PE/换手率等）"""
+    cached = _cache_get(_RT_CACHE, code)
+    if cached is not None:
+        logger.debug(f"[cache hit] {code} 实时行情")
+        return cached
     try:
         import akshare as ak
         df = ak.stock_individual_info_em(symbol=code)
@@ -88,6 +125,7 @@ def get_realtime_info(code: str) -> Optional[Dict]:
             key = str(row.iloc[0])
             val = row.iloc[1]
             result[key] = val
+        _cache_set(_RT_CACHE, code, result)
         return result
     except Exception as e:
         logger.debug(f"获取{code}实时信息失败: {e}")

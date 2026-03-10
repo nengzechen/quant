@@ -24,7 +24,7 @@
 import logging
 import time
 from dataclasses import dataclass, field
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 
 from src.indicators import (
     get_daily_df, get_stock_sector,
@@ -289,37 +289,107 @@ class Strategy2:
 # 批量筛选
 # ============================================================
 
+def _fast_prefilter_s1(code: str, df) -> Tuple[bool, str]:
+    """
+    策略一快速预筛（纯技术，不调外部接口）
+    通过：价格在MA20以上 OR 近5日有放量（量比>0.8）
+    未通过：趋势和量能双双极差，直接跳过
+    """
+    if df is None or len(df) < 20:
+        return True, "数据不足，保留进入完整筛选"
+    try:
+        import numpy as np
+        close = df["close"]
+        volume = df["volume"]
+        ma20 = close.rolling(20).mean().iloc[-1]
+        vol_ma5 = volume.iloc[-6:-1].mean()
+        vol_ratio = volume.iloc[-1] / vol_ma5 if vol_ma5 > 0 else 0
+        above_ma20 = close.iloc[-1] >= ma20 * 0.97   # 允许3%以内的偏离
+        has_volume = vol_ratio >= 0.8
+        if not above_ma20 and not has_volume:
+            return False, f"预筛未通过：价格低于MA20且量比{vol_ratio:.2f}<0.8"
+        return True, f"预筛通过：MA20偏离{((close.iloc[-1]-ma20)/ma20*100):.1f}%，量比{vol_ratio:.2f}"
+    except Exception:
+        return True, "预筛异常，保留"
+
+
+def _fast_prefilter_s2(code: str, df) -> Tuple[bool, str]:
+    """
+    策略二快速预筛：必须有明显下跌（近60日跌幅>10%）才值得抄底分析
+    """
+    if df is None or len(df) < 20:
+        return True, "数据不足，保留"
+    try:
+        close = df["close"]
+        window = min(60, len(close))
+        drop = (close.iloc[-1] - close.iloc[-window]) / close.iloc[-window] * 100
+        if drop > -10:
+            return False, f"预筛未通过：近{window}日仅跌{drop:.1f}%，不满足抄底条件"
+        return True, f"预筛通过：近{window}日跌幅{drop:.1f}%"
+    except Exception:
+        return True, "预筛异常，保留"
+
+
 def run_strategy1_batch(codes: List[str], min_score: int = 9) -> List[StrategyResult]:
-    """批量跑策略一，按总分降序返回"""
+    """
+    批量跑策略一（含分层筛选）
+    流程：预加载板块 → 快速预筛（纯技术）→ 完整策略评分
+    """
+    from src.indicators import clear_data_cache
     s = Strategy1()
-    # 预加载板块
+    # 预加载板块（一次拉取，后续复用缓存）
     get_top5_sectors()
     get_limitup_sector()
 
+    passed_pre, skipped_pre = 0, 0
     results = []
     for code in codes:
         try:
-            time.sleep(0.5)
-            r = s.run(code)
+            # 第一层：拉日线（会被缓存，后续 Strategy1.run 复用）
+            df = get_daily_df(code, days=100)
+            ok, reason = _fast_prefilter_s1(code, df)
+            if not ok:
+                logger.info(f"[策略一-预筛跳过] {code}: {reason}")
+                skipped_pre += 1
+                continue
+            passed_pre += 1
+            # 第二层：完整评分（df 已缓存，不重复拉取）
+            time.sleep(0.3)
+            r = s.run(code, df=df)
             logger.info(f"[策略一] {code}: {r.total_score}/{r.max_score} {r.passed_dims}")
             results.append(r)
         except Exception as e:
             logger.error(f"[策略一] {code} 出错: {e}")
+
+    logger.info(f"[策略一] 预筛通过 {passed_pre}/{len(codes)}，跳过 {skipped_pre}")
     results.sort(key=lambda x: x.total_score, reverse=True)
     return [r for r in results if r.total_score >= min_score]
 
 
 def run_strategy2_batch(codes: List[str], min_score: int = 3) -> List[StrategyResult]:
-    """批量跑策略二，按总分降序返回"""
+    """
+    批量跑策略二（含分层筛选）
+    流程：快速预筛（需有明显下跌）→ 完整策略评分
+    """
     s = Strategy2()
+    passed_pre, skipped_pre = 0, 0
     results = []
     for code in codes:
         try:
-            time.sleep(0.5)
-            r = s.run(code)
+            df = get_daily_df(code, days=120)
+            ok, reason = _fast_prefilter_s2(code, df)
+            if not ok:
+                logger.info(f"[策略二-预筛跳过] {code}: {reason}")
+                skipped_pre += 1
+                continue
+            passed_pre += 1
+            time.sleep(0.3)
+            r = s.run(code, df=df)
             logger.info(f"[策略二] {code}: {r.total_score}/{r.max_score} {r.passed_dims}")
             results.append(r)
         except Exception as e:
             logger.error(f"[策略二] {code} 出错: {e}")
+
+    logger.info(f"[策略二] 预筛通过 {passed_pre}/{len(codes)}，跳过 {skipped_pre}")
     results.sort(key=lambda x: x.total_score, reverse=True)
     return [r for r in results if r.total_score >= min_score]
