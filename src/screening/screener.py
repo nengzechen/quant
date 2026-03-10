@@ -27,7 +27,7 @@ from dataclasses import dataclass, field
 from typing import List, Dict, Any, Optional, Tuple
 
 from src.screening.indicators import (
-    get_daily_df, get_stock_sector,
+    get_daily_df, get_stock_sector, get_realtime_info,
     # 市场情绪
     check_kdj_market, check_market_breadth,
     # 板块
@@ -44,6 +44,8 @@ from src.screening.indicators import (
     check_chan_bottom_pattern, check_macd_divergence,
     # 特色主力
     check_battle_long, check_jiuyu_zhizun, check_cys, check_cd40,
+    # 缓存
+    clear_data_cache,
 )
 
 logger = logging.getLogger(__name__)
@@ -119,6 +121,24 @@ class StrategyResult:
 
 
 # ============================================================
+# 辅助：获取股票名称
+# ============================================================
+
+def _get_stock_name(code: str) -> str:
+    """从实时行情缓存中取股票名称，失败返回空字符串"""
+    try:
+        info = get_realtime_info(code)
+        if info:
+            # stock_individual_info_em 返回的 key 因 akshare 版本而异
+            for key in ("股票简称", "股票名称", "名称"):
+                if key in info:
+                    return str(info[key])
+    except Exception:
+        pass
+    return ""
+
+
+# ============================================================
 # 策略一：强势多头突破/接力策略
 # ============================================================
 
@@ -142,6 +162,9 @@ class Strategy1:
         result = StrategyResult(code=code, strategy=self.NAME)
         if df is None:
             df = get_daily_df(code, days=100)
+
+        # 填充股票名称
+        result.name = _get_stock_name(code)
 
         sector = get_stock_sector(code)
 
@@ -234,6 +257,9 @@ class Strategy2:
         if df is None:
             df = get_daily_df(code, days=120)
 
+        # 填充股票名称
+        result.name = _get_stock_name(code)
+
         # ---- A. 大级别背离信号 ----
         grp_a = []
         # 日线背离
@@ -289,6 +315,38 @@ class Strategy2:
 # 批量筛选
 # ============================================================
 
+def _check_market_sentiment() -> Tuple[bool, str]:
+    """
+    市场情绪前置门（策略一专用）
+    - 大盘KDJ极弱（K<20且J<0）→ 发出警告，但不强制停止
+    - 涨跌家数比极差（跌>涨2倍以上）→ 返回 False
+    返回：(sentiment_ok, 描述)
+    """
+    try:
+        import akshare as ak
+        # 用沪深300日线做市场情绪代理
+        df_idx = ak.stock_zh_index_daily(symbol="sh000300")
+        if df_idx is not None and not df_idx.empty:
+            df_idx = df_idx.rename(columns={"date": "date", "open": "open", "high": "high",
+                                             "low": "low", "close": "close", "volume": "volume"})
+            r_kdj = check_kdj_market(df_idx)
+            if r_kdj["passed"] is False:
+                logger.warning(f"[市场情绪] 大盘KDJ极弱: {r_kdj['detail']}，策略一胜率可能偏低")
+    except Exception as e:
+        logger.debug(f"[市场情绪] KDJ检查失败: {e}")
+
+    try:
+        r_breadth = check_market_breadth()
+        if r_breadth["passed"] is False:
+            msg = f"市场极度悲观: {r_breadth['detail']}"
+            logger.warning(f"[市场情绪] {msg}")
+            return False, msg
+        return True, r_breadth.get("detail", "市场情绪正常")
+    except Exception as e:
+        logger.debug(f"[市场情绪] 涨跌家数检查失败: {e}")
+        return True, "情绪检查异常，继续执行"
+
+
 def _fast_prefilter_s1(code: str, df) -> Tuple[bool, str]:
     """
     策略一快速预筛（纯技术，不调外部接口）
@@ -298,7 +356,6 @@ def _fast_prefilter_s1(code: str, df) -> Tuple[bool, str]:
     if df is None or len(df) < 20:
         return True, "数据不足，保留进入完整筛选"
     try:
-        import numpy as np
         close = df["close"]
         volume = df["volume"]
         ma20 = close.rolling(20).mean().iloc[-1]
@@ -332,10 +389,16 @@ def _fast_prefilter_s2(code: str, df) -> Tuple[bool, str]:
 
 def run_strategy1_batch(codes: List[str], min_score: int = 9) -> List[StrategyResult]:
     """
-    批量跑策略一（含分层筛选）
-    流程：预加载板块 → 快速预筛（纯技术）→ 完整策略评分
+    批量跑策略一（含市场情绪前置门 + 分层筛选）
+    流程：市场情绪检查 → 预加载板块 → 快速预筛 → 完整策略评分
     """
-    from src.screening.indicators import clear_data_cache
+    # ---- 市场情绪前置门 ----
+    sentiment_ok, sentiment_desc = _check_market_sentiment()
+    if not sentiment_ok:
+        logger.warning(f"[策略一] 市场情绪极差（{sentiment_desc}），跳过本次选股")
+        return []
+    logger.info(f"[策略一] 市场情绪: {sentiment_desc}")
+
     s = Strategy1()
     # 预加载板块（一次拉取，后续复用缓存）
     get_top5_sectors()
@@ -343,23 +406,27 @@ def run_strategy1_batch(codes: List[str], min_score: int = 9) -> List[StrategyRe
 
     passed_pre, skipped_pre = 0, 0
     results = []
-    for code in codes:
-        try:
-            # 第一层：拉日线（会被缓存，后续 Strategy1.run 复用）
-            df = get_daily_df(code, days=100)
-            ok, reason = _fast_prefilter_s1(code, df)
-            if not ok:
-                logger.info(f"[策略一-预筛跳过] {code}: {reason}")
-                skipped_pre += 1
-                continue
-            passed_pre += 1
-            # 第二层：完整评分（df 已缓存，不重复拉取）
-            time.sleep(0.3)
-            r = s.run(code, df=df)
-            logger.info(f"[策略一] {code}: {r.total_score}/{r.max_score} {r.passed_dims}")
-            results.append(r)
-        except Exception as e:
-            logger.error(f"[策略一] {code} 出错: {e}")
+    try:
+        for code in codes:
+            try:
+                # 第一层：拉日线（会被缓存，后续 Strategy1.run 复用）
+                df = get_daily_df(code, days=100)
+                ok, reason = _fast_prefilter_s1(code, df)
+                if not ok:
+                    logger.info(f"[策略一-预筛跳过] {code}: {reason}")
+                    skipped_pre += 1
+                    continue
+                passed_pre += 1
+                # 第二层：完整评分（df 已缓存，不重复拉取）
+                time.sleep(0.3)
+                r = s.run(code, df=df)
+                logger.info(f"[策略一] {code} {r.name}: {r.total_score}/{r.max_score} {r.passed_dims}")
+                results.append(r)
+            except Exception as e:
+                logger.error(f"[策略一] {code} 出错: {e}")
+    finally:
+        # 批量结束后清空缓存，避免跨日数据污染
+        clear_data_cache()
 
     logger.info(f"[策略一] 预筛通过 {passed_pre}/{len(codes)}，跳过 {skipped_pre}")
     results.sort(key=lambda x: x.total_score, reverse=True)
@@ -374,21 +441,25 @@ def run_strategy2_batch(codes: List[str], min_score: int = 3) -> List[StrategyRe
     s = Strategy2()
     passed_pre, skipped_pre = 0, 0
     results = []
-    for code in codes:
-        try:
-            df = get_daily_df(code, days=120)
-            ok, reason = _fast_prefilter_s2(code, df)
-            if not ok:
-                logger.info(f"[策略二-预筛跳过] {code}: {reason}")
-                skipped_pre += 1
-                continue
-            passed_pre += 1
-            time.sleep(0.3)
-            r = s.run(code, df=df)
-            logger.info(f"[策略二] {code}: {r.total_score}/{r.max_score} {r.passed_dims}")
-            results.append(r)
-        except Exception as e:
-            logger.error(f"[策略二] {code} 出错: {e}")
+    try:
+        for code in codes:
+            try:
+                df = get_daily_df(code, days=120)
+                ok, reason = _fast_prefilter_s2(code, df)
+                if not ok:
+                    logger.info(f"[策略二-预筛跳过] {code}: {reason}")
+                    skipped_pre += 1
+                    continue
+                passed_pre += 1
+                time.sleep(0.3)
+                r = s.run(code, df=df)
+                logger.info(f"[策略二] {code} {r.name}: {r.total_score}/{r.max_score} {r.passed_dims}")
+                results.append(r)
+            except Exception as e:
+                logger.error(f"[策略二] {code} 出错: {e}")
+    finally:
+        # 批量结束后清空缓存
+        clear_data_cache()
 
     logger.info(f"[策略二] 预筛通过 {passed_pre}/{len(codes)}，跳过 {skipped_pre}")
     results.sort(key=lambda x: x.total_score, reverse=True)

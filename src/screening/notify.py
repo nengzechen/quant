@@ -6,12 +6,17 @@
 """
 
 import logging
+import os
 from datetime import datetime
 from typing import List, Optional
 
 from src.screening.screener import StrategyResult
 
 logger = logging.getLogger(__name__)
+
+# 项目根目录（相对于本文件的绝对路径，避免工作目录问题）
+_PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+
 
 # 评分对应的 emoji
 def _score_emoji(score: int, max_score: int) -> str:
@@ -36,15 +41,17 @@ def format_strategy1_message(results: List[StrategyResult], top_n: int = 5) -> s
 
     for i, r in enumerate(results[:top_n], 1):
         emoji = _score_emoji(r.total_score, r.max_score)
-        lines.append(f"**{i}. {r.code}** {emoji} {r.total_score}/{r.max_score}分")
+        name_str = f" {r.name}" if r.name else ""
+        lines.append(f"**{i}. {r.code}{name_str}** {emoji} {r.total_score}/{r.max_score}分")
         if r.passed_dims:
             lines.append(f"   ✓ {' | '.join(r.passed_dims)}")
-        # 显示关键维度详情
+        # 显示关键维度详情（Bug修复：用 dims 列表代替不存在的 dim_details 属性）
         key_dims = ["MACD金叉>MA20", "均线多头排列", "资金流入", "缠论底分型"]
-        for dim in key_dims:
-            detail = r.dim_details.get(dim, {})
-            if detail.get("passed") is True and detail.get("detail"):
-                lines.append(f"   → {detail['detail']}")
+        dim_map = {d.name: d for d in r.dims}
+        for dim_name in key_dims:
+            d = dim_map.get(dim_name)
+            if d and d.passed is True and d.detail:
+                lines.append(f"   → {d.detail}")
                 break
         lines.append("")
 
@@ -64,9 +71,17 @@ def format_strategy2_message(results: List[StrategyResult], top_n: int = 5) -> s
 
     for i, r in enumerate(results[:top_n], 1):
         emoji = _score_emoji(r.total_score, r.max_score)
-        lines.append(f"**{i}. {r.code}** {emoji} {r.total_score}/{r.max_score}分")
+        name_str = f" {r.name}" if r.name else ""
+        lines.append(f"**{i}. {r.code}{name_str}** {emoji} {r.total_score}/{r.max_score}分")
         if r.passed_dims:
             lines.append(f"   ✓ {' | '.join(r.passed_dims)}")
+        # 显示底背离/底分型详情
+        dim_map = {d.name: d for d in r.dims}
+        for dim_name in ["日线MACD底背离", "底分型确认", "CYS<-15(超跌)"]:
+            d = dim_map.get(dim_name)
+            if d and d.passed is True and d.detail:
+                lines.append(f"   → {d.detail}")
+                break
         lines.append("")
 
     lines.append(f"共 {len(results)} 只出现抄底信号，需结合盘面确认。")
@@ -94,21 +109,27 @@ def run_and_notify_screening(
         save_report: 是否保存 Markdown 报告
 
     Returns:
-        {"strategy1": [...], "strategy2": [...]}
+        {"strategy1": [...], "strategy2": [...], "top5": [...]}
     """
     from src.screening.screener import run_strategy1_batch, run_strategy2_batch
-    from src.indicators import get_top5_sectors, get_limitup_sector
+    from src.screening.indicators import (  # Bug修复：从正确路径导入
+        get_top5_sectors, get_limitup_sector, clear_data_cache
+    )
 
     logger.info(f"[选股] 开始筛选 {len(stock_codes)} 只股票...")
 
-    # 预加载板块数据
+    # 预加载板块数据（run_strategy1_batch 内部也会调用，这里预热缓存）
     top5 = get_top5_sectors()
     limitup = get_limitup_sector()
     logger.info(f"[选股] 今日前五板块: {top5}，涨停最多: {limitup}")
 
-    # 运行策略
-    s1_results = run_strategy1_batch(stock_codes, min_score=s1_min_score)
-    s2_results = run_strategy2_batch(stock_codes, min_score=s2_min_score)
+    try:
+        # 运行策略
+        s1_results = run_strategy1_batch(stock_codes, min_score=s1_min_score)
+        s2_results = run_strategy2_batch(stock_codes, min_score=s2_min_score)
+    finally:
+        # 批量结束后清空缓存，避免跨日数据污染
+        clear_data_cache()
 
     logger.info(f"[选股] 策略一通过: {len(s1_results)} 只，策略二通过: {len(s2_results)} 只")
 
@@ -134,13 +155,11 @@ def run_and_notify_screening(
 
 
 def _save_screening_report(s1_results, s2_results, top5, limitup):
-    """保存选股报告到 reports/screening/"""
-    import os
-    from datetime import datetime
-
+    """保存选股报告到 reports/screening/（使用项目根目录绝对路径）"""
     try:
         today = datetime.now().strftime("%Y%m%d")
-        report_dir = os.path.join(os.path.dirname(__file__), "..", "..", "reports", "screening")
+        # Bug修复：改用项目根目录绝对路径，不再依赖工作目录
+        report_dir = os.path.join(_PROJECT_ROOT, "reports", "screening")
         os.makedirs(report_dir, exist_ok=True)
         path = os.path.join(report_dir, f"daily_screen_{today}.md")
 
@@ -155,7 +174,11 @@ def _save_screening_report(s1_results, s2_results, top5, limitup):
         if s1_results:
             for r in s1_results:
                 emoji = _score_emoji(r.total_score, r.max_score)
-                lines.append(f"- {emoji} **{r.code}** {r.total_score}/{r.max_score}分 | {' | '.join(r.passed_dims)}")
+                name_str = f" {r.name}" if r.name else ""
+                lines.append(
+                    f"- {emoji} **{r.code}{name_str}** {r.total_score}/{r.max_score}分"
+                    f" | {' | '.join(r.passed_dims)}"
+                )
         else:
             lines.append("- 今日无股票达到门槛")
 
@@ -164,7 +187,11 @@ def _save_screening_report(s1_results, s2_results, top5, limitup):
         if s2_results:
             for r in s2_results:
                 emoji = _score_emoji(r.total_score, r.max_score)
-                lines.append(f"- {emoji} **{r.code}** {r.total_score}/{r.max_score}分 | {' | '.join(r.passed_dims)}")
+                name_str = f" {r.name}" if r.name else ""
+                lines.append(
+                    f"- {emoji} **{r.code}{name_str}** {r.total_score}/{r.max_score}分"
+                    f" | {' | '.join(r.passed_dims)}"
+                )
         else:
             lines.append("- 今日无抄底信号")
 
