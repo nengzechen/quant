@@ -19,7 +19,25 @@ from src.screening.screener import (
 )
 from src.screening.notify import run_and_notify_screening
 
+# V2：四大模型
+from src.screening.models import (
+    ModelResult,
+    BottomFishing,
+    SwingTrading,
+    StrongTrend,
+    LimitUpHunter,
+)
+
+# V2：两阶段流水线
+from src.screening.pipeline import (
+    run_phase1,
+    run_phase2,
+    run_phase2_once,
+    SeedEntry,
+)
+
 __all__ = [
+    # V1 原有（保持兼容）
     "Strategy1",
     "Strategy2",
     "StrategyResult",
@@ -27,4 +45,14 @@ __all__ = [
     "run_strategy1_batch",
     "run_strategy2_batch",
     "run_and_notify_screening",
+    # V2 新增
+    "ModelResult",
+    "BottomFishing",
+    "SwingTrading",
+    "StrongTrend",
+    "LimitUpHunter",
+    "run_phase1",
+    "run_phase2",
+    "run_phase2_once",
+    "SeedEntry",
 ]

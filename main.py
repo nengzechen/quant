@@ -139,6 +139,36 @@ def parse_arguments() -> argparse.Namespace:
         help='选股时扫描全量 A 股（约5000只），而非仅 STOCK_LIST 自选股'
     )
 
+    # === V2 两阶段选股流水线 ===
+    parser.add_argument(
+        '--phase1',
+        action='store_true',
+        help='V2 Phase1：收盘后全市场扫描，生成种子池（data/seed_pool_YYYYMMDD.json）'
+    )
+    parser.add_argument(
+        '--phase1-target',
+        type=int,
+        default=80,
+        help='Phase1 种子池目标数量（默认 80 只）'
+    )
+    parser.add_argument(
+        '--phase2',
+        action='store_true',
+        help='V2 Phase2：盘中实时监控种子池，推送买入信号'
+    )
+    parser.add_argument(
+        '--phase2-interval',
+        type=int,
+        default=60,
+        help='Phase2 每轮扫描间隔（秒，默认 60）'
+    )
+    parser.add_argument(
+        '--phase2-rounds',
+        type=int,
+        default=30,
+        help='Phase2 最大扫描轮数（默认 30 轮）'
+    )
+
     parser.add_argument(
         '--force-run',
         action='store_true',
@@ -669,6 +699,50 @@ def main() -> int:
         return 0
 
     try:
+        # 模式: V2 Phase1 全市场扫描 → 种子池
+        if getattr(args, 'phase1', False):
+            logger.info("模式: V2 Phase1 全市场扫描")
+            from src.screening.pipeline import run_phase1
+            from src.notification import NotificationService
+
+            notifier = NotificationService()
+            seeds = run_phase1(
+                target_count=getattr(args, 'phase1_target', 80),
+                max_workers=args.workers or 3,
+                save=True,
+            )
+            logger.info(f"[Phase1] 完成，共 {len(seeds)} 只进入种子池")
+
+            if seeds and not args.no_notify and notifier.is_available():
+                from datetime import datetime as _dt
+                summary_lines = [f"## 📊 Phase1 种子池 [{_dt.now().strftime('%Y-%m-%d')}]\n"]
+                for e in seeds[:15]:
+                    summary_lines.append(
+                        f"- **{e.code} {e.name}** [{e.model}] "
+                        f"{e.phase1_score}/{e.max_score}分 | {' | '.join(e.passed_dims[:4])}"
+                    )
+                if len(seeds) > 15:
+                    summary_lines.append(f"\n... 共 {len(seeds)} 只，详见 data/seed_pool_*.json")
+                summary_lines.append("\n> 仅供参考，不构成投资建议")
+                notifier.send("\n".join(summary_lines))
+            return 0
+
+        # 模式: V2 Phase2 盘中实时监控 → 买入信号
+        if getattr(args, 'phase2', False):
+            logger.info("模式: V2 Phase2 盘中实时监控")
+            from src.screening.pipeline import run_phase2
+            from src.notification import NotificationService
+
+            notifier = NotificationService()
+            triggered = run_phase2(
+                notifier=notifier,
+                send_notification=not args.no_notify,
+                interval_seconds=getattr(args, 'phase2_interval', 60),
+                max_rounds=getattr(args, 'phase2_rounds', 30),
+            )
+            logger.info(f"[Phase2] 共触发 {len(triggered)} 只买入信号")
+            return 0
+
         # 模式0b: 量化下单 Agent 系统
         if getattr(args, 'quant', False):
             logger.info("模式: 量化下单 Agent 系统")
