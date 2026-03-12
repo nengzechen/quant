@@ -56,6 +56,8 @@ def clear_data_cache():
     _RT_CACHE.clear()
     _SNAPSHOT_CACHE["df"] = None
     _SNAPSHOT_CACHE["ts"] = 0
+    _SECTOR_CACHE["fetched"] = False
+    _SECTOR_CACHE["ts"] = 0
     logger.debug("数据缓存已清空")
 
 
@@ -321,18 +323,20 @@ def check_market_breadth() -> IndicatorResult:
 # 2. 板块轮动模块
 # ============================================================
 
-# 缓存
-_SECTOR_CACHE: Dict = {"top5": [], "limitup": "", "ts": 0, "ttl": 3600}
+# 缓存：fetched=True 表示已尝试过（无论成功与否），避免非交易时段重复请求
+_SECTOR_CACHE: Dict = {"top5": [], "limitup": "", "ts": 0, "ttl": 3600, "fetched": False}
 
 
 def get_top5_sectors() -> List[str]:
     """获取今日涨幅前5行业板块"""
-    if time.time() - _SECTOR_CACHE["ts"] < _SECTOR_CACHE["ttl"] and _SECTOR_CACHE["top5"]:
+    if _SECTOR_CACHE["fetched"] and time.time() - _SECTOR_CACHE["ts"] < _SECTOR_CACHE["ttl"]:
         return _SECTOR_CACHE["top5"]
     try:
         import akshare as ak
         df = ak.stock_board_industry_name_em()
         if df is None or df.empty:
+            _SECTOR_CACHE["fetched"] = True
+            _SECTOR_CACHE["ts"] = time.time()
             return []
         col = next((c for c in ["涨跌幅", "change_pct"] if c in df.columns), None)
         if col:
@@ -341,15 +345,18 @@ def get_top5_sectors() -> List[str]:
         top5 = [str(v) for v in df[name_col].head(5).tolist()]
         _SECTOR_CACHE["top5"] = top5
         _SECTOR_CACHE["ts"] = time.time()
+        _SECTOR_CACHE["fetched"] = True
         return top5
     except Exception as e:
         logger.warning(f"板块数据失败: {e}")
+        _SECTOR_CACHE["fetched"] = True
+        _SECTOR_CACHE["ts"] = time.time()
         return []
 
 
 def get_limitup_sector() -> str:
     """前5板块中涨停家数最多的板块"""
-    if time.time() - _SECTOR_CACHE["ts"] < _SECTOR_CACHE["ttl"] and _SECTOR_CACHE["limitup"]:
+    if _SECTOR_CACHE["fetched"] and time.time() - _SECTOR_CACHE["ts"] < _SECTOR_CACHE["ttl"]:
         return _SECTOR_CACHE["limitup"]
     try:
         import akshare as ak
@@ -366,8 +373,12 @@ def get_limitup_sector() -> str:
             except Exception:
                 continue
         _SECTOR_CACHE["limitup"] = best
+        _SECTOR_CACHE["fetched"] = True
+        _SECTOR_CACHE["ts"] = time.time()
         return best
     except Exception as e:
+        _SECTOR_CACHE["fetched"] = True
+        _SECTOR_CACHE["ts"] = time.time()
         return ""
 
 
