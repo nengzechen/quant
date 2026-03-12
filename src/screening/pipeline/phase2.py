@@ -49,8 +49,7 @@ def _check_model_trigger(entry: "SeedEntry", code: str, df) -> Tuple[bool, str]:
     """
     按模型专属触发条件（Phase2 盘中调用）：
 
-    BottomFishing : 资金流入 + 强分时（近似 5 分钟底分型）
-    SwingTrading  : 强分时脉冲 + 大单净流入
+    BottomSwing   : 资金流入 + 强分时（近似 5 分钟底分型）
     StrongTrend   : 强分时 + 量比>1 + 大单净流入（三合一）
     LimitUpHunter : 九五之尊 + 强分时（或极高换手）
     """
@@ -61,17 +60,11 @@ def _check_model_trigger(entry: "SeedEntry", code: str, df) -> Tuple[bool, str]:
 
     model = entry.model
 
-    if model == "BottomFishing":
+    if model == "BottomSwing":
         r_ff = check_fund_flow(code)
         r_is = check_intraday_strong(code)
         triggered = (r_ff["passed"] is True) and (r_is["passed"] is True)
         return triggered, "资金流入 + 强分时确认"
-
-    elif model == "SwingTrading":
-        r_is = check_intraday_strong(code)
-        r_ff = check_fund_flow(code)
-        triggered = (r_is["passed"] is True) and (r_ff["passed"] is True)
-        return triggered, "强分时脉冲 + 大单净流入"
 
     elif model == "StrongTrend":
         r_is = check_intraday_strong(code)
@@ -206,4 +199,36 @@ def run_phase2(
         if round_i < max_rounds - 1 and interval_seconds > 0:
             time.sleep(interval_seconds)
 
+    # 保存本次所有买入信号到 reports/signals/
+    if triggered_all:
+        _save_signal_report(triggered_all, date_str)
+
     return triggered_all
+
+
+def _save_signal_report(entries: List["SeedEntry"], date_str: Optional[str] = None) -> None:
+    """将 Phase2 买入信号追加保存到 reports/signals/phase2_YYYYMMDD.md"""
+    import os
+    today = date_str or datetime.now().strftime("%Y%m%d")
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+    signals_dir = os.path.join(project_root, "reports", "signals")
+    os.makedirs(signals_dir, exist_ok=True)
+    report_path = os.path.join(signals_dir, f"phase2_{today}.md")
+
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+    lines = [f"# Phase2 买入信号 [{now_str}]\n"]
+    for e in entries:
+        score_pct = int(e.phase1_score / e.max_score * 100) if e.max_score else 0
+        lines.append(
+            f"- **{e.code} {e.name}** [{e.model}] "
+            f"Phase1得分 {e.phase1_score}/{e.max_score}({score_pct}%) "
+            f"| 触发时间 {e.phase2_trigger_time} "
+            f"| 触发条件: {e.phase2_reason}"
+        )
+    lines.append("\n> 仅供参考，不构成投资建议")
+    content = "\n".join(lines) + "\n"
+
+    mode = "a" if os.path.exists(report_path) else "w"
+    with open(report_path, mode, encoding="utf-8") as f:
+        f.write(content)
+    logger.info(f"[Phase2] 信号报告已保存: {report_path}")

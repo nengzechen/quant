@@ -136,7 +136,7 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument(
         '--screen-all',
         action='store_true',
-        help='选股时扫描全量 A 股（约5000只），而非仅 STOCK_LIST 自选股'
+        help='[已废弃] 请使用 --phase1 代替。保留此参数仅为向后兼容。'
     )
 
     # === V2 两阶段选股流水线 ===
@@ -368,29 +368,24 @@ def run_full_analysis(
         )
 
         # ============================================================
-        # 步骤一：量化选股（开盘前预判候选票）
+        # 步骤一：Phase1 全市场选股（收盘后离线扫描 → 种子池）
         # ============================================================
         screening_results = {}
-        scan_all = getattr(args, 'screen_all', False)
-        # scan_all 时 stock_codes 仅作备用，候选池由快照预筛决定
-        screening_codes = stock_codes if not scan_all else []
-        if getattr(config, 'screening_enabled', True) and (scan_all or screening_codes):
+        if getattr(config, 'screening_enabled', True):
             try:
                 logger.info("=" * 40)
-                logger.info("步骤一：量化选股")
+                logger.info("步骤一：Phase1 全市场选股")
                 logger.info("=" * 40)
-                from src.screening.notify import run_and_notify_screening
-                screening_results = run_and_notify_screening(
-                    stock_codes=screening_codes,
-                    notifier=pipeline.notifier,
-                    send_notification=not args.no_notify,
-                    s1_min_score=getattr(config, 'screening_s1_min_score', 7),
-                    s2_min_score=getattr(config, 'screening_s2_min_score', 3),
-                    save_report=True,
-                    scan_all=scan_all,
+                from src.screening.pipeline import run_phase1
+                seeds = run_phase1(
+                    target_count=getattr(config, 'screening_phase1_target', 80),
+                    max_workers=args.workers or 3,
+                    save=True,
                 )
+                screening_results = {"phase1_seeds": seeds}
+                logger.info(f"步骤一完成，{len(seeds)} 只进入种子池")
             except Exception as e:
-                logger.warning(f"量化选股失败（已忽略，不影响后续流程）: {e}")
+                logger.warning(f"Phase1 选股失败（已忽略，不影响后续流程）: {e}")
 
         # ============================================================
         # 步骤二：个股分析（LLM 深度分析）
@@ -519,9 +514,10 @@ def run_full_analysis(
                 from quant.orchestrator import QuantOrchestrator
                 quant = QuantOrchestrator(config=config)
                 # 把选股结果作为信号输入
-                if screening_results.get("strategy1"):
-                    top_codes = [r.code for r in screening_results["strategy1"][:5]]
-                    logger.info(f"[量化引擎] 策略一候选票: {top_codes}")
+                seeds = screening_results.get("phase1_seeds", [])
+                if seeds:
+                    top_codes = [e.code for e in seeds[:5]]
+                    logger.info(f"[量化引擎] Phase1 候选票: {top_codes}")
                     quant.run(candidate_codes=top_codes)
                 else:
                     quant.run()
@@ -712,6 +708,32 @@ def main() -> int:
                 save=True,
             )
             logger.info(f"[Phase1] 完成，共 {len(seeds)} 只进入种子池")
+
+            # 保存 Markdown 筛选报告到 reports/screening/
+            if seeds:
+                from datetime import datetime as _dt
+                import os
+                today_str = _dt.now().strftime("%Y%m%d")
+                screening_dir = os.path.join(
+                    os.path.dirname(os.path.abspath(__file__)), "reports", "screening"
+                )
+                os.makedirs(screening_dir, exist_ok=True)
+                report_path = os.path.join(screening_dir, f"daily_screen_{today_str}.md")
+                report_lines = [
+                    f"# Phase1 每日选股报告 [{_dt.now().strftime('%Y-%m-%d')}]\n",
+                    f"共 {len(seeds)} 只进入种子池\n",
+                ]
+                for e in seeds:
+                    score_pct = int(e.phase1_score / e.max_score * 100) if e.max_score else 0
+                    report_lines.append(
+                        f"- **{e.code} {e.name}** [{e.model}] "
+                        f"{e.phase1_score}/{e.max_score}分({score_pct}%) "
+                        f"| {' | '.join(e.passed_dims[:5])}"
+                    )
+                report_lines.append("\n> 仅供参考，不构成投资建议")
+                with open(report_path, "w", encoding="utf-8") as _f:
+                    _f.write("\n".join(report_lines) + "\n")
+                logger.info(f"[Phase1] 筛选报告已保存: {report_path}")
 
             if seeds and not args.no_notify and notifier.is_available():
                 from datetime import datetime as _dt

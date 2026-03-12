@@ -19,11 +19,10 @@ from src.screening.screener import (
 )
 from src.screening.notify import run_and_notify_screening
 
-# V2：四大模型
+# V2：三大模型
 from src.screening.models import (
     ModelResult,
-    BottomFishing,
-    SwingTrading,
+    BottomSwing,
     StrongTrend,
     LimitUpHunter,
 )
@@ -47,8 +46,7 @@ __all__ = [
     "run_and_notify_screening",
     # V2 新增
     "ModelResult",
-    "BottomFishing",
-    "SwingTrading",
+    "BottomSwing",
     "StrongTrend",
     "LimitUpHunter",
     "run_phase1",

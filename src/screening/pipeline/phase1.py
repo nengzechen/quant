@@ -7,7 +7,7 @@ Phase1：收盘后离线运行（全市场 → 种子池）
   2. 过滤 ST / 北交所 / 退市，得到候选总池
   3. 用 prefilter_from_snapshot 分两路候选池（活跃股 / 超跌股）
      - 如快照拉取失败（非交易时段），直接使用全量代码
-  4. 四个模型并发评分（BottomFishing+SwingTrading 用超跌池；StrongTrend+LimitUpHunter 用活跃池）
+  4. 三个模型并发评分（BottomSwing 用超跌池；StrongTrend+LimitUpHunter 用活跃池）
   5. 各模型用自己的 is_qualified_seed() 判断是否进种子池
   6. 合并去重（同一股票取最高分模型）
   7. 截取 top N，保存到 data/seed_pool_YYYYMMDD.json
@@ -96,7 +96,7 @@ def run_phase1(
     Returns:
         SeedEntry 列表
     """
-    from src.screening.models import BottomFishing, SwingTrading, StrongTrend, LimitUpHunter
+    from src.screening.models import BottomSwing, StrongTrend, LimitUpHunter
     from src.screening.pipeline.seed_pool import SeedEntry, save_seed_pool
     from src.screening.indicators import (
         get_daily_df, get_top5_sectors, get_limitup_sector, clear_data_cache,
@@ -121,8 +121,7 @@ def run_phase1(
 
     # 模型 → (候选池, 模型实例)
     models_config = [
-        (BottomFishing(), s2_pool),
-        (SwingTrading(),  s2_pool),
+        (BottomSwing(),   s2_pool),
         (StrongTrend(),   s1_pool),
         (LimitUpHunter(), s1_pool),
     ]
