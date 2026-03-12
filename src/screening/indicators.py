@@ -54,7 +54,104 @@ def clear_data_cache():
     """手动清空缓存（批次结束后可调用）"""
     _DF_CACHE.clear()
     _RT_CACHE.clear()
+    _SNAPSHOT_CACHE["df"] = None
+    _SNAPSHOT_CACHE["ts"] = 0
     logger.debug("数据缓存已清空")
+
+
+# ============================================================
+# 全市场快照缓存（全量扫描时只拉一次）
+# ============================================================
+_SNAPSHOT_CACHE: Dict[str, Any] = {"df": None, "ts": 0, "ttl": 600}  # 10分钟有效
+
+
+def get_market_snapshot() -> Optional[Any]:
+    """
+    获取全市场实时快照（stock_zh_a_spot_em），缓存 10 分钟。
+
+    返回 DataFrame，包含字段：
+      代码、名称、最新价、涨跌幅、成交额、换手率、量比 等
+    """
+    now = time.time()
+    if _SNAPSHOT_CACHE["df"] is not None and now - _SNAPSHOT_CACHE["ts"] < _SNAPSHOT_CACHE["ttl"]:
+        return _SNAPSHOT_CACHE["df"]
+    try:
+        import akshare as ak
+        df = ak.stock_zh_a_spot_em()
+        _SNAPSHOT_CACHE["df"] = df
+        _SNAPSHOT_CACHE["ts"] = now
+        logger.info(f"[市场快照] 已拉取 {len(df)} 只股票实时数据")
+        return df
+    except Exception as e:
+        logger.warning(f"[市场快照] 获取失败: {e}")
+        return None
+
+
+def prefilter_from_snapshot(strategy: str = "s1") -> List[str]:
+    """
+    第一阶段：利用全市场快照做廉价粗筛，一次请求过滤 ~5000 → ~200-500 只。
+
+    策略一（强势突破）筛选条件：
+        - 排除北交所（代码以 8 开头）
+        - 排除 ST / 退市
+        - 最新价 ≥ 5 元（过滤仙股）
+        - 成交额 ≥ 1 亿（过滤僵尸股）
+        - 换手率 ≥ 2%（有活跃度）
+        - 量比 ≥ 1（放量）
+        - 涨跌幅 ≥ -8%（非跌停）
+
+    策略二（缠论抄底）筛选条件：
+        - 排除北交所 / ST / 退市
+        - 最新价 ≥ 3 元
+        - 成交额 ≥ 5000 万
+        - 涨跌幅 在 [-10%, -1%] 之间（有明显下跌但未跌停）
+
+    Returns:
+        符合条件的股票代码列表
+    """
+    df = get_market_snapshot()
+    if df is None or df.empty:
+        logger.warning("[快照预筛] 快照数据为空，返回空列表")
+        return []
+
+    code_col = "代码" if "代码" in df.columns else df.columns[1]
+    name_col = "名称" if "名称" in df.columns else None
+
+    codes_series = df[code_col].astype(str).str.zfill(6)
+    mask = pd.Series([True] * len(df), index=df.index)
+
+    # 通用过滤：排除北交所、ST、退市
+    mask &= ~codes_series.str.startswith("8")
+    if name_col and name_col in df.columns:
+        names = df[name_col].astype(str)
+        mask &= ~names.str.contains("ST|退市|退", case=False, na=False)
+
+    if strategy == "s2":
+        # 策略二：抄底，要求有明显下跌
+        if "最新价" in df.columns:
+            mask &= pd.to_numeric(df["最新价"], errors="coerce").fillna(0) >= 3.0
+        if "成交额" in df.columns:
+            mask &= pd.to_numeric(df["成交额"], errors="coerce").fillna(0) >= 5e7
+        if "涨跌幅" in df.columns:
+            pct = pd.to_numeric(df["涨跌幅"], errors="coerce").fillna(0)
+            mask &= pct < -1.0    # 有下跌才值得抄底
+            mask &= pct > -10.0   # 跌停不碰
+    else:
+        # 策略一：强势突破，要求放量活跃
+        if "最新价" in df.columns:
+            mask &= pd.to_numeric(df["最新价"], errors="coerce").fillna(0) >= 5.0
+        if "成交额" in df.columns:
+            mask &= pd.to_numeric(df["成交额"], errors="coerce").fillna(0) >= 1e8
+        if "换手率" in df.columns:
+            mask &= pd.to_numeric(df["换手率"], errors="coerce").fillna(0) >= 2.0
+        if "量比" in df.columns:
+            mask &= pd.to_numeric(df["量比"], errors="coerce").fillna(0) >= 1.0
+        if "涨跌幅" in df.columns:
+            mask &= pd.to_numeric(df["涨跌幅"], errors="coerce").fillna(0) >= -8.0
+
+    result = codes_series[mask].tolist()
+    logger.info(f"[快照预筛-{strategy}] {len(df)} 只 → 候选 {len(result)} 只")
+    return result
 
 # ============================================================
 # 类型别名
@@ -272,6 +369,19 @@ def get_limitup_sector() -> str:
         return best
     except Exception as e:
         return ""
+
+
+def get_stock_name(code: str) -> str:
+    """获取股票名称（复用 realtime_info 缓存，不额外请求）"""
+    try:
+        info = get_realtime_info(code)
+        if info:
+            for k in ["股票简称", "名称", "简称"]:
+                if k in info and info[k]:
+                    return str(info[k])
+    except Exception:
+        pass
+    return ""
 
 
 def get_stock_sector(code: str) -> str:

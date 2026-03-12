@@ -134,6 +134,12 @@ def parse_arguments() -> argparse.Namespace:
     )
 
     parser.add_argument(
+        '--screen-all',
+        action='store_true',
+        help='选股时扫描全量 A 股（约5000只），而非仅 STOCK_LIST 自选股'
+    )
+
+    parser.add_argument(
         '--force-run',
         action='store_true',
         help='跳过交易日检查，强制执行全量分析（Issue #373）'
@@ -335,19 +341,23 @@ def run_full_analysis(
         # 步骤一：量化选股（开盘前预判候选票）
         # ============================================================
         screening_results = {}
-        if getattr(config, 'screening_enabled', True) and stock_codes:
+        scan_all = getattr(args, 'screen_all', False)
+        # scan_all 时 stock_codes 仅作备用，候选池由快照预筛决定
+        screening_codes = stock_codes if not scan_all else []
+        if getattr(config, 'screening_enabled', True) and (scan_all or screening_codes):
             try:
                 logger.info("=" * 40)
                 logger.info("步骤一：量化选股")
                 logger.info("=" * 40)
                 from src.screening.notify import run_and_notify_screening
                 screening_results = run_and_notify_screening(
-                    stock_codes=stock_codes,
+                    stock_codes=screening_codes,
                     notifier=pipeline.notifier,
                     send_notification=not args.no_notify,
                     s1_min_score=getattr(config, 'screening_s1_min_score', 7),
                     s2_min_score=getattr(config, 'screening_s2_min_score', 3),
                     save_report=True,
+                    scan_all=scan_all,
                 )
             except Exception as e:
                 logger.warning(f"量化选股失败（已忽略，不影响后续流程）: {e}")

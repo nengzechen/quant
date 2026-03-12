@@ -96,39 +96,60 @@ def run_and_notify_screening(
     s1_min_score: int = 7,
     s2_min_score: int = 3,
     save_report: bool = True,
+    scan_all: bool = False,
 ) -> dict:
     """
     执行选股并推送通知
 
+    两阶段流程（scan_all=True 时启用）：
+        阶段一：全市场快照预筛（一次请求，~5000 → ~200-500 只）
+            - 策略一候选：放量活跃股（价格/成交额/换手率/量比过滤）
+            - 策略二候选：有明显下跌的股票（涨跌幅过滤）
+        阶段二：逐只精细评分（仅对候选池调外部接口）
+
     Args:
-        stock_codes: 待筛选股票列表
+        stock_codes: 待筛选股票列表（scan_all=True 时忽略）
         notifier: NotificationService 实例
         send_notification: 是否推送通知
         s1_min_score: 策略一最低门槛
         s2_min_score: 策略二最低门槛
         save_report: 是否保存 Markdown 报告
+        scan_all: True=全市场两阶段扫描，False=仅对 stock_codes 评分
 
     Returns:
         {"strategy1": [...], "strategy2": [...], "top5": [...]}
     """
     from src.screening.screener import run_strategy1_batch, run_strategy2_batch
-    from src.screening.indicators import (  # Bug修复：从正确路径导入
-        get_top5_sectors, get_limitup_sector, clear_data_cache
+    from src.screening.indicators import (
+        get_top5_sectors, get_limitup_sector, clear_data_cache,
+        prefilter_from_snapshot,
     )
 
-    logger.info(f"[选股] 开始筛选 {len(stock_codes)} 只股票...")
+    # ---- 阶段一：确定候选池 ----
+    if scan_all:
+        logger.info("[选股] 全市场扫描模式：阶段一 快照预筛...")
+        s1_candidates = prefilter_from_snapshot(strategy="s1")
+        s2_candidates = prefilter_from_snapshot(strategy="s2")
+        logger.info(
+            f"[选股] 快照预筛完成：策略一候选 {len(s1_candidates)} 只，"
+            f"策略二候选 {len(s2_candidates)} 只"
+        )
+    else:
+        s1_candidates = stock_codes
+        s2_candidates = stock_codes
+        logger.info(f"[选股] 自选股模式：共 {len(stock_codes)} 只")
 
-    # 预加载板块数据（run_strategy1_batch 内部也会调用，这里预热缓存）
+    # 预加载板块数据（预热缓存，后续评分中复用）
     top5 = get_top5_sectors()
     limitup = get_limitup_sector()
     logger.info(f"[选股] 今日前五板块: {top5}，涨停最多: {limitup}")
 
+    # ---- 阶段二：逐只精细评分 ----
     try:
-        # 运行策略
-        s1_results = run_strategy1_batch(stock_codes, min_score=s1_min_score)
-        s2_results = run_strategy2_batch(stock_codes, min_score=s2_min_score)
+        logger.info("[选股] 阶段二：策略精细评分...")
+        s1_results = run_strategy1_batch(s1_candidates, min_score=s1_min_score)
+        s2_results = run_strategy2_batch(s2_candidates, min_score=s2_min_score)
     finally:
-        # 批量结束后清空缓存，避免跨日数据污染
         clear_data_cache()
 
     logger.info(f"[选股] 策略一通过: {len(s1_results)} 只，策略二通过: {len(s2_results)} 只")
