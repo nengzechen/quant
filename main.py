@@ -22,6 +22,15 @@ A股自选股智能分析系统 - 主调度程序
 - 买点偏好：缩量回踩 MA5/MA10 支撑
 """
 import os
+
+# 强制禁用代理（macOS 系统代理会劫持 Python 请求，导致东方财富 API 断连）
+# 必须在 requests/akshare 导入之前执行
+for _k in ("http_proxy", "https_proxy", "all_proxy", "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY"):
+    os.environ.pop(_k, None)
+import urllib.request as _ur
+_ur.getproxies = lambda: {}
+del _ur, _k
+
 from src.config import setup_env
 setup_env()
 

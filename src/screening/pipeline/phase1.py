@@ -99,7 +99,8 @@ def run_phase1(
     from src.screening.models import BottomSwing, StrongTrend, LimitUpHunter
     from src.screening.pipeline.seed_pool import SeedEntry, save_seed_pool
     from src.screening.indicators import (
-        get_daily_df, get_top5_sectors, get_limitup_sector, clear_data_cache,
+        get_daily_df, get_market_snapshot, get_top5_sectors, get_limitup_sector,
+        clear_data_cache, bs_logout,
     )
 
     logger.info("=" * 50)
@@ -115,9 +116,11 @@ def run_phase1(
     # Step 2: 分两路候选池
     s1_pool, s2_pool = _split_candidates(all_codes)
 
-    # Step 3: 预热板块缓存（供 StrongTrend 复用）
-    get_top5_sectors()
-    get_limitup_sector()
+    # Step 3: 预热板块缓存（仅交易时段才预热，非交易时段 eastmoney 无法访问会触发 mini_racer 崩溃）
+    snapshot = get_market_snapshot()
+    if snapshot is not None:
+        get_top5_sectors()
+        get_limitup_sector()
 
     # 模型 → (候选池, 模型实例)
     models_config = [
@@ -147,7 +150,7 @@ def run_phase1(
                 for code in pool:
                     f = executor.submit(_score_one, model, code)
                     futures[f] = code
-                    time.sleep(0.05)   # 轻微限速，避免触发 API 频率限制
+                    time.sleep(0.01)   # 轻微限速，避免触发 API 频率限制
 
             done = 0
             total = len(futures)
@@ -160,6 +163,7 @@ def run_phase1(
                     all_results.append(entry)
     finally:
         clear_data_cache()
+        bs_logout()
 
     logger.info(f"[Phase1] 原始入选 {len(all_results)} 条")
 

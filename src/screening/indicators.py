@@ -22,6 +22,7 @@
 """
 
 import logging
+import threading
 import time
 from typing import Optional, Dict, Any, List, Tuple
 
@@ -36,6 +37,47 @@ logger = logging.getLogger(__name__)
 _DF_CACHE: Dict[str, Any] = {}       # key: "code_days", value: {"df": df, "ts": timestamp}
 _RT_CACHE: Dict[str, Any] = {}       # key: code, value: {"data": dict, "ts": timestamp}
 _CACHE_TTL = 1800                     # 30分钟有效期（日内复用）
+
+# ============================================================
+# baostock 会话管理（避免多线程重复 login/logout）
+# ============================================================
+_BS_LOCK = threading.Lock()
+_BS_LOGGED_IN = False
+
+def _bs_ensure_login():
+    """确保 baostock 处于登录状态（线程安全，只登录一次）"""
+    global _BS_LOGGED_IN
+    if _BS_LOGGED_IN:
+        return True
+    with _BS_LOCK:
+        if _BS_LOGGED_IN:
+            return True
+        try:
+            import baostock as bs
+            lg = bs.login()
+            if lg.error_code == "0":
+                _BS_LOGGED_IN = True
+                logger.debug("baostock 已登录")
+                return True
+        except Exception as e:
+            logger.warning(f"baostock login 失败: {e}")
+    return False
+
+def bs_logout():
+    """登出 baostock（Phase1 结束后调用）"""
+    global _BS_LOGGED_IN
+    if not _BS_LOGGED_IN:
+        return
+    with _BS_LOCK:
+        if not _BS_LOGGED_IN:
+            return
+        try:
+            import baostock as bs
+            bs.logout()
+            _BS_LOGGED_IN = False
+            logger.debug("baostock 已登出")
+        except Exception:
+            pass
 
 def _df_cache_key(code: str, days: int) -> str:
     return f"{code}_{days}"
@@ -56,6 +98,7 @@ def clear_data_cache():
     _RT_CACHE.clear()
     _SNAPSHOT_CACHE["df"] = None
     _SNAPSHOT_CACHE["ts"] = 0
+    _SNAPSHOT_CACHE["fetched"] = False
     _SECTOR_CACHE["fetched"] = False
     _SECTOR_CACHE["ts"] = 0
     logger.debug("数据缓存已清空")
@@ -64,28 +107,47 @@ def clear_data_cache():
 # ============================================================
 # 全市场快照缓存（全量扫描时只拉一次）
 # ============================================================
-_SNAPSHOT_CACHE: Dict[str, Any] = {"df": None, "ts": 0, "ttl": 600}  # 10分钟有效
+_SNAPSHOT_CACHE: Dict[str, Any] = {"df": None, "ts": 0, "ttl": 600, "fetched": False}  # 10分钟有效
+
+
+def _is_trading_hours() -> bool:
+    """简单判断是否在交易时段（9:15-15:30，工作日）"""
+    from datetime import datetime
+    now = datetime.now()
+    if now.weekday() >= 5:  # 周六、周日
+        return False
+    t = now.hour * 100 + now.minute
+    return 915 <= t <= 1530
 
 
 def get_market_snapshot() -> Optional[Any]:
     """
     获取全市场实时快照（stock_zh_a_spot_em），缓存 10 分钟。
+    非交易时段直接跳过（stock_zh_a_spot_em 使用 mini_racer，非交易时段调用会崩溃）。
 
     返回 DataFrame，包含字段：
       代码、名称、最新价、涨跌幅、成交额、换手率、量比 等
     """
     now = time.time()
-    if _SNAPSHOT_CACHE["df"] is not None and now - _SNAPSHOT_CACHE["ts"] < _SNAPSHOT_CACHE["ttl"]:
+    if _SNAPSHOT_CACHE["fetched"] and now - _SNAPSHOT_CACHE["ts"] < _SNAPSHOT_CACHE["ttl"]:
         return _SNAPSHOT_CACHE["df"]
+    if not _is_trading_hours():
+        logger.debug("[市场快照] 非交易时段，跳过快照拉取")
+        _SNAPSHOT_CACHE["fetched"] = True
+        _SNAPSHOT_CACHE["ts"] = now
+        return None
     try:
         import akshare as ak
         df = ak.stock_zh_a_spot_em()
         _SNAPSHOT_CACHE["df"] = df
         _SNAPSHOT_CACHE["ts"] = now
+        _SNAPSHOT_CACHE["fetched"] = True
         logger.info(f"[市场快照] 已拉取 {len(df)} 只股票实时数据")
         return df
     except Exception as e:
         logger.warning(f"[市场快照] 获取失败: {e}")
+        _SNAPSHOT_CACHE["fetched"] = True
+        _SNAPSHOT_CACHE["ts"] = now
         return None
 
 
@@ -181,31 +243,80 @@ def _sleep(s: float = 0.5):
     time.sleep(s)
 
 
+def _get_daily_df_baostock(code: str, days: int = 100) -> Optional[pd.DataFrame]:
+    """baostock 备用数据源（akshare 失败时使用，共享登录会话，线程安全）"""
+    if not _bs_ensure_login():
+        return None
+    try:
+        import baostock as bs
+        from datetime import date, timedelta
+        # baostock 代码格式: sh.600001 / sz.000001
+        bs_code = f"sh.{code}" if code.startswith("6") else f"sz.{code}"
+        end_date = date.today().strftime("%Y-%m-%d")
+        start_dt = date.today() - timedelta(days=max(days * 2, 365))
+        start_date = start_dt.strftime("%Y-%m-%d")
+        # baostock 共享 socket，需加锁避免并发读写冲突
+        with _BS_LOCK:
+            rs = bs.query_history_k_data_plus(
+                bs_code,
+                "date,open,high,low,close,volume,amount,turn,pctChg",
+                start_date=start_date,
+                end_date=end_date,
+                frequency="d",
+                adjustflag="2",   # 前复权
+            )
+            if rs.error_code != "0":
+                return None
+            rows = []
+            while rs.next():
+                rows.append(rs.get_row_data())
+        if not rows:
+            return None
+        df = pd.DataFrame(rows, columns=["date", "open", "high", "low", "close",
+                                          "volume", "amount", "turnover", "pct_change"])
+        for col in ["open", "high", "low", "close", "volume", "amount", "turnover", "pct_change"]:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+        df["date"] = pd.to_datetime(df["date"])
+        df = df.sort_values("date").reset_index(drop=True)
+        return df.tail(days)
+    except Exception as e:
+        logger.debug(f"baostock 获取{code}日线数据失败: {e}")
+        return None
+
+
 def get_daily_df(code: str, days: int = 100) -> Optional[pd.DataFrame]:
-    """获取日线数据（带缓存，批量分析时同一股票不重复拉取）"""
+    """获取日线数据（带缓存，akshare 失败自动回退 baostock）"""
     cache_key = _df_cache_key(code, days)
     cached = _cache_get(_DF_CACHE, cache_key)
     if cached is not None:
         logger.debug(f"[cache hit] {code} 日线数据")
         return cached
+    # 优先用 akshare sina 源（不经过 eastmoney，可绕过代理问题）
     try:
         import akshare as ak
-        df = ak.stock_zh_a_hist(symbol=code, period="daily", adjust="qfq")
+        prefix = "sh" if code.startswith("6") else "sz"
+        df = ak.stock_zh_a_daily(symbol=f"{prefix}{code}", adjust="qfq")
         if df is None or df.empty:
-            return None
-        df = df.rename(columns={
-            "日期": "date", "开盘": "open", "最高": "high",
-            "最低": "low", "收盘": "close", "成交量": "volume",
-            "成交额": "amount", "涨跌幅": "pct_change", "换手率": "turnover",
-        })
+            raise ValueError("empty")
+        # turnover 是小数（0.003），转换为百分比（0.3%）→ 乘以 100
+        if "turnover" in df.columns:
+            df["turnover"] = df["turnover"] * 100
+        # 补充 pct_change 列
+        if "pct_change" not in df.columns and "close" in df.columns:
+            df["pct_change"] = df["close"].pct_change() * 100
         df["date"] = pd.to_datetime(df["date"])
         df = df.sort_values("date").reset_index(drop=True)
         result = df.tail(days)
         _cache_set(_DF_CACHE, cache_key, result)
         return result
     except Exception as e:
-        logger.warning(f"获取{code}日线数据失败: {e}")
-        return None
+        logger.debug(f"akshare sina 获取{code}日线数据失败({e})，尝试 baostock")
+
+    # 回退：baostock（需登录，线程安全锁序列化）
+    result = _get_daily_df_baostock(code, days)
+    if result is not None:
+        _cache_set(_DF_CACHE, cache_key, result)
+    return result
 
 
 def get_realtime_info(code: str) -> Optional[Dict]:
