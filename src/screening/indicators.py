@@ -975,3 +975,111 @@ def check_cd40(df: pd.DataFrame, threshold: float = -20.0) -> IndicatorResult:
         return _ok(cd40, detail) if passed else _fail(cd40, detail)
     except Exception as e:
         return _skip(str(e))
+
+
+def check_cys_rising(df: pd.DataFrame, threshold: float = -15.0) -> IndicatorResult:
+    """
+    CYS<阈值 且 开始上行：
+    - 当前 CYS < threshold（深度超跌）
+    - CYS 近 5 日处于上升趋势（当前 > 5 日前）
+    适用于抄底模型：超跌后开始修复
+    """
+    if df is None or len(df) < 45:
+        return _skip("数据不足")
+    try:
+        c = df["close"]
+        ma40 = c.rolling(40).mean()
+        cys = (c - ma40) / ma40 * 100
+        cur = cys.iloc[-1]
+        prev = cys.iloc[-6]
+        oversold = cur < threshold
+        rising = cur > prev
+        passed = oversold and rising
+        detail = (f"CYS={cur:.2f}（阈值<{threshold}），"
+                  f"{'上行↑' if rising else '下行↓'}（5日前={prev:.2f}）")
+        return _ok(cur, detail) if passed else _fail(cur, detail)
+    except Exception as e:
+        return _skip(str(e))
+
+
+def check_cys_positive(df: pd.DataFrame, threshold: float = 9.5) -> IndicatorResult:
+    """
+    CYS13 > 阈值（指南针指标强势区）：
+    (收盘价 - MA40) / MA40 * 100 > threshold
+    CYS13 > 9.5 → 价格比40日均线高9.5%，处于强势区
+    """
+    if df is None or len(df) < 40:
+        return _skip("数据不足40日")
+    try:
+        c = df["close"]
+        ma40 = c.rolling(40).mean().iloc[-1]
+        cys = (c.iloc[-1] - ma40) / ma40 * 100
+        passed = cys > threshold
+        detail = f"CYS13={cys:.2f}（阈值>{threshold}，{'强势区' if passed else '未达标'}）"
+        return _ok(cys, detail) if passed else _fail(cys, detail)
+    except Exception as e:
+        return _skip(str(e))
+
+
+def check_kdj_cross(df: pd.DataFrame) -> IndicatorResult:
+    """
+    KDJ金叉：近5根K线内 K 上穿 D，且 J > 0
+    适用于抄底/波段模型：动能启动信号
+    """
+    if df is None or len(df) < 15:
+        return _skip()
+    try:
+        K, D, J = _calc_kdj(df)
+        j = J.iloc[-1]
+        j_positive = j > 0
+        # 近5根内 K 上穿 D
+        cross = False
+        for i in range(-5, 0):
+            if K.iloc[i] > D.iloc[i] and K.iloc[i - 1] <= D.iloc[i - 1]:
+                cross = True
+                break
+        passed = cross and j_positive
+        k, d = K.iloc[-1], D.iloc[-1]
+        detail = (f"K={k:.1f} D={d:.1f} J={j:.1f}，"
+                  f"{'近期金叉' if cross else '未金叉'}，J{'>' if j_positive else '<'}0")
+        return _ok({"K": k, "D": d, "J": j}, detail) if passed else _fail(None, detail)
+    except Exception as e:
+        return _skip(str(e))
+
+
+def check_kdj_above90(df: pd.DataFrame) -> IndicatorResult:
+    """
+    KDJ强势：J > 90（或 K、D 均 > 80）表示强势动能
+    适用于强势模型
+    """
+    if df is None or len(df) < 9:
+        return _skip()
+    try:
+        K, D, J = _calc_kdj(df)
+        k, d, j = K.iloc[-1], D.iloc[-1], J.iloc[-1]
+        passed = j > 90 or (k > 80 and d > 80)
+        detail = f"K={k:.1f} D={d:.1f} J={j:.1f}（{'强势' if passed else '未达强势'}）"
+        return _ok({"K": k, "D": d, "J": j}, detail) if passed else _fail({"K": k, "D": d, "J": j}, detail)
+    except Exception as e:
+        return _skip(str(e))
+
+
+def check_dmi_strong(df: pd.DataFrame) -> IndicatorResult:
+    """
+    DMI强势手拉手（适用于强势模型）：
+    - PDI > MDI（多头占优）
+    - ADX > 25
+    - MDI > 25（双方力量均强，但多头占优，高波动强趋势）
+    - PDI 和 ADX 均在上升
+    """
+    if df is None or len(df) < 20:
+        return _skip()
+    try:
+        pdi, mdi, adx = _calc_dmi(df)
+        p, m, a = pdi.iloc[-1], mdi.iloc[-1], adx.iloc[-1]
+        p_prev, a_prev = pdi.iloc[-2], adx.iloc[-2]
+        passed = (p > m and a > 25 and m > 25 and p > p_prev and a > a_prev)
+        detail = f"PDI={p:.1f} MDI={m:.1f} ADX={a:.1f}，{'强势手拉手' if passed else '未达标'}"
+        return _ok({"pdi": p, "mdi": m, "adx": a}, detail) if passed else _fail(None, detail)
+    except Exception as e:
+        return _skip(str(e))

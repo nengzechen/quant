@@ -25,6 +25,75 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 logger = logging.getLogger(__name__)
 
 
+def _get_board_sector(code: str) -> str:
+    """
+    根据股票代码推断市场板块（不需要额外 API 请求）：
+    6xxxxx → 沪主板；688xxx → 科创板；
+    300xxx/301xxx → 创业板；002xxx/003xxx → 深中小板；
+    000xxx/001xxx → 深主板；其余 → 其他
+    """
+    if code.startswith("688"):
+        return "科创板"
+    if code.startswith("6"):
+        return "沪主板"
+    if code.startswith("300") or code.startswith("301"):
+        return "创业板"
+    if code.startswith("002") or code.startswith("003"):
+        return "深中小板"
+    if code.startswith("000") or code.startswith("001"):
+        return "深主板"
+    return "其他"
+
+
+def _select_top5_per_sector(entries: List, target_count: int = 100, top_n: int = 5) -> List:
+    """
+    按行业板块分组，每个板块取 top_n 只（按得分排序）。
+    - 优先使用 SeedEntry 上已缓存的行业信息
+    - 回退到按代码前缀推断市场板块
+    - 不足 target_count 时按全局得分补足
+    """
+    from src.screening.indicators import get_stock_sector
+
+    # 为每只股票打上板块标签
+    sector_map: Dict[str, List] = {}
+    for entry in entries:
+        # 尝试从行业缓存取
+        sector = ""
+        try:
+            sector = get_stock_sector(entry.code) or ""
+        except Exception:
+            pass
+        if not sector:
+            sector = _get_board_sector(entry.code)
+        sector_map.setdefault(sector, []).append(entry)
+
+    # 每个板块按得分降序取 top_n
+    selected = []
+    for sector, group in sorted(sector_map.items()):
+        group_sorted = sorted(group, key=lambda x: x.phase1_score, reverse=True)
+        selected.extend(group_sorted[:top_n])
+        logger.info(f"[Phase1] 板块「{sector}」{len(group)} 只 → 取 {min(len(group), top_n)} 只")
+
+    # 去重（同一支股票可能因同名板块重复）
+    seen = set()
+    unique = []
+    for e in sorted(selected, key=lambda x: x.phase1_score, reverse=True):
+        if e.code not in seen:
+            seen.add(e.code)
+            unique.append(e)
+
+    # 不足 target_count 时，从剩余未入选股票按得分补足
+    if len(unique) < target_count:
+        selected_codes = {e.code for e in unique}
+        remaining = sorted(
+            [e for e in entries if e.code not in selected_codes],
+            key=lambda x: x.phase1_score, reverse=True
+        )
+        unique.extend(remaining[:target_count - len(unique)])
+
+    return unique
+
+
 def _fetch_all_a_codes() -> List[str]:
     """
     获取全量 A 股代码列表（一次请求，约 5500 只）。
@@ -173,9 +242,9 @@ def run_phase1(
         if entry.code not in dedup or entry.phase1_score > dedup[entry.code].phase1_score:
             dedup[entry.code] = entry
 
-    # Step 6: 按得分降序，截取 target_count
-    seeds = sorted(dedup.values(), key=lambda x: x.phase1_score, reverse=True)[:target_count]
-    logger.info(f"[Phase1] 去重后 {len(dedup)} 只 → 截取 top {len(seeds)} 只进入种子池")
+    # Step 6: 按行业板块分组，每个板块取 top5，确保多元化
+    seeds = _select_top5_per_sector(list(dedup.values()), target_count)
+    logger.info(f"[Phase1] 去重后 {len(dedup)} 只 → 按板块top5筛选后 {len(seeds)} 只进入种子池")
 
     # Step 7: 保存 JSON
     if save:

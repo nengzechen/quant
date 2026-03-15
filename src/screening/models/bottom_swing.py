@@ -1,27 +1,26 @@
 # -*- coding: utf-8 -*-
 """
-模型一：抄底/波段 (BottomSwing)
+模型三：抄底/波段 (BottomSwing)
+适用场景：市场情绪反弹时的底部抄底
 
-合并了原 BottomFishing（深度抄底）与 SwingTrading（波段操作）两个模型。
-核心判断：以缠论底分型为锚点，分两条路径入选：
-
+两条入选路径：
   抄底路径（oversold reversal）：
-    A组大级别背离至少1维通过 → 总分 >= 4
-    适用于：价格仍在低位，均线尚未多头，等待反转
+    A组大级别背离至少1维 + B组极度超卖且上行 → 总分 >= 4
+    适用于：价格仍在低位，CYS深度超跌后开始上行
 
   波段路径（trend pullback）：
     C组趋势环境全部通过 + E组缠论底分型通过 → 总分 >= 5
-    适用于：均线多头排列，回踩支撑，寻找起涨点
+    适用于：均线多头排列，回踩支撑，底分型确认起涨
 
-维度（共 11 维）：
+维度（共 12 维）：
   A. 大级别背离  - 日线MACD底背离 + 周线MACD底背离
-  B. 极度超卖    - CYS<-15 + CD40<-20
-  C. 趋势环境    - 均线多头排列 + KDJ[50,100]
-  D. 形态支撑    - 头肩底 OR 回踩关键均线（任一通过）
-  E. 缠论确认    - 底分型确认
-  F. 动能辅助    - MACD金叉>MA20 + 量能放大
+  B. 极度超卖    - CYS<-15且上行
+  C. 趋势环境    - 均线多头排列 + KDJ金叉(J>0)
+  D. 形态支撑    - 头肩底 OR 回踩关键均线
+  E. 缠论确认    - 底分型
+  F. 动能辅助    - MACD金叉>MA20 + DMI手拉手
   G. 资金启动    - 资金流入 + 量比>1
-  H. 基本面      - PE合理
+  H. 基本面      - PE合理 + 净利润同比预增
 """
 import logging
 from typing import Optional
@@ -33,22 +32,22 @@ from src.screening.screener import DimResult, _get_stock_name
 from src.screening.indicators import (
     get_daily_df,
     check_macd_divergence,
-    check_cys, check_cd40,
-    check_ma_bull, check_kdj_above50,
+    check_cys_rising,
+    check_ma_bull, check_kdj_cross,
     check_head_shoulder_bottom,
     check_chan_bottom_pattern,
     check_macd_golden_above_ma20,
-    check_volume_expand,
+    check_dmi,
     check_fund_flow,
     check_volume_ratio,
-    check_pe,
+    check_pe, check_profit_growth,
     _ok, _fail, _skip,
 )
 
 logger = logging.getLogger(__name__)
 
-MIN_SEED_SCORE_REVERSAL = 4   # 抄底路径：11维中至少 4 分
-MIN_SEED_SCORE_PULLBACK = 5   # 波段路径：11维中至少 5 分
+MIN_SEED_SCORE_REVERSAL = 4   # 抄底路径：至少 4 分
+MIN_SEED_SCORE_PULLBACK = 5   # 波段路径：至少 5 分
 
 
 def _check_pullback_ma(df: pd.DataFrame) -> dict:
@@ -72,19 +71,11 @@ def _check_pullback_ma(df: pd.DataFrame) -> dict:
 
 
 class BottomSwing:
-    """抄底/波段模型 - Phase1 离线全市场扫描用"""
+    """抄底/波段模型 - Phase1 离线全市场扫描"""
 
-    NAME = "模型一：抄底/波段(BottomSwing)"
+    NAME = "模型三：抄底/波段(BottomSwing)"
 
     def run(self, code: str, df=None, weekly_df=None) -> ModelResult:
-        """
-        Args:
-            code     : 股票代码
-            df       : 日线 DataFrame（None 时自动拉取）
-            weekly_df: 周线 DataFrame（None 时由日线聚合）
-        Returns:
-            ModelResult
-        """
         result = ModelResult(code=code, strategy=self.NAME, model_name="BottomSwing")
 
         if df is None:
@@ -113,27 +104,24 @@ class BottomSwing:
         result.dims.append(d_weekly); grp_a.append(d_weekly)
         result.groups["A.大级别背离"] = grp_a
 
-        # ---- B. 极度超卖 ----
+        # ---- B. 极度超卖且上行 ----
         grp_b = []
-        for name, r in [
-            ("CYS<-15(超跌)", check_cys(df, threshold=-15.0)),
-            ("CD40<-20(动量超跌)", check_cd40(df, threshold=-20.0)),
-        ]:
-            d = DimResult(name, r["passed"], r["value"], r["detail"])
-            result.dims.append(d); grp_b.append(d)
+        r_cys = check_cys_rising(df, threshold=-15.0)
+        d_cys = DimResult("CYS<-15且上行", r_cys["passed"], r_cys["value"], r_cys["detail"])
+        result.dims.append(d_cys); grp_b.append(d_cys)
         result.groups["B.极度超卖"] = grp_b
 
         # ---- C. 趋势环境 ----
         grp_c = []
         for name, r in [
             ("均线多头排列", check_ma_bull(df)),
-            ("KDJ[50,100]", check_kdj_above50(df)),
+            ("KDJ金叉(J>0)", check_kdj_cross(df)),
         ]:
             d = DimResult(name, r["passed"], r["value"], r["detail"])
             result.dims.append(d); grp_c.append(d)
         result.groups["C.趋势环境"] = grp_c
 
-        # ---- D. 形态支撑（头肩底 OR 回踩均线，任一通过得分） ----
+        # ---- D. 形态支撑（头肩底 OR 回踩均线） ----
         grp_d = []
         r_hs = check_head_shoulder_bottom(df)
         r_pb = _check_pullback_ma(df)
@@ -158,7 +146,7 @@ class BottomSwing:
         grp_f = []
         for name, r in [
             ("MACD金叉>MA20", check_macd_golden_above_ma20(df)),
-            ("量能放大", check_volume_expand(df)),
+            ("DMI手拉手", check_dmi(df)),
         ]:
             d = DimResult(name, r["passed"], r["value"], r["detail"])
             result.dims.append(d); grp_f.append(d)
@@ -176,9 +164,12 @@ class BottomSwing:
 
         # ---- H. 基本面 ----
         grp_h = []
-        r_pe = check_pe(code)
-        d_pe = DimResult("PE合理", r_pe["passed"], r_pe["value"], r_pe["detail"])
-        result.dims.append(d_pe); grp_h.append(d_pe)
+        for name, r in [
+            ("PE合理", check_pe(code)),
+            ("净利润预增", check_profit_growth(code)),
+        ]:
+            d = DimResult(name, r["passed"], r["value"], r["detail"])
+            result.dims.append(d); grp_h.append(d)
         result.groups["H.基本面"] = grp_h
 
         result.phase1_score = result.total_score
@@ -186,9 +177,9 @@ class BottomSwing:
 
     def is_qualified_seed(self, result: ModelResult) -> bool:
         """
-        进种子池判断（两条路径之一满足即可）：
+        进种子池（两条路径之一满足即可）：
 
-        抄底路径：总分 >= 4，且 A组（大级别背离）至少 1 维通过
+        抄底路径：总分 >= 4，且 A组（大级别背离）至少1维通过
         波段路径：总分 >= 5，且 C组（趋势环境）全部通过，且 E组（底分型）通过
         """
         score = result.total_score
@@ -196,12 +187,10 @@ class BottomSwing:
         c_dims = result.groups.get("C.趋势环境", [])
         e_dims = result.groups.get("E.缠论确认", [])
 
-        # 抄底路径
         reversal_ok = (
             score >= MIN_SEED_SCORE_REVERSAL
             and any(d.passed is True for d in a_dims)
         )
-        # 波段路径
         pullback_ok = (
             score >= MIN_SEED_SCORE_PULLBACK
             and all(d.passed is True for d in c_dims)

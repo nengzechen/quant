@@ -718,9 +718,11 @@ def main() -> int:
             )
             logger.info(f"[Phase1] 完成，共 {len(seeds)} 只进入种子池")
 
-            # 保存 Markdown 筛选报告到 reports/screening/
+            # 保存 Markdown 筛选报告到 reports/screening/（按板块分组）
             if seeds:
                 from datetime import datetime as _dt
+                from src.screening.pipeline.phase1 import _get_board_sector
+                from src.screening.indicators import get_stock_sector
                 import os
                 today_str = _dt.now().strftime("%Y%m%d")
                 screening_dir = os.path.join(
@@ -728,18 +730,28 @@ def main() -> int:
                 )
                 os.makedirs(screening_dir, exist_ok=True)
                 report_path = os.path.join(screening_dir, f"daily_screen_{today_str}.md")
+
+                # 按板块分组
+                sector_groups: dict = {}
+                for e in seeds:
+                    sec = get_stock_sector(e.code) or _get_board_sector(e.code)
+                    sector_groups.setdefault(sec, []).append(e)
+
                 report_lines = [
                     f"# Phase1 每日选股报告 [{_dt.now().strftime('%Y-%m-%d')}]\n",
-                    f"共 {len(seeds)} 只进入种子池\n",
+                    f"共 {len(seeds)} 只，覆盖 {len(sector_groups)} 个板块（每板块最多5只）\n",
                 ]
-                for e in seeds:
-                    score_pct = int(e.phase1_score / e.max_score * 100) if e.max_score else 0
-                    report_lines.append(
-                        f"- **{e.code} {e.name}** [{e.model}] "
-                        f"{e.phase1_score}/{e.max_score}分({score_pct}%) "
-                        f"| {' | '.join(e.passed_dims[:5])}"
-                    )
-                report_lines.append("\n> 仅供参考，不构成投资建议")
+                for sec, group in sorted(sector_groups.items(),
+                                          key=lambda x: -max(e.phase1_score for e in x[1])):
+                    report_lines.append(f"\n## {sec}（{len(group)}只）\n")
+                    for e in sorted(group, key=lambda x: -x.phase1_score):
+                        score_pct = int(e.phase1_score / e.max_score * 100) if e.max_score else 0
+                        report_lines.append(
+                            f"- **{e.code} {e.name}** [{e.model}] "
+                            f"{e.phase1_score}/{e.max_score}分({score_pct}%) "
+                            f"| {' | '.join(e.passed_dims[:5])}"
+                        )
+                report_lines.append("\n\n> 仅供参考，不构成投资建议")
                 with open(report_path, "w", encoding="utf-8") as _f:
                     _f.write("\n".join(report_lines) + "\n")
                 logger.info(f"[Phase1] 筛选报告已保存: {report_path}")
