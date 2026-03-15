@@ -577,7 +577,12 @@ def check_pe(code: str, pe_max: float = 100) -> IndicatorResult:
 
 
 def check_profit_growth(code: str) -> IndicatorResult:
-    """净利润连续增长（近两期同比均为正，最新期降幅不超过50%）"""
+    """净利润连续增长（近两期同比均为正，最新期降幅不超过50%）
+    注：财务数据来自 eastmoney，非交易时段/无法访问时返回 skip
+    """
+    # eastmoney 财务接口使用 mini_racer，非交易时段不调用（防止 V8 崩溃）
+    if not _is_trading_hours():
+        return _skip("非交易时段跳过财务数据请求")
     try:
         import akshare as ak
         _sleep(0.5)
