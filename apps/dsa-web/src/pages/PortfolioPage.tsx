@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { quantApi } from '../api/quant';
 import type { PortfolioData, Position, Trade, OrderRequest } from '../api/quant';
 import { getParsedApiError } from '../api/error';
+import type { ParsedApiError } from '../api/error';
 import { ApiErrorAlert } from '../components/common';
 
 // ─── 工具函数 ───────────────────────────────────────────────
@@ -45,129 +46,6 @@ const StatCard: React.FC<{
     {sub && <span className={`text-xs font-mono ${subClass ?? 'text-secondary'}`}>{sub}</span>}
   </div>
 );
-
-// ─── 下单表单 ─────────────────────────────────────────────
-
-const OrderForm: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => {
-  const [form, setForm] = useState<OrderRequest>({
-    stock_code: '',
-    action: 'BUY',
-    quantity: 100,
-    price: 0,
-    stop_loss_price: 0,
-  });
-  const [submitting, setSubmitting] = useState(false);
-  const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
-
-  const set = (k: keyof OrderRequest, v: string | number) =>
-    setForm((f) => ({ ...f, [k]: v }));
-
-  const submit = async () => {
-    if (!form.stock_code.trim()) { setMsg({ type: 'err', text: '请填写股票代码' }); return; }
-    if (form.price <= 0) { setMsg({ type: 'err', text: '价格须大于 0' }); return; }
-    if (form.quantity <= 0 || form.quantity % 100 !== 0) {
-      setMsg({ type: 'err', text: '股数须为 100 的整数倍' }); return;
-    }
-    setSubmitting(true);
-    setMsg(null);
-    try {
-      const res = await quantApi.placeOrder(form);
-      setMsg({ type: 'ok', text: `${actionLabel(form.action)}成功，状态: ${res.status}` });
-      onSuccess();
-    } catch (e) {
-      const err = getParsedApiError(e);
-      setMsg({ type: 'err', text: err?.message ?? '下单失败' });
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  return (
-    <div className="terminal-card p-5">
-      <h3 className="text-sm font-semibold text-cyan mb-4 uppercase tracking-wider">手动下单</h3>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        {/* 股票代码 */}
-        <div className="flex flex-col gap-1">
-          <label className="text-xs text-muted">股票代码</label>
-          <input
-            className="input-terminal font-mono"
-            placeholder="600519"
-            value={form.stock_code}
-            onChange={(e) => set('stock_code', e.target.value.trim())}
-          />
-        </div>
-        {/* 方向 */}
-        <div className="flex flex-col gap-1">
-          <label className="text-xs text-muted">方向</label>
-          <select
-            className="input-terminal"
-            value={form.action}
-            onChange={(e) => set('action', e.target.value as 'BUY' | 'SELL')}
-          >
-            <option value="BUY">买入</option>
-            <option value="SELL">卖出</option>
-          </select>
-        </div>
-        {/* 价格 */}
-        <div className="flex flex-col gap-1">
-          <label className="text-xs text-muted">价格</label>
-          <input
-            type="number"
-            className="input-terminal font-mono"
-            placeholder="0.00"
-            min={0}
-            step={0.01}
-            value={form.price || ''}
-            onChange={(e) => set('price', parseFloat(e.target.value) || 0)}
-          />
-        </div>
-        {/* 数量 */}
-        <div className="flex flex-col gap-1">
-          <label className="text-xs text-muted">股数</label>
-          <input
-            type="number"
-            className="input-terminal font-mono"
-            placeholder="100"
-            min={100}
-            step={100}
-            value={form.quantity}
-            onChange={(e) => set('quantity', parseInt(e.target.value) || 100)}
-          />
-        </div>
-        {/* 止损 */}
-        <div className="flex flex-col gap-1">
-          <label className="text-xs text-muted">止损价（可选）</label>
-          <input
-            type="number"
-            className="input-terminal font-mono"
-            placeholder="0.00"
-            min={0}
-            step={0.01}
-            value={form.stop_loss_price || ''}
-            onChange={(e) => set('stop_loss_price', parseFloat(e.target.value) || 0)}
-          />
-        </div>
-        {/* 提交 */}
-        <div className="flex flex-col gap-1">
-          <label className="text-xs text-muted opacity-0">操作</label>
-          <button
-            type="button"
-            className={`btn-primary h-9 text-sm ${form.action === 'SELL' ? 'bg-green-600 hover:bg-green-500 border-green-500' : ''}`}
-            disabled={submitting}
-            onClick={() => void submit()}
-          >
-            {submitting ? '提交中…' : actionLabel(form.action)}
-          </button>
-        </div>
-      </div>
-      {msg && (
-        <p className={`mt-3 text-xs font-mono ${msg.type === 'ok' ? 'text-green-400' : 'text-red-400'}`}>
-          {msg.text}
-        </p>
-      )}
-    </div>
-  );
-};
 
 // ─── 持仓表格 ─────────────────────────────────────────────
 
@@ -285,7 +163,7 @@ const TradesTable: React.FC<{ trades: Trade[] }> = ({ trades }) => {
 const PortfolioPage: React.FC = () => {
   const [data, setData] = useState<PortfolioData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<unknown>(null);
+  const [error, setError] = useState<ParsedApiError | null>(null);
   const [lastUpdated, setLastUpdated] = useState('');
   // 快速卖出：点击持仓行的「卖出」按钮后，自动填入下单表单（暂用 alert 简化）
   const [sellTarget, setSellTarget] = useState<Position | null>(null);
@@ -297,7 +175,7 @@ const PortfolioPage: React.FC = () => {
       setError(null);
       setLastUpdated(new Date().toLocaleTimeString('zh-CN'));
     } catch (e) {
-      setError(e);
+      setError(getParsedApiError(e));
     } finally {
       setLoading(false);
     }
@@ -442,7 +320,7 @@ const OrderFormWithTarget: React.FC<{
       onClearTarget();
     } catch (e) {
       const err = getParsedApiError(e);
-      setMsg({ type: 'err', text: err?.message ?? '下单失败' });
+      setMsg({ type: 'err', text: err.message || '下单失败' });
     } finally {
       setSubmitting(false);
     }
