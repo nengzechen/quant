@@ -723,7 +723,6 @@ def main() -> int:
                 from datetime import datetime as _dt
                 from src.screening.pipeline.phase1 import _get_board_sector
                 from src.screening.indicators import get_stock_sector
-                import os
                 today_str = _dt.now().strftime("%Y%m%d")
                 screening_dir = os.path.join(
                     os.path.dirname(os.path.abspath(__file__)), "reports", "screening"
