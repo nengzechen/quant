@@ -25,11 +25,43 @@ def _get_broker():
 # GET /portfolio
 # ─────────────────────────────────────────────
 
+def _fetch_realtime_prices(codes: list) -> dict:
+    """
+    拉取持仓股票的实时最新价（交易时段）或最新收盘价（非交易时段）。
+    失败时静默返回空字典，调用方保留原有价格。
+    """
+    if not codes:
+        return {}
+    try:
+        import akshare as ak
+        snapshot = ak.stock_zh_a_spot_em()
+        price_map = {}
+        for _, row in snapshot.iterrows():
+            code = str(row.get("代码", ""))
+            if code in codes:
+                price = float(row.get("最新价") or 0)
+                if price > 0:
+                    price_map[code] = price
+        return price_map
+    except Exception as e:
+        logger.debug(f"[portfolio] 实时价格获取失败（使用历史价格）: {e}")
+        return {}
+
+
 @router.get("/portfolio")
 def get_portfolio():
     """返回账户概况、持仓列表、最近 30 笔交易"""
     try:
         broker = _get_broker()
+
+        # 尝试更新持仓实时价格
+        positions_raw = broker.get_positions()
+        if positions_raw:
+            codes = [p.stock_code for p in positions_raw]
+            price_map = _fetch_realtime_prices(codes)
+            if price_map:
+                broker.update_position_prices(price_map)
+
         account = broker.get_account_info()
         positions = broker.get_positions()
         trades = broker.get_trade_records(limit=30)
