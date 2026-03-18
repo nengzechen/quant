@@ -24,13 +24,14 @@ export interface Position {
 }
 
 export interface Trade {
-  order_id: string;
+  record_id: string;
+  order_id: string | null;
   stock_code: string;
   stock_name?: string;
   action: 'BUY' | 'SELL';
   quantity: number;
   price: number;
-  amount: number;
+  total_amount: number;
   commission: number;
   status: string;
   timestamp: string;

@@ -127,7 +127,7 @@ const TradesTable: React.FC<{ trades: Trade[] }> = ({ trades }) => {
         </thead>
         <tbody>
           {trades.map((t) => (
-            <tr key={t.order_id} className="border-b border-dim hover:bg-elevated transition-colors">
+            <tr key={t.record_id} className="border-b border-dim hover:bg-elevated transition-colors">
               <td className="py-2 px-3 text-secondary text-xs whitespace-nowrap">
                 {fmtTime(t.timestamp)}
               </td>
@@ -137,7 +137,7 @@ const TradesTable: React.FC<{ trades: Trade[] }> = ({ trades }) => {
               </td>
               <td className="py-2 px-3 font-mono">{t.quantity.toLocaleString()}</td>
               <td className="py-2 px-3 font-mono">{fmt(t.price, 3)}</td>
-              <td className="py-2 px-3 font-mono">{fmt(t.amount)}</td>
+              <td className="py-2 px-3 font-mono">{fmt(t.total_amount)}</td>
               <td className="py-2 px-3 font-mono text-muted">{fmt(t.commission)}</td>
               <td className="py-2 px-3">
                 <span
