@@ -6,6 +6,8 @@ POST /api/v1/quant/order      - 手动下单（买入/卖出）
 """
 
 import logging
+import time
+import threading
 from typing import Literal
 
 from fastapi import APIRouter, HTTPException
@@ -14,6 +16,13 @@ from pydantic import BaseModel, Field
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+# ─── 价格缓存（非阻塞后台刷新，避免每次 API 请求都等外部数据源超时）─────
+_price_cache: dict = {}        # {code: price}
+_price_cache_ts: float = 0.0   # 上次成功更新时间戳
+_PRICE_CACHE_TTL = 60          # 缓存有效期（秒），超过后触发后台刷新
+_price_fetch_lock = threading.Lock()
+_price_fetch_running = False    # 防止并发重复刷新
+
 
 def _get_broker():
     """每次请求加载最新的模拟盘数据（从 JSON 文件读取）"""
@@ -21,32 +30,62 @@ def _get_broker():
     return PaperBroker()
 
 
+def _do_fetch_prices(codes: list) -> dict:
+    """用 get_daily_df（内置多数据源 fallback）取每只股最新收盘价。"""
+    from src.screening.indicators import get_daily_df
+    result = {}
+    for code in codes:
+        try:
+            df = get_daily_df(code, days=3)
+            if df is not None and not df.empty:
+                price = float(df.iloc[-1]["close"])
+                if price > 0:
+                    result[code] = price
+        except Exception:
+            pass
+    return result
+
+
+def _bg_refresh(codes: list) -> None:
+    """后台线程：拉价格并更新缓存，完成后释放锁。"""
+    global _price_cache, _price_cache_ts, _price_fetch_running
+    try:
+        prices = _do_fetch_prices(codes)
+        if prices:
+            with _price_fetch_lock:
+                _price_cache.update(prices)
+                _price_cache_ts = time.time()
+            logger.info(f"[portfolio] 价格缓存刷新: {prices}")
+    except Exception as e:
+        logger.debug(f"[portfolio] 后台价格刷新失败: {e}")
+    finally:
+        _price_fetch_running = False
+
+
+def _get_prices_nonblocking(codes: list) -> dict:
+    """
+    立即返回缓存价格；若缓存已过期且没有正在进行的刷新，触发后台线程更新。
+    调用方永远不会阻塞等待外部数据源。
+    """
+    global _price_fetch_running
+    now = time.time()
+
+    with _price_fetch_lock:
+        cached = {c: _price_cache[c] for c in codes if c in _price_cache}
+        cache_age = now - _price_cache_ts
+        should_refresh = (cache_age > _PRICE_CACHE_TTL) and not _price_fetch_running
+
+    if should_refresh:
+        _price_fetch_running = True
+        t = threading.Thread(target=_bg_refresh, args=(codes,), daemon=True)
+        t.start()
+
+    return cached
+
+
 # ─────────────────────────────────────────────
 # GET /portfolio
 # ─────────────────────────────────────────────
-
-def _fetch_realtime_prices(codes: list) -> dict:
-    """
-    拉取持仓股票的实时最新价（交易时段）或最新收盘价（非交易时段）。
-    失败时静默返回空字典，调用方保留原有价格。
-    """
-    if not codes:
-        return {}
-    try:
-        import akshare as ak
-        snapshot = ak.stock_zh_a_spot_em()
-        price_map = {}
-        for _, row in snapshot.iterrows():
-            code = str(row.get("代码", ""))
-            if code in codes:
-                price = float(row.get("最新价") or 0)
-                if price > 0:
-                    price_map[code] = price
-        return price_map
-    except Exception as e:
-        logger.debug(f"[portfolio] 实时价格获取失败（使用历史价格）: {e}")
-        return {}
-
 
 @router.get("/portfolio")
 def get_portfolio():
@@ -54,11 +93,11 @@ def get_portfolio():
     try:
         broker = _get_broker()
 
-        # 尝试更新持仓实时价格
+        # 非阻塞价格更新：立即用缓存，后台刷新不影响响应时间
         positions_raw = broker.get_positions()
         if positions_raw:
             codes = [p.stock_code for p in positions_raw]
-            price_map = _fetch_realtime_prices(codes)
+            price_map = _get_prices_nonblocking(codes)
             if price_map:
                 broker.update_position_prices(price_map)
 
