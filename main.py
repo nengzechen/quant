@@ -183,6 +183,11 @@ def parse_arguments() -> argparse.Namespace:
         default=None,
         help='Phase2 指定读取的种子池日期（YYYYMMDD，默认今天）'
     )
+    parser.add_argument(
+        '--phase2-auto-order',
+        action='store_true',
+        help='Phase2 触发买入信号时自动向模拟账户下单'
+    )
 
     parser.add_argument(
         '--force-run',
@@ -782,12 +787,19 @@ def main() -> int:
             from src.notification import NotificationService
 
             notifier = NotificationService()
+            auto_order_broker = None
+            if getattr(args, 'phase2_auto_order', False):
+                from quant.broker.paper_broker import PaperBroker
+                auto_order_broker = PaperBroker()
+                logger.info("[Phase2] 已启用自动下单模式（PaperBroker）")
+
             triggered = run_phase2(
                 notifier=notifier,
                 send_notification=not args.no_notify,
                 interval_seconds=getattr(args, 'phase2_interval', 60),
                 max_rounds=getattr(args, 'phase2_rounds', 30),
                 date_str=getattr(args, 'phase2_date', None),
+                broker=auto_order_broker,
             )
             logger.info(f"[Phase2] 共触发 {len(triggered)} 只买入信号")
             return 0

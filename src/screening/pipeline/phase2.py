@@ -121,12 +121,57 @@ def run_phase2_once(
     )
 
 
+def _place_auto_order(broker, entry: "SeedEntry", df) -> None:
+    """触发信号后自动下模拟买单（等权仓位）"""
+    try:
+        price = float(df.iloc[-1]["close"]) if df is not None and not df.empty else 0.0
+        if price <= 0:
+            logger.warning(f"[Phase2] {entry.code} 无法获取价格，跳过自动下单")
+            return
+
+        portfolio = broker.get_portfolio()
+        max_pos = portfolio.get("max_positions", 10)
+        total_cap = portfolio.get("total_capital", 1_000_000)
+        avail_cash = portfolio.get("available_cash", 0.0)
+        cur_positions = portfolio.get("position_count", 0)
+
+        if cur_positions >= max_pos:
+            logger.info(f"[Phase2] 持仓已满 ({cur_positions}/{max_pos})，跳过 {entry.code}")
+            return
+
+        # 等权仓位：总资金 / 最大持仓数，最小手=100股
+        alloc = total_cap / max_pos
+        quantity = int(alloc / price / 100) * 100
+        if quantity <= 0:
+            logger.warning(f"[Phase2] {entry.code} 计算手数为 0，跳过自动下单")
+            return
+
+        cost = price * quantity
+        if cost > avail_cash:
+            logger.warning(f"[Phase2] {entry.code} 资金不足 (需 {cost:.0f}，余 {avail_cash:.0f})")
+            return
+
+        record = broker.place_order(
+            stock_code=entry.code,
+            action="BUY",
+            quantity=quantity,
+            price=price,
+        )
+        logger.info(
+            f"[Phase2] 自动下单: {entry.code} {entry.name} "
+            f"×{quantity} 股 @{price:.2f} 状态={record.status}"
+        )
+    except Exception as e:
+        logger.error(f"[Phase2] 自动下单失败 {entry.code}: {e}")
+
+
 def run_phase2(
     date_str: Optional[str] = None,
     notifier=None,
     send_notification: bool = True,
     interval_seconds: int = 60,
     max_rounds: int = 30,
+    broker=None,
 ) -> List["SeedEntry"]:
     """
     Phase2 主流程入口（盘中循环监控）
@@ -137,6 +182,7 @@ def run_phase2(
         send_notification : 是否推送通知
         interval_seconds  : 每轮扫描间隔（秒）
         max_rounds        : 最大扫描轮数
+        broker            : 券商实例（传入则触发时自动下模拟买单）
 
     Returns:
         全部已触发买入信号的 SeedEntry 列表
@@ -178,6 +224,8 @@ def run_phase2(
                     entry.phase2_reason = f"{reason_u} | {reason_m}"
                     triggered_this.append(entry)
                     logger.info(f"[Phase2] 买入信号: {code} {entry.name} | {entry.phase2_reason}")
+                    if broker is not None:
+                        _place_auto_order(broker, entry, df)
         finally:
             clear_data_cache()
 
