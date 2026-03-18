@@ -26,19 +26,31 @@ logger = logging.getLogger(__name__)
 
 def _check_universal_trigger(code: str, df) -> Tuple[bool, str]:
     """
-    通用盘中触发：高开 + 量比>1 + 换手率>3%（三条全部满足）
-
-    Returns:
-        (triggered, reason_str)
+    通用盘中触发：高开 + 量比>1 + 换手率>3%
+    优先使用腾讯实时行情；获取失败时 fallback 到日线数据。
     """
-    from src.screening.indicators import check_high_open, check_volume_ratio, check_turnover
-    r_ho = check_high_open(df)
-    r_vr = check_volume_ratio(df, threshold=1.0)
-    r_to = check_turnover(df, threshold=3.0)
+    from src.screening.indicators import (
+        get_realtime_quote_tencent,
+        check_high_open_rt, check_volume_ratio_rt, check_turnover_rt,
+        check_high_open, check_volume_ratio, check_turnover,
+    )
+
+    quote = get_realtime_quote_tencent(code)
+    if quote:
+        r_ho = check_high_open_rt(quote)
+        r_vr = check_volume_ratio_rt(quote, df, threshold=1.0)
+        r_to = check_turnover_rt(quote, threshold=3.0)
+        source = "实时"
+    else:
+        logger.debug(f"[Phase2] {code} 实时行情获取失败，fallback 到日线数据")
+        r_ho = check_high_open(df)
+        r_vr = check_volume_ratio(df, threshold=1.0)
+        r_to = check_turnover(df, threshold=3.0)
+        source = "日线"
 
     triggered = all(r["passed"] is True for r in [r_ho, r_vr, r_to])
     reason = (
-        f"高开{r_ho.get('value', '?')} | "
+        f"[{source}]高开{r_ho.get('value', '?')} | "
         f"量比{r_vr.get('value', '?')} | "
         f"换手{r_to.get('value', '?')}%"
     )

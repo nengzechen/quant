@@ -108,10 +108,25 @@ def save_seed_pool(entries: List[SeedEntry], date_str: Optional[str] = None) -> 
 
 
 def load_seed_pool(date_str: Optional[str] = None) -> List[SeedEntry]:
-    """读取种子池 JSON，找不到文件返回空列表"""
+    """
+    读取种子池 JSON。
+    - 若指定 date_str 则严格加载对应文件。
+    - 若 date_str 为 None 且当日文件不存在，自动 fallback 到最近一个可用池。
+    """
     path = get_seed_pool_path(date_str)
     if not os.path.exists(path):
-        return []
+        if date_str is not None:
+            return []
+        # 自动寻找最近的种子池文件
+        seed_files = sorted(
+            [f for f in os.listdir(_DATA_DIR) if f.startswith("seed_pool_") and f.endswith(".json")],
+            reverse=True,
+        )
+        if not seed_files:
+            return []
+        path = os.path.join(_DATA_DIR, seed_files[0])
+        import logging as _log
+        _log.getLogger(__name__).info(f"[SeedPool] 当日种子池不存在，使用最近可用: {seed_files[0]}")
     with open(path, "r", encoding="utf-8") as f:
         data = json.load(f)
     return [SeedEntry.from_dict(e) for e in data.get("entries", [])]

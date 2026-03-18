@@ -727,6 +727,130 @@ def check_volume_expand(df: pd.DataFrame, days: int = 5, min_days: int = 4) -> I
 
 
 # ============================================================
+# 4b. 实时行情（腾讯接口）— Phase2 盘中专用
+# ============================================================
+
+def get_realtime_quote_tencent(code: str) -> dict:
+    """
+    通过腾讯行情接口获取单只股票实时行情。
+    字段索引（~分隔）：
+      [1]=名称 [2]=代码 [3]=当前价 [4]=昨收 [5]=今开
+      [6]=成交量(手) [37]=成交金额(元) [38]=换手率(%)
+    返回空 dict 表示获取失败。
+    """
+    import requests
+    try:
+        market = "sh" if code.startswith(("6", "5")) else "sz"
+        url = f"https://qt.gtimg.cn/q={market}{code}"
+        r = requests.get(url, timeout=5, headers={"Referer": "https://finance.qq.com"})
+        for line in r.text.strip().split("\n"):
+            if "=" not in line:
+                continue
+            raw = line.split("=", 1)[1].strip().strip('"').strip(";")
+            parts = raw.split("~")
+            if len(parts) < 39:
+                continue
+            current = float(parts[3]) if parts[3] else 0.0
+            prev_close = float(parts[4]) if parts[4] else 0.0
+            today_open = float(parts[5]) if parts[5] else 0.0
+            vol_lot = float(parts[6]) if parts[6] else 0.0
+            turnover_rate = float(parts[38]) if parts[38] else 0.0
+            if current > 0:
+                return {
+                    "code": parts[2],
+                    "current_price": current,
+                    "prev_close": prev_close,
+                    "today_open": today_open,
+                    "volume_lot": vol_lot,
+                    "turnover_rate": turnover_rate,
+                }
+    except Exception as e:
+        logger.debug(f"[RT quote] {code} 获取失败: {e}")
+    return {}
+
+
+def check_high_open_rt(quote: dict) -> IndicatorResult:
+    """高开（实时）：今日开盘价高于昨日收盘价 0.5% 以上"""
+    try:
+        today_open = quote.get("today_open", 0.0)
+        prev_close = quote.get("prev_close", 0.0)
+        if today_open <= 0 or prev_close <= 0:
+            return _skip("实时行情数据不足")
+        open_pct = (today_open - prev_close) / prev_close * 100
+        passed = open_pct >= 0.5
+        return (
+            _ok(round(open_pct, 2), f"高开{open_pct:.2f}%")
+            if passed else
+            _fail(round(open_pct, 2), f"开盘涨跌{open_pct:.2f}%，未高开")
+        )
+    except Exception as e:
+        return _skip(str(e))
+
+
+def check_volume_ratio_rt(
+    quote: dict, df: pd.DataFrame, threshold: float = 1.0
+) -> IndicatorResult:
+    """
+    量比（实时，按时间比例折算）：
+      量比 = 当前成交量 / (5日均量 * 已交易时间占比)
+    """
+    try:
+        if df is None or len(df) < 6:
+            return _skip("历史数据不足")
+        vol_ma5 = df["volume"].iloc[-6:-1].mean()
+        if vol_ma5 <= 0:
+            return _skip("5日均量为0")
+
+        current_vol = quote.get("volume_lot", 0.0)
+        if current_vol <= 0:
+            return _skip("当前成交量为0")
+
+        from datetime import datetime, timezone, timedelta
+        # 使用 CST (UTC+8) 时间计算 A股交易时段
+        cst = timezone(timedelta(hours=8))
+        now = datetime.now(cst)
+        # 交易时段：09:30-11:30(120min) + 13:00-15:00(120min) = 240min
+        open_dt = now.replace(hour=9, minute=30, second=0, microsecond=0)
+        break_start = now.replace(hour=11, minute=30, second=0, microsecond=0)
+        break_end = now.replace(hour=13, minute=0, second=0, microsecond=0)
+        close_dt = now.replace(hour=15, minute=0, second=0, microsecond=0)
+        total_minutes = 240
+        if now <= open_dt:
+            elapsed = 1
+        elif now <= break_start:
+            elapsed = (now - open_dt).total_seconds() / 60
+        elif now <= break_end:
+            elapsed = 120
+        elif now <= close_dt:
+            elapsed = 120 + (now - break_end).total_seconds() / 60
+        else:
+            elapsed = 240
+        elapsed = max(1.0, min(elapsed, total_minutes))
+        time_ratio = elapsed / total_minutes
+
+        expected_vol = vol_ma5 * time_ratio
+        ratio = current_vol / expected_vol if expected_vol > 0 else 0.0
+        passed = ratio > threshold
+        detail = f"量比={ratio:.2f}（已交易{elapsed:.0f}分钟，阈值>{threshold}）"
+        return _ok(round(ratio, 2), detail) if passed else _fail(round(ratio, 2), detail)
+    except Exception as e:
+        return _skip(str(e))
+
+
+def check_turnover_rt(quote: dict, threshold: float = 3.0) -> IndicatorResult:
+    """换手率（实时）> threshold%"""
+    try:
+        turnover = quote.get("turnover_rate", 0.0)
+        if turnover <= 0:
+            return _skip("换手率数据不可用")
+        passed = turnover >= threshold
+        detail = f"换手率={turnover:.2f}%（阈值>{threshold}%）"
+        return _ok(round(turnover, 2), detail) if passed else _fail(round(turnover, 2), detail)
+    except Exception as e:
+        return _skip(str(e))
+
+
+# ============================================================
 # 5. 传统技术与形态模块
 # ============================================================
 
