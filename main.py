@@ -177,6 +177,12 @@ def parse_arguments() -> argparse.Namespace:
         default=30,
         help='Phase2 最大扫描轮数（默认 30 轮）'
     )
+    parser.add_argument(
+        '--phase2-date',
+        type=str,
+        default=None,
+        help='Phase2 指定读取的种子池日期（YYYYMMDD，默认今天）'
+    )
 
     parser.add_argument(
         '--force-run',
@@ -781,6 +787,7 @@ def main() -> int:
                 send_notification=not args.no_notify,
                 interval_seconds=getattr(args, 'phase2_interval', 60),
                 max_rounds=getattr(args, 'phase2_rounds', 30),
+                date_str=getattr(args, 'phase2_date', None),
             )
             logger.info(f"[Phase2] 共触发 {len(triggered)} 只买入信号")
             return 0
