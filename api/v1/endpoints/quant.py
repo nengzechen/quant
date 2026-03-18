@@ -30,20 +30,64 @@ def _get_broker():
     return PaperBroker()
 
 
+def _code_to_market(code: str) -> str:
+    """将股票代码转换为腾讯行情前缀（sh/sz）。"""
+    if code.startswith(("6", "5")):
+        return f"sh{code}"
+    return f"sz{code}"
+
+
 def _do_fetch_prices(codes: list) -> dict:
-    """用 get_daily_df（内置多数据源 fallback）取每只股最新收盘价。"""
-    from src.screening.indicators import get_daily_df
-    result = {}
-    for code in codes:
-        try:
-            df = get_daily_df(code, days=3)
-            if df is not None and not df.empty:
-                price = float(df.iloc[-1]["close"])
+    """
+    用腾讯实时行情接口取最新价，失败时 fallback 到 get_daily_df 日线收盘价。
+    腾讯接口格式：qt.gtimg.cn/q=sz300422,sh600519
+    返回字段第3位（index 3）为最新价。
+    """
+    import requests
+
+    # ── 优先：腾讯实时行情（盘中/盘后均有效）──────────────────
+    try:
+        symbols = ",".join(_code_to_market(c) for c in codes)
+        r = requests.get(
+            f"https://qt.gtimg.cn/q={symbols}",
+            timeout=5,
+            headers={"Referer": "https://finance.qq.com"},
+        )
+        result = {}
+        for line in r.text.strip().split("\n"):
+            if "=" not in line:
+                continue
+            raw = line.split("=", 1)[1].strip().strip('"').strip(";")
+            parts = raw.split("~")
+            if len(parts) > 4:
+                code = parts[2]
+                price = float(parts[3]) if parts[3] else 0.0
                 if price > 0:
                     result[code] = price
-        except Exception:
-            pass
-    return result
+        if result:
+            return result
+    except Exception as e:
+        logger.debug(f"[portfolio] 腾讯行情失败，fallback 到日线数据: {e}")
+
+    # ── fallback：日线收盘价（无内部缓存问题）─────────────────
+    try:
+        import akshare as ak
+        result = {}
+        for code in codes:
+            try:
+                df = ak.stock_zh_a_hist(
+                    symbol=code, period="daily",
+                    adjust="qfq", timeout=5,
+                )
+                if df is not None and not df.empty:
+                    price = float(df.iloc[-1]["收盘"])
+                    if price > 0:
+                        result[code] = price
+            except Exception:
+                pass
+        return result
+    except Exception:
+        return {}
 
 
 def _bg_refresh(codes: list) -> None:
