@@ -632,13 +632,24 @@ def check_high_open(df: pd.DataFrame) -> IndicatorResult:
         return _skip(str(e))
 
 
+def _run_with_timeout(fn, timeout_sec: int = 10):
+    """在子线程中执行 fn，超时后返回 None（防止 AKShare 无限阻塞）。"""
+    from concurrent.futures import ThreadPoolExecutor, TimeoutError as FTimeout
+    with ThreadPoolExecutor(max_workers=1) as exe:
+        fut = exe.submit(fn)
+        try:
+            return fut.result(timeout=timeout_sec)
+        except (FTimeout, Exception):
+            return None
+
+
 def check_intraday_strong(code: str) -> IndicatorResult:
     """
     强分时：开盘30分钟涨幅>1%，且当前价格高于均价
     """
     try:
         import akshare as ak
-        df_min = ak.stock_intraday_em(symbol=code)
+        df_min = _run_with_timeout(lambda: ak.stock_intraday_em(symbol=code), timeout_sec=10)
         if df_min is None or df_min.empty:
             return _skip("分时数据获取失败")
         # 找价格列
@@ -697,7 +708,10 @@ def check_fund_flow(code: str) -> IndicatorResult:
     try:
         import akshare as ak
         market = "sh" if code.startswith("6") else "sz"
-        df = ak.stock_individual_fund_flow(stock=code, market=market)
+        df = _run_with_timeout(
+            lambda: ak.stock_individual_fund_flow(stock=code, market=market),
+            timeout_sec=10,
+        )
         if df is None or df.empty:
             return _skip("资金流向获取失败")
         col = next((c for c in df.columns if "主力" in str(c) and "净" in str(c)), None)
