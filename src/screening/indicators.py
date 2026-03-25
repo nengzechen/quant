@@ -79,6 +79,47 @@ def bs_logout():
         except Exception:
             pass
 
+# AKShare 自适应可用性：连续超时超过阈值后自动切换到 baostock
+_AKSHARE_OK: Optional[bool] = None   # None=未测试
+_AKSHARE_TIMEOUT_COUNT: int = 0      # 连续超时次数
+_AKSHARE_TIMEOUT_LIMIT: int = 3      # 超过3次连续超时即关闭 AKShare
+
+
+def _check_akshare_available() -> bool:
+    """
+    自适应检测：初次测试一只股票（5秒）；连续超时3次后永久切换到 baostock。
+    """
+    global _AKSHARE_OK
+    if _AKSHARE_OK is False:
+        return False
+    if _AKSHARE_OK is None:
+        try:
+            import akshare as ak
+            def _test():
+                return ak.stock_zh_a_daily(symbol="sh600000", adjust="qfq")
+            result = _run_with_timeout(_test, timeout_sec=5)
+            _AKSHARE_OK = result is not None and not result.empty
+        except Exception:
+            _AKSHARE_OK = False
+        logger.info(f"[AKShare] {'可达' if _AKSHARE_OK else '不可达，走 baostock'}")
+    return bool(_AKSHARE_OK)
+
+
+def _akshare_report_timeout():
+    """AKShare 单次超时时调用；连续超时超限后禁用 AKShare。"""
+    global _AKSHARE_OK, _AKSHARE_TIMEOUT_COUNT
+    _AKSHARE_TIMEOUT_COUNT += 1
+    if _AKSHARE_TIMEOUT_COUNT >= _AKSHARE_TIMEOUT_LIMIT:
+        _AKSHARE_OK = False
+        logger.warning(f"[AKShare] 连续超时 {_AKSHARE_TIMEOUT_COUNT} 次，已切换到 baostock")
+
+
+def _akshare_report_success():
+    """AKShare 成功一次后重置连续超时计数器。"""
+    global _AKSHARE_TIMEOUT_COUNT
+    _AKSHARE_TIMEOUT_COUNT = 0
+
+
 def _df_cache_key(code: str, days: int) -> str:
     return f"{code}_{days}"
 
@@ -291,26 +332,31 @@ def get_daily_df(code: str, days: int = 100) -> Optional[pd.DataFrame]:
     if cached is not None:
         logger.debug(f"[cache hit] {code} 日线数据")
         return cached
-    # 优先用 akshare sina 源（不经过 eastmoney，可绕过代理问题）
-    try:
-        import akshare as ak
-        prefix = "sh" if code.startswith("6") else "sz"
-        df = ak.stock_zh_a_daily(symbol=f"{prefix}{code}", adjust="qfq")
-        if df is None or df.empty:
-            raise ValueError("empty")
-        # turnover 是小数（0.003），转换为百分比（0.3%）→ 乘以 100
-        if "turnover" in df.columns:
-            df["turnover"] = df["turnover"] * 100
-        # 补充 pct_change 列
-        if "pct_change" not in df.columns and "close" in df.columns:
-            df["pct_change"] = df["close"].pct_change() * 100
-        df["date"] = pd.to_datetime(df["date"])
-        df = df.sort_values("date").reset_index(drop=True)
-        result = df.tail(days)
-        _cache_set(_DF_CACHE, cache_key, result)
-        return result
-    except Exception as e:
-        logger.debug(f"akshare sina 获取{code}日线数据失败({e})，尝试 baostock")
+    # 优先用 akshare sina 源（仅在可达时尝试，避免逐股等超时）
+    if _check_akshare_available():
+        try:
+            import akshare as ak
+            prefix = "sh" if code.startswith("6") else "sz"
+
+            def _fetch_ak():
+                return ak.stock_zh_a_daily(symbol=f"{prefix}{code}", adjust="qfq")
+
+            df = _run_with_timeout(_fetch_ak, timeout_sec=15)
+            if df is None or df.empty:
+                raise ValueError("empty or timeout")
+            # turnover 是小数（0.003），转换为百分比（0.3%）→ 乘以 100
+            if "turnover" in df.columns:
+                df["turnover"] = df["turnover"] * 100
+            # 补充 pct_change 列
+            if "pct_change" not in df.columns and "close" in df.columns:
+                df["pct_change"] = df["close"].pct_change() * 100
+            df["date"] = pd.to_datetime(df["date"])
+            df = df.sort_values("date").reset_index(drop=True)
+            result = df.tail(days)
+            _cache_set(_DF_CACHE, cache_key, result)
+            return result
+        except Exception as e:
+            logger.debug(f"akshare sina 获取{code}日线数据失败({e})，尝试 baostock")
 
     # 回退：baostock（需登录，线程安全锁序列化）
     result = _get_daily_df_baostock(code, days)
@@ -327,7 +373,10 @@ def get_realtime_info(code: str) -> Optional[Dict]:
         return cached
     try:
         import akshare as ak
-        df = ak.stock_individual_info_em(symbol=code)
+        df = _run_with_timeout(
+            lambda: ak.stock_individual_info_em(symbol=code),
+            timeout_sec=8,
+        )
         if df is None or df.empty:
             return None
         result = {}
