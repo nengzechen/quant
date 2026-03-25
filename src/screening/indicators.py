@@ -332,7 +332,7 @@ def get_daily_df(code: str, days: int = 100) -> Optional[pd.DataFrame]:
     if cached is not None:
         logger.debug(f"[cache hit] {code} 日线数据")
         return cached
-    # 优先用 akshare sina 源（仅在可达时尝试，避免逐股等超时）
+    # 优先用 akshare sina 源（自适应：连续超时3次后永久切换到 baostock）
     if _check_akshare_available():
         try:
             import akshare as ak
@@ -341,9 +341,13 @@ def get_daily_df(code: str, days: int = 100) -> Optional[pd.DataFrame]:
             def _fetch_ak():
                 return ak.stock_zh_a_daily(symbol=f"{prefix}{code}", adjust="qfq")
 
-            df = _run_with_timeout(_fetch_ak, timeout_sec=15)
-            if df is None or df.empty:
-                raise ValueError("empty or timeout")
+            df = _run_with_timeout(_fetch_ak, timeout_sec=8)
+            if df is None:
+                _akshare_report_timeout()
+                raise ValueError("timeout")
+            if df.empty:
+                raise ValueError("empty")
+            _akshare_report_success()
             # turnover 是小数（0.003），转换为百分比（0.3%）→ 乘以 100
             if "turnover" in df.columns:
                 df["turnover"] = df["turnover"] * 100
