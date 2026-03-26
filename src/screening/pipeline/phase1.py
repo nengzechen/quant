@@ -133,8 +133,8 @@ def _split_candidates(all_codes: List[str]):
     """
     from src.screening.indicators import prefilter_from_snapshot
 
-    s1_pool = prefilter_from_snapshot(strategy="s1")
-    s2_pool = prefilter_from_snapshot(strategy="s2")
+    s1_pool = prefilter_from_snapshot(strategy="s1", codes=all_codes)
+    s2_pool = prefilter_from_snapshot(strategy="s2", codes=all_codes)
 
     if not s1_pool and not s2_pool:
         logger.info("[Phase1] 快照预筛为空（可能为非交易时段），两个候选池均使用全量代码")

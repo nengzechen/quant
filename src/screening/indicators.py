@@ -140,6 +140,8 @@ def clear_data_cache():
     _SNAPSHOT_CACHE["df"] = None
     _SNAPSHOT_CACHE["ts"] = 0
     _SNAPSHOT_CACHE["fetched"] = False
+    _TENCENT_SNAPSHOT_CACHE["df"] = None
+    _TENCENT_SNAPSHOT_CACHE["ts"] = 0
     _SECTOR_CACHE["fetched"] = False
     _SECTOR_CACHE["ts"] = 0
     logger.debug("数据缓存已清空")
@@ -149,6 +151,7 @@ def clear_data_cache():
 # 全市场快照缓存（全量扫描时只拉一次）
 # ============================================================
 _SNAPSHOT_CACHE: Dict[str, Any] = {"df": None, "ts": 0, "ttl": 600, "fetched": False}  # 10分钟有效
+_TENCENT_SNAPSHOT_CACHE: Dict[str, Any] = {"df": None, "ts": 0}  # 腾讯快照缓存，20分钟有效
 
 
 def _is_trading_hours() -> bool:
@@ -192,7 +195,70 @@ def get_market_snapshot() -> Optional[Any]:
         return None
 
 
-def prefilter_from_snapshot(strategy: str = "s1") -> List[str]:
+def get_market_snapshot_tencent(codes: List[str]) -> Optional[pd.DataFrame]:
+    """
+    通过腾讯行情批量接口获取全市场快照，替代 stock_zh_a_spot_em。
+    每批 200 只，约 28 批 × 0.3s ≈ 8s 完成全量，无需 JS 引擎，收盘后可用。
+    字段(~分隔): [3]=当前价 [4]=昨收 [32]=涨跌幅 [37]=成交额(万元) [38]=换手率 [39]=量比
+    """
+    # 20分钟内复用上次结果（Phase1 连续调用 s1/s2 时只查一次）
+    cached = _TENCENT_SNAPSHOT_CACHE.get("df")
+    if cached is not None and time.time() - _TENCENT_SNAPSHOT_CACHE.get("ts", 0) < 1200:
+        logger.debug("[腾讯快照] 使用缓存")
+        return cached
+
+    import requests
+
+    def _tc(code: str) -> str:
+        return ("sh" if code.startswith(("6", "5")) else "sz") + code
+
+    rows = []
+    hdrs = {"Referer": "https://finance.qq.com", "User-Agent": "Mozilla/5.0"}
+    for i in range(0, len(codes), 200):
+        batch = codes[i: i + 200]
+        try:
+            r = requests.get(
+                "https://qt.gtimg.cn/q=" + ",".join(_tc(c) for c in batch),
+                timeout=10, headers=hdrs,
+            )
+            for line in r.text.strip().split("\n"):
+                if "=" not in line or "~" not in line:
+                    continue
+                raw = line.split("=", 1)[1].strip().strip('"').strip(";")
+                p = raw.split("~")
+                if len(p) < 40:
+                    continue
+                try:
+                    cur = float(p[3]) if p[3] else 0.0
+                    if cur <= 0:
+                        continue
+                    prev = float(p[4]) if p[4] else cur
+                    pct = float(p[32]) if p[32] else (
+                        (cur - prev) / prev * 100 if prev > 0 else 0.0)
+                    rows.append({
+                        "代码": p[2].zfill(6),
+                        "名称": p[1],
+                        "最新价": cur,
+                        "涨跌幅": round(pct, 2),
+                        "成交额": float(p[37]) * 10000 if p[37] else 0.0,
+                        "换手率": float(p[38]) if p[38] else 0.0,
+                        "量比":   float(p[39]) if len(p) > 39 and p[39] else 1.0,
+                    })
+                except (ValueError, IndexError):
+                    continue
+        except Exception as e:
+            logger.warning(f"[腾讯快照] 批次 {i // 200 + 1} 失败: {e}")
+
+    if not rows:
+        return None
+    df = pd.DataFrame(rows)
+    _TENCENT_SNAPSHOT_CACHE["df"] = df
+    _TENCENT_SNAPSHOT_CACHE["ts"] = time.time()
+    logger.info(f"[腾讯快照] 批量获取 {len(df)} 只股票数据")
+    return df
+
+
+def prefilter_from_snapshot(strategy: str = "s1", codes: Optional[List[str]] = None) -> List[str]:
     """
     第一阶段：利用全市场快照做廉价粗筛，一次请求过滤 ~5000 → ~200-500 只。
 
@@ -215,8 +281,11 @@ def prefilter_from_snapshot(strategy: str = "s1") -> List[str]:
         符合条件的股票代码列表
     """
     df = get_market_snapshot()
+    if (df is None or df.empty) and codes:
+        logger.info("[快照预筛] stock_zh_a_spot_em 不可用，切换到腾讯批量接口")
+        df = get_market_snapshot_tencent(codes)
     if df is None or df.empty:
-        logger.warning("[快照预筛] 快照数据为空，返回空列表")
+        logger.warning("[快照预筛] 快照数据为空（腾讯接口也失败），返回空列表")
         return []
 
     code_col = "代码" if "代码" in df.columns else df.columns[1]
