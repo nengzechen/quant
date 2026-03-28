@@ -79,45 +79,21 @@ def bs_logout():
         except Exception:
             pass
 
-# AKShare 自适应可用性：连续超时超过阈值后自动切换到 baostock
-_AKSHARE_OK: Optional[bool] = None   # None=未测试
-_AKSHARE_TIMEOUT_COUNT: int = 0      # 连续超时次数
-_AKSHARE_TIMEOUT_LIMIT: int = 1      # 1次超时立即切换到 baostock（更保守）
+# get_daily_df 数据源：优先 baostock（本地、稳定）；AKShare 作为备选
+# 服务器上 AKShare 对部分股票会无限挂起，已禁用以防 Phase1 卡死
+_AKSHARE_OK: bool = False   # 直接禁用 AKShare（get_daily_df 只走 baostock）
 
 
 def _check_akshare_available() -> bool:
-    """
-    自适应检测：初次测试一只股票（5秒）；连续超时3次后永久切换到 baostock。
-    """
-    global _AKSHARE_OK
-    if _AKSHARE_OK is False:
-        return False
-    if _AKSHARE_OK is None:
-        try:
-            import akshare as ak
-            def _test():
-                return ak.stock_zh_a_daily(symbol="sh600000", adjust="qfq")
-            result = _run_with_timeout(_test, timeout_sec=5)
-            _AKSHARE_OK = result is not None and not result.empty
-        except Exception:
-            _AKSHARE_OK = False
-        logger.info(f"[AKShare] {'可达' if _AKSHARE_OK else '不可达，走 baostock'}")
-    return bool(_AKSHARE_OK)
+    return _AKSHARE_OK
 
 
 def _akshare_report_timeout():
-    """AKShare 单次超时时调用；连续超时超限后禁用 AKShare。"""
-    global _AKSHARE_OK, _AKSHARE_TIMEOUT_COUNT
-    _AKSHARE_TIMEOUT_COUNT += 1
-    if _AKSHARE_TIMEOUT_COUNT >= _AKSHARE_TIMEOUT_LIMIT:
-        _AKSHARE_OK = False
-        logger.warning(f"[AKShare] 连续超时 {_AKSHARE_TIMEOUT_COUNT} 次，已切换到 baostock")
+    pass
 
 
 def _akshare_report_success():
-    """AKShare 成功一次后重置连续超时计数器。"""
-    global _AKSHARE_TIMEOUT_COUNT
-    _AKSHARE_TIMEOUT_COUNT = 0
+    pass
 
 
 def _df_cache_key(code: str, days: int) -> str:
@@ -755,39 +731,14 @@ def check_high_open(df: pd.DataFrame) -> IndicatorResult:
 
 
 def _run_with_timeout(fn, timeout_sec: int = 10):
-    """
-    在独立子进程中执行 fn，超时强制 terminate（真正杀掉，不像线程）。
-    fn 不能是 lambda，必须是可 pickle 的 callable（用 functools.partial 或具名函数）。
-    返回结果，超时或出错返回 None。
-    """
-    import multiprocessing
-    import queue as _queue
-
-    ctx = multiprocessing.get_context("fork")  # fork 比 spawn 快，无需序列化
-    result_q = ctx.Queue()
-
-    def _worker(q, _fn):
+    """在子线程中执行 fn，超时后返回 None（防止 AKShare 无限阻塞）。"""
+    from concurrent.futures import ThreadPoolExecutor, TimeoutError as FTimeout
+    with ThreadPoolExecutor(max_workers=1) as exe:
+        fut = exe.submit(fn)
         try:
-            q.put(("ok", _fn()))
-        except Exception as e:
-            q.put(("err", None))
-
-    p = ctx.Process(target=_worker, args=(result_q, fn), daemon=True)
-    p.start()
-    p.join(timeout_sec)
-
-    if p.is_alive():
-        p.terminate()
-        p.join(2)
-        if p.is_alive():
-            p.kill()
-        return None
-
-    try:
-        status, value = result_q.get_nowait()
-        return value if status == "ok" else None
-    except _queue.Empty:
-        return None
+            return fut.result(timeout=timeout_sec)
+        except (FTimeout, Exception):
+            return None
 
 
 def check_intraday_strong(code: str) -> IndicatorResult:
