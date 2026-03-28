@@ -82,7 +82,7 @@ def bs_logout():
 # AKShare 自适应可用性：连续超时超过阈值后自动切换到 baostock
 _AKSHARE_OK: Optional[bool] = None   # None=未测试
 _AKSHARE_TIMEOUT_COUNT: int = 0      # 连续超时次数
-_AKSHARE_TIMEOUT_LIMIT: int = 3      # 超过3次连续超时即关闭 AKShare
+_AKSHARE_TIMEOUT_LIMIT: int = 1      # 1次超时立即切换到 baostock（更保守）
 
 
 def _check_akshare_available() -> bool:
@@ -755,14 +755,39 @@ def check_high_open(df: pd.DataFrame) -> IndicatorResult:
 
 
 def _run_with_timeout(fn, timeout_sec: int = 10):
-    """在子线程中执行 fn，超时后返回 None（防止 AKShare 无限阻塞）。"""
-    from concurrent.futures import ThreadPoolExecutor, TimeoutError as FTimeout
-    with ThreadPoolExecutor(max_workers=1) as exe:
-        fut = exe.submit(fn)
+    """
+    在独立子进程中执行 fn，超时强制 terminate（真正杀掉，不像线程）。
+    fn 不能是 lambda，必须是可 pickle 的 callable（用 functools.partial 或具名函数）。
+    返回结果，超时或出错返回 None。
+    """
+    import multiprocessing
+    import queue as _queue
+
+    ctx = multiprocessing.get_context("fork")  # fork 比 spawn 快，无需序列化
+    result_q = ctx.Queue()
+
+    def _worker(q, _fn):
         try:
-            return fut.result(timeout=timeout_sec)
-        except (FTimeout, Exception):
-            return None
+            q.put(("ok", _fn()))
+        except Exception as e:
+            q.put(("err", None))
+
+    p = ctx.Process(target=_worker, args=(result_q, fn), daemon=True)
+    p.start()
+    p.join(timeout_sec)
+
+    if p.is_alive():
+        p.terminate()
+        p.join(2)
+        if p.is_alive():
+            p.kill()
+        return None
+
+    try:
+        status, value = result_q.get_nowait()
+        return value if status == "ok" else None
+    except _queue.Empty:
+        return None
 
 
 def check_intraday_strong(code: str) -> IndicatorResult:
