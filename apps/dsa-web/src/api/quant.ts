@@ -52,9 +52,18 @@ export interface OrderRequest {
   stop_loss_price?: number;
 }
 
+export interface QuoteInfo {
+  code: string;
+  name: string;
+  price: number;
+}
+
 export const quantApi = {
   getPortfolio: () =>
     apiClient.get<PortfolioData>('/api/v1/quant/portfolio').then((r) => r.data),
+
+  getQuote: (code: string) =>
+    apiClient.get<QuoteInfo>(`/api/v1/quant/quote?code=${code}`).then((r) => r.data),
 
   placeOrder: (req: OrderRequest) =>
     apiClient.post<{ status: string; trade: Trade }>('/api/v1/quant/order', req).then((r) => r.data),

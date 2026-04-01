@@ -1,5 +1,5 @@
 import type React from 'react';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { quantApi } from '../api/quant';
 import type { PortfolioData, Position, Trade, OrderRequest } from '../api/quant';
 import { getParsedApiError } from '../api/error';
@@ -283,8 +283,11 @@ const OrderFormWithTarget: React.FC<{
     price: 0,
     stop_loss_price: 0,
   });
+  const [stockName, setStockName] = useState('');
+  const [quoteLoading, setQuoteLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // 当 sellTarget 变化时，预填表单
   useEffect(() => {
@@ -296,9 +299,32 @@ const OrderFormWithTarget: React.FC<{
         price: sellTarget.current_price,
         stop_loss_price: 0,
       });
+      setStockName(sellTarget.stock_name);
       setMsg(null);
     }
   }, [sellTarget]);
+
+  // 股票代码变化时，防抖 500ms 后自动拉行情
+  const handleCodeChange = (code: string) => {
+    setForm((f) => ({ ...f, stock_code: code, price: 0 }));
+    setStockName('');
+    if (sellTarget) onClearTarget();
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (code.length === 6) {
+      debounceRef.current = setTimeout(async () => {
+        setQuoteLoading(true);
+        try {
+          const q = await quantApi.getQuote(code);
+          setForm((f) => ({ ...f, price: q.price }));
+          setStockName(q.name);
+        } catch {
+          setMsg({ type: 'err', text: '无法获取该股票行情，请确认代码' });
+        } finally {
+          setQuoteLoading(false);
+        }
+      }, 500);
+    }
+  };
 
   const set = (k: keyof OrderRequest, v: string | number) => {
     setForm((f) => ({ ...f, [k]: v }));
@@ -307,7 +333,7 @@ const OrderFormWithTarget: React.FC<{
 
   const submit = async () => {
     if (!form.stock_code.trim()) { setMsg({ type: 'err', text: '请填写股票代码' }); return; }
-    if (form.price <= 0) { setMsg({ type: 'err', text: '价格须大于 0' }); return; }
+    if (form.price <= 0) { setMsg({ type: 'err', text: '价格未获取，请稍候或检查代码' }); return; }
     if (form.quantity <= 0 || form.quantity % 100 !== 0) {
       setMsg({ type: 'err', text: '股数须为 100 的整数倍' }); return;
     }
@@ -337,14 +363,19 @@ const OrderFormWithTarget: React.FC<{
         </div>
       )}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        {/* 股票代码 + 名称 */}
         <div className="flex flex-col gap-1">
           <label className="text-xs text-muted">股票代码</label>
           <input
             className="input-terminal font-mono"
             placeholder="600519"
+            maxLength={6}
             value={form.stock_code}
-            onChange={(e) => set('stock_code', e.target.value.trim())}
+            onChange={(e) => handleCodeChange(e.target.value.trim())}
           />
+          {stockName && (
+            <span className="text-xs text-cyan truncate">{stockName}</span>
+          )}
         </div>
         <div className="flex flex-col gap-1">
           <label className="text-xs text-muted">方向</label>
@@ -357,16 +388,18 @@ const OrderFormWithTarget: React.FC<{
             <option value="SELL">卖出</option>
           </select>
         </div>
+        {/* 价格：只读，自动填入 */}
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-muted">价格</label>
+          <label className="text-xs text-muted">
+            实时价格
+            {quoteLoading && <span className="ml-1 text-muted animate-pulse">获取中…</span>}
+          </label>
           <input
             type="number"
-            className="input-terminal font-mono"
-            placeholder="0.00"
-            min={0}
-            step={0.01}
+            className="input-terminal font-mono opacity-70 cursor-not-allowed"
+            readOnly
             value={form.price || ''}
-            onChange={(e) => set('price', parseFloat(e.target.value) || 0)}
+            tabIndex={-1}
           />
         </div>
         <div className="flex flex-col gap-1">
@@ -402,10 +435,10 @@ const OrderFormWithTarget: React.FC<{
                 ? 'bg-green-600/20 border-green-500/50 text-green-400 hover:bg-green-600/30'
                 : 'btn-primary'
             }`}
-            disabled={submitting}
+            disabled={submitting || quoteLoading || form.price <= 0}
             onClick={() => void submit()}
           >
-            {submitting ? '提交中…' : `${actionLabel(form.action)}`}
+            {submitting ? '提交中…' : actionLabel(form.action)}
           </button>
         </div>
       </div>

@@ -174,6 +174,38 @@ def get_portfolio():
 
 
 # ─────────────────────────────────────────────
+# GET /quote
+# ─────────────────────────────────────────────
+
+@router.get("/quote")
+def get_quote(code: str):
+    """获取单只股票的实时价格和名称（供下单表单自动填价用）"""
+    try:
+        import requests as _req
+        market = "sh" if code.startswith(("6", "5")) else "sz"
+        r = _req.get(
+            f"https://qt.gtimg.cn/q={market}{code}",
+            timeout=5,
+            headers={"Referer": "https://finance.qq.com"},
+        )
+        for line in r.text.strip().split("\n"):
+            if "=" not in line:
+                continue
+            raw = line.split("=", 1)[1].strip().strip('"').strip(";")
+            parts = raw.split("~")
+            if len(parts) > 4:
+                name = parts[1] if parts[1] else code
+                price = float(parts[3]) if parts[3] else 0.0
+                if price > 0:
+                    return {"code": code, "name": name, "price": price}
+        raise HTTPException(status_code=404, detail="无法获取该股票行情")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ─────────────────────────────────────────────
 # POST /order
 # ─────────────────────────────────────────────
 
