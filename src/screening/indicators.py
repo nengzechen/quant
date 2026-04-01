@@ -63,6 +63,19 @@ def _bs_ensure_login():
             logger.warning(f"baostock login 失败: {e}")
     return False
 
+def _bs_force_reconnect():
+    """强制重置 baostock 连接（断线后调用）"""
+    global _BS_LOGGED_IN
+    with _BS_LOCK:
+        try:
+            import baostock as bs
+            bs.logout()
+        except Exception:
+            pass
+        _BS_LOGGED_IN = False
+    return _bs_ensure_login()
+
+
 def bs_logout():
     """登出 baostock（Phase1 结束后调用）"""
     global _BS_LOGGED_IN
@@ -330,32 +343,43 @@ def _sleep(s: float = 0.5):
 
 
 def _get_daily_df_baostock(code: str, days: int = 100) -> Optional[pd.DataFrame]:
-    """baostock 备用数据源（akshare 失败时使用，共享登录会话，线程安全）"""
-    if not _bs_ensure_login():
-        return None
-    try:
-        import baostock as bs
-        from datetime import date, timedelta
-        # baostock 代码格式: sh.600001 / sz.000001
-        bs_code = f"sh.{code}" if code.startswith("6") else f"sz.{code}"
-        end_date = date.today().strftime("%Y-%m-%d")
-        start_dt = date.today() - timedelta(days=max(days * 2, 365))
-        start_date = start_dt.strftime("%Y-%m-%d")
-        # baostock 共享 socket，需加锁避免并发读写冲突
-        with _BS_LOCK:
-            rs = bs.query_history_k_data_plus(
-                bs_code,
-                "date,open,high,low,close,volume,amount,turn,pctChg",
-                start_date=start_date,
-                end_date=end_date,
-                frequency="d",
-                adjustflag="2",   # 前复权
-            )
-            if rs.error_code != "0":
-                return None
-            rows = []
-            while rs.next():
-                rows.append(rs.get_row_data())
+    """baostock 备用数据源（自动重连断线处理，线程安全）"""
+    import baostock as bs
+    from datetime import date, timedelta
+    bs_code = f"sh.{code}" if code.startswith("6") else f"sz.{code}"
+    end_date = date.today().strftime("%Y-%m-%d")
+    start_dt = date.today() - timedelta(days=max(days * 2, 365))
+    start_date = start_dt.strftime("%Y-%m-%d")
+
+    for attempt in range(2):
+        if not _bs_ensure_login():
+            return None
+        try:
+            with _BS_LOCK:
+                rs = bs.query_history_k_data_plus(
+                    bs_code,
+                    "date,open,high,low,close,volume,amount,turn,pctChg",
+                    start_date=start_date,
+                    end_date=end_date,
+                    frequency="d",
+                    adjustflag="2",
+                )
+                if rs.error_code != "0":
+                    if attempt == 0:
+                        logger.debug(f"baostock {code} error {rs.error_code}，强制重连")
+                        _bs_force_reconnect()
+                        continue
+                    return None
+                rows = []
+                while rs.next():
+                    rows.append(rs.get_row_data())
+        except Exception as e:
+            if attempt == 0:
+                logger.debug(f"baostock {code} 异常({e})，强制重连")
+                _bs_force_reconnect()
+                continue
+            logger.debug(f"baostock 获取{code}日线数据失败: {e}")
+            return None
         if not rows:
             return None
         df = pd.DataFrame(rows, columns=["date", "open", "high", "low", "close",
@@ -365,9 +389,6 @@ def _get_daily_df_baostock(code: str, days: int = 100) -> Optional[pd.DataFrame]
         df["date"] = pd.to_datetime(df["date"])
         df = df.sort_values("date").reset_index(drop=True)
         return df.tail(days)
-    except Exception as e:
-        logger.debug(f"baostock 获取{code}日线数据失败: {e}")
-        return None
 
 
 def get_daily_df(code: str, days: int = 100) -> Optional[pd.DataFrame]:
@@ -733,18 +754,23 @@ def check_high_open(df: pd.DataFrame) -> IndicatorResult:
 def _run_with_timeout(fn, timeout_sec: int = 10):
     """在子线程中执行 fn，超时后返回 None（防止 AKShare 无限阻塞）。"""
     from concurrent.futures import ThreadPoolExecutor, TimeoutError as FTimeout
-    with ThreadPoolExecutor(max_workers=1) as exe:
-        fut = exe.submit(fn)
-        try:
-            return fut.result(timeout=timeout_sec)
-        except (FTimeout, Exception):
-            return None
+    exe = ThreadPoolExecutor(max_workers=1)
+    fut = exe.submit(fn)
+    try:
+        result = fut.result(timeout=timeout_sec)
+        exe.shutdown(wait=False)
+        return result
+    except (FTimeout, Exception):
+        exe.shutdown(wait=False)
+        return None
 
 
 def check_intraday_strong(code: str) -> IndicatorResult:
     """
     强分时：开盘30分钟涨幅>1%，且当前价格高于均价
     """
+    if not _AKSHARE_OK:
+        return _skip("AKShare已禁用")
     try:
         import akshare as ak
         df_min = _run_with_timeout(lambda: ak.stock_intraday_em(symbol=code), timeout_sec=10)
@@ -803,6 +829,8 @@ def check_turnover(df: pd.DataFrame, threshold: float = 3.0) -> IndicatorResult:
 
 def check_fund_flow(code: str) -> IndicatorResult:
     """近5日主力净流入为正"""
+    if not _AKSHARE_OK:
+        return _skip("AKShare已禁用")
     try:
         import akshare as ak
         market = "sh" if code.startswith("6") else "sz"
@@ -913,7 +941,8 @@ def check_volume_ratio_rt(
         if vol_ma5 <= 0:
             return _skip("5日均量为0")
 
-        current_vol = quote.get("volume_lot", 0.0)
+        # volume_lot 单位：手（1手=100股），vol_ma5 单位：股，统一转换为股
+        current_vol = quote.get("volume_lot", 0.0) * 100
         if current_vol <= 0:
             return _skip("当前成交量为0")
 

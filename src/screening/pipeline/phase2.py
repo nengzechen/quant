@@ -59,40 +59,30 @@ def _check_universal_trigger(code: str, df) -> Tuple[bool, str]:
 
 def _check_model_trigger(entry: "SeedEntry", code: str, df) -> Tuple[bool, str]:
     """
-    按模型专属触发条件（Phase2 盘中调用）：
+    按模型专属触发条件（Phase2 盘中调用，仅用实时+日线数据，不依赖 AKShare）：
 
-    BottomSwing   : 资金流入 + 强分时（近似 5 分钟底分型）
-    StrongTrend   : 强分时 + 量比>1 + 大单净流入（三合一）
-    LimitUpHunter : 九五之尊 + 强分时（或极高换手）
+    BottomSwing   : 实时量比>1.2（底部反弹放量确认）
+    StrongTrend   : 实时量比>1.2（强趋势续量）
+    LimitUpHunter : 九五之尊形态 OR 日线换手率>3%
     """
     from src.screening.indicators import (
-        check_fund_flow, check_intraday_strong,
-        check_jiuyu_zhizun, check_turnover, check_volume_ratio,
+        get_realtime_quote_tencent,
+        check_volume_ratio_rt, check_jiuyu_zhizun, check_turnover,
     )
 
     model = entry.model
+    quote = get_realtime_quote_tencent(code)
 
-    if model == "BottomSwing":
-        r_ff = check_fund_flow(code)
-        r_is = check_intraday_strong(code)
-        triggered = (r_ff["passed"] is True) and (r_is["passed"] is True)
-        return triggered, "资金流入 + 强分时确认"
-
-    elif model == "StrongTrend":
-        r_is = check_intraday_strong(code)
-        r_vr = check_volume_ratio(df, threshold=1.0)
-        r_ff = check_fund_flow(code)
-        triggered = all(r["passed"] is True for r in [r_is, r_vr, r_ff])
-        return triggered, "强分时 + 量比>1 + 大单净流入"
+    if model in ("BottomSwing", "StrongTrend"):
+        r_vr = check_volume_ratio_rt(quote, df, threshold=1.2)
+        triggered = r_vr["passed"] is True
+        return triggered, f"实时量比{r_vr.get('value', '?')}x放量确认"
 
     elif model == "LimitUpHunter":
         r_jyzz = check_jiuyu_zhizun(df)
-        r_is = check_intraday_strong(code)
         r_to = check_turnover(df, threshold=3.0)
-        triggered = (r_jyzz["passed"] is True) and any(
-            r["passed"] is True for r in [r_is, r_to]
-        )
-        return triggered, "九五之尊 + 分时强度"
+        triggered = (r_jyzz["passed"] is True) or (r_to["passed"] is True)
+        return triggered, "九五之尊形态或高换手确认"
 
     return False, f"未知模型 {model}"
 
