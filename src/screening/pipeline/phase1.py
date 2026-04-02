@@ -143,7 +143,7 @@ def _split_candidates(all_codes: List[str]):
     # 快照预筛结果与全量代码取交集，确保不引入无效代码
     all_set = set(all_codes)
     s1_pool = [c for c in s1_pool if c in all_set] or all_codes
-    s2_pool = ([c for c in s2_pool if c in all_set] or all_codes)[:600]  # 超跌池最多600只，避免大跌日膨胀
+    s2_pool = [c for c in s2_pool if c in all_set] or all_codes
 
     logger.info(f"[Phase1] 候选池 s1(活跃)={len(s1_pool)} 只，s2(超跌)={len(s2_pool)} 只")
     return s1_pool, s2_pool
