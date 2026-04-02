@@ -343,36 +343,43 @@ def _sleep(s: float = 0.5):
 
 
 def _get_daily_df_baostock(code: str, days: int = 100) -> Optional[pd.DataFrame]:
-    """baostock 备用数据源（自动重连断线处理，线程安全）"""
-    import baostock as bs
+    """baostock 备用数据源（带超时+自动重连，线程安全）"""
     from datetime import date, timedelta
+
     bs_code = f"sh.{code}" if code.startswith("6") else f"sz.{code}"
     end_date = date.today().strftime("%Y-%m-%d")
     start_dt = date.today() - timedelta(days=max(days * 2, 365))
     start_date = start_dt.strftime("%Y-%m-%d")
 
+    def _do_query():
+        import baostock as bs
+        with _BS_LOCK:
+            rs = bs.query_history_k_data_plus(
+                bs_code,
+                "date,open,high,low,close,volume,amount,turn,pctChg",
+                start_date=start_date,
+                end_date=end_date,
+                frequency="d",
+                adjustflag="2",
+            )
+            if rs.error_code != "0":
+                raise RuntimeError(f"baostock error {rs.error_code}")
+            rows = []
+            while rs.next():
+                rows.append(rs.get_row_data())
+            return rows
+
     for attempt in range(2):
         if not _bs_ensure_login():
             return None
         try:
-            with _BS_LOCK:
-                rs = bs.query_history_k_data_plus(
-                    bs_code,
-                    "date,open,high,low,close,volume,amount,turn,pctChg",
-                    start_date=start_date,
-                    end_date=end_date,
-                    frequency="d",
-                    adjustflag="2",
-                )
-                if rs.error_code != "0":
-                    if attempt == 0:
-                        logger.debug(f"baostock {code} error {rs.error_code}，强制重连")
-                        _bs_force_reconnect()
-                        continue
-                    return None
-                rows = []
-                while rs.next():
-                    rows.append(rs.get_row_data())
+            rows = _run_with_timeout(_do_query, timeout_sec=8)
+            if rows is None:
+                if attempt == 0:
+                    logger.debug(f"baostock {code} 超时，强制重连")
+                    _bs_force_reconnect()
+                    continue
+                return None
         except Exception as e:
             if attempt == 0:
                 logger.debug(f"baostock {code} 异常({e})，强制重连")

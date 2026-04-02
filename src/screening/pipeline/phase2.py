@@ -124,18 +124,22 @@ def run_phase2_once(
 
 
 def _place_auto_order(broker, entry: "SeedEntry", df) -> None:
-    """触发信号后自动下模拟买单（等权仓位）"""
+    """触发信号后自动下模拟买单（等权仓位，优先实时价）"""
     try:
-        price = float(df.iloc[-1]["close"]) if df is not None and not df.empty else 0.0
+        from src.screening.indicators import get_realtime_quote_tencent
+        quote = get_realtime_quote_tencent(entry.code)
+        price = quote.get("current_price", 0.0) if quote else 0.0
+        if price <= 0 and df is not None and not df.empty:
+            price = float(df.iloc[-1]["close"])
         if price <= 0:
             logger.warning(f"[Phase2] {entry.code} 无法获取价格，跳过自动下单")
             return
 
-        portfolio = broker.get_portfolio()
-        max_pos = portfolio.get("max_positions", 10)
-        total_cap = portfolio.get("total_capital", 1_000_000)
-        avail_cash = portfolio.get("available_cash", 0.0)
-        cur_positions = portfolio.get("position_count", 0)
+        account = broker.get_account_info()
+        max_pos = account.get("max_positions", 10)
+        total_cap = account.get("total_capital", 1_000_000)
+        avail_cash = account.get("available_cash", 0.0)
+        cur_positions = account.get("position_count", 0)
 
         if cur_positions >= max_pos:
             logger.info(f"[Phase2] 持仓已满 ({cur_positions}/{max_pos})，跳过 {entry.code}")
@@ -222,7 +226,7 @@ def run_phase2(
                 ok_m, reason_m = _check_model_trigger(entry, code, df)
                 if ok_m:
                     entry.phase2_triggered = True
-                    entry.phase2_trigger_time = datetime.now().strftime("%H:%M:%S")
+                    entry.phase2_trigger_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     entry.phase2_reason = f"{reason_u} | {reason_m}"
                     triggered_this.append(entry)
                     logger.info(f"[Phase2] 买入信号: {code} {entry.name} | {entry.phase2_reason}")
