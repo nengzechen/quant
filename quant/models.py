@@ -119,6 +119,8 @@ class Position:
     open_time: str
     stop_loss_price: Optional[float] = None
     take_profit_price: Optional[float] = None
+    highest_price: Optional[float] = None   # 持仓期间最高价（移动止损用）
+    model: Optional[str] = None             # 触发买入的模型名称
 
     def to_dict(self) -> dict:
         """序列化为字典"""
@@ -126,8 +128,9 @@ class Position:
 
     @classmethod
     def from_dict(cls, data: dict) -> 'Position':
-        """从字典反序列化"""
-        return cls(**data)
+        """从字典反序列化（兼容旧格式：忽略未知字段，缺省字段用默认值）"""
+        known = {f.name for f in cls.__dataclass_fields__.values()}
+        return cls(**{k: v for k, v in data.items() if k in known})
 
     def update_price(self, price: float) -> None:
         """
@@ -140,6 +143,8 @@ class Position:
         self.market_value = self.quantity * price
         self.pnl = (price - self.avg_cost) * self.quantity
         self.pnl_pct = (price - self.avg_cost) / self.avg_cost * 100 if self.avg_cost > 0 else 0.0
+        if price > 0 and (self.highest_price is None or price > self.highest_price):
+            self.highest_price = price
 
 
 @dataclass

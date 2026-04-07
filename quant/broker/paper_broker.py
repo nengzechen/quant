@@ -191,6 +191,7 @@ class PaperBroker(BaseBroker):
         price: float,
         order_type: str = "LIMIT",
         stock_name: str = "",
+        model: str = "",
     ) -> TradeRecord:
         """
         模拟下单（立即成交）。
@@ -261,6 +262,8 @@ class PaperBroker(BaseBroker):
                     pnl=0.0,
                     pnl_pct=0.0,
                     open_time=datetime.now().isoformat(),
+                    highest_price=price,
+                    model=model or None,
                 )
 
             self._portfolio.recalculate()

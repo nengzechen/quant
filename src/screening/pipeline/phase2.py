@@ -23,6 +23,112 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+# ===== 自动卖出参数 =====
+_STOP_LOSS_PCT = {
+    "LimitUpHunter": -0.03,   # 追涨停风险高，止损更严
+    "default":       -0.05,   # 其余模型统一 -5%
+}
+_TAKE_PROFIT_PCT = {
+    "BottomSwing":   0.10,
+    "StrongTrend":   0.20,
+    "LimitUpHunter": 0.06,
+    "default":       0.15,
+}
+_TRAILING_STOP_PCT = {          # 从最高价回落多少触发移动止损
+    "BottomSwing": 0.07,
+    "StrongTrend": 0.10,
+}
+_MAX_HOLD_DAYS = 14             # 持有超过 14 天且浮盈 < 2% → 时间止损
+
+
+def _check_sell_signals(broker) -> int:
+    """
+    检查所有持仓是否触发卖出条件，触发则自动下卖单。
+    优先级：硬止损 > 止盈 > 移动止损 > 时间止损
+
+    Returns:
+        本轮实际卖出数量
+    """
+    from src.screening.indicators import get_realtime_quote_tencent
+
+    positions = broker.get_positions()
+    if not positions:
+        return 0
+
+    # 批量获取实时价，同时更新 highest_price
+    price_map = {}
+    for pos in positions:
+        quote = get_realtime_quote_tencent(pos.stock_code)
+        price = quote.get("current_price", 0.0) if quote else 0.0
+        if price > 0:
+            price_map[pos.stock_code] = price
+    if price_map:
+        broker.update_position_prices(price_map)
+
+    # 重新读取更新后的持仓
+    positions = broker.get_positions()
+    sold = 0
+
+    for pos in positions:
+        code = pos.stock_code
+        model = pos.model or "default"
+        current_price = pos.current_price
+        avg_cost = pos.avg_cost
+        if avg_cost <= 0 or current_price <= 0:
+            continue
+
+        pnl_pct = (current_price - avg_cost) / avg_cost
+
+        sell_reason = None
+
+        # 1. 硬止损
+        stop_pct = _STOP_LOSS_PCT.get(model, _STOP_LOSS_PCT["default"])
+        if pnl_pct <= stop_pct:
+            sell_reason = f"硬止损 {pnl_pct*100:.1f}% ≤ {stop_pct*100:.0f}%"
+
+        # 2. 止盈
+        if sell_reason is None:
+            tp_pct = _TAKE_PROFIT_PCT.get(model, _TAKE_PROFIT_PCT["default"])
+            if pnl_pct >= tp_pct:
+                sell_reason = f"止盈 {pnl_pct*100:.1f}% ≥ {tp_pct*100:.0f}%"
+
+        # 3. 移动止损（仅适用特定模型，且已盈利过）
+        if sell_reason is None and model in _TRAILING_STOP_PCT:
+            trail_pct = _TRAILING_STOP_PCT[model]
+            hp = pos.highest_price
+            if hp and hp > avg_cost and current_price <= hp * (1 - trail_pct):
+                from_peak = (current_price - hp) / hp
+                sell_reason = f"移动止损 从最高{hp:.2f}回落{from_peak*100:.1f}% ≤ -{trail_pct*100:.0f}%"
+
+        # 4. 时间止损
+        if sell_reason is None and pos.open_time:
+            try:
+                open_dt = datetime.fromisoformat(pos.open_time)
+                hold_days = (datetime.now() - open_dt).days
+                if hold_days >= _MAX_HOLD_DAYS and pnl_pct < 0.02:
+                    sell_reason = f"时间止损 持有{hold_days}天收益{pnl_pct*100:.1f}%<2%"
+            except Exception:
+                pass
+
+        if sell_reason:
+            record = broker.place_order(
+                stock_code=code,
+                action="SELL",
+                quantity=pos.quantity,
+                price=current_price,
+                stock_name=pos.stock_name,
+            )
+            if record.status.value == "FILLED":
+                logger.info(
+                    f"[Phase2] 自动卖出: {code} {pos.stock_name} "
+                    f"@{current_price:.2f} | {sell_reason}"
+                )
+                sold += 1
+            else:
+                logger.warning(f"[Phase2] 卖出失败: {code} {record.status}")
+
+    return sold
+
 
 def _check_universal_trigger(code: str, df) -> Tuple[bool, str]:
     """
@@ -163,6 +269,7 @@ def _place_auto_order(broker, entry: "SeedEntry", df) -> None:
             quantity=quantity,
             price=price,
             stock_name=entry.name,
+            model=entry.model,
         )
         logger.info(
             f"[Phase2] 自动下单: {entry.code} {entry.name} "
@@ -213,6 +320,13 @@ def run_phase2(
             break
 
         logger.info(f"[Phase2] 待监控 {len(pending)} 只")
+
+        # 每轮先检查持仓是否触发卖出
+        if broker is not None:
+            sold_count = _check_sell_signals(broker)
+            if sold_count > 0:
+                logger.info(f"[Phase2] 本轮自动卖出 {sold_count} 只")
+
         triggered_this: List["SeedEntry"] = []
 
         try:
