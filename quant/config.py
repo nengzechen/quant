@@ -40,7 +40,7 @@ class QuantConfig:
     initial_capital: float = 1_000_000
     broker_type: str = "paper"
     paper_account_path: str = os.path.expanduser("~/.stock_quant/paper_account.json")
-    max_positions: int = 10
+    max_positions: int = 20
     risk_per_trade_pct: float = 0.02
     sizing_method: str = "atr_based"
     fixed_fraction: float = 0.10
@@ -73,7 +73,7 @@ class QuantConfig:
             paper_account_path=os.path.expanduser(
                 os.getenv("QUANT_PAPER_ACCOUNT_PATH", "~/.stock_quant/paper_account.json")
             ),
-            max_positions=int(os.getenv("QUANT_MAX_POSITIONS", "10")),
+            max_positions=int(os.getenv("QUANT_MAX_POSITIONS", "20")),
             risk_per_trade_pct=float(os.getenv("QUANT_RISK_PER_TRADE_PCT", "0.02")),
             sizing_method=os.getenv("QUANT_SIZING_METHOD", "atr_based"),
             fixed_fraction=float(os.getenv("QUANT_FIXED_FRACTION", "0.10")),

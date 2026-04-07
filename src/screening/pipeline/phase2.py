@@ -162,6 +162,7 @@ def _place_auto_order(broker, entry: "SeedEntry", df) -> None:
             action="BUY",
             quantity=quantity,
             price=price,
+            stock_name=entry.name,
         )
         logger.info(
             f"[Phase2] 自动下单: {entry.code} {entry.name} "

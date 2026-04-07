@@ -790,7 +790,7 @@ def main() -> int:
             auto_order_broker = None
             if getattr(args, 'phase2_auto_order', False):
                 from quant.broker.paper_broker import PaperBroker
-                auto_order_broker = PaperBroker()
+                auto_order_broker = PaperBroker(max_positions=20)
                 logger.info("[Phase2] 已启用自动下单模式（PaperBroker）")
 
             triggered = run_phase2(

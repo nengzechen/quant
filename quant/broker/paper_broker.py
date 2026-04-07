@@ -190,6 +190,7 @@ class PaperBroker(BaseBroker):
         quantity: int,
         price: float,
         order_type: str = "LIMIT",
+        stock_name: str = "",
     ) -> TradeRecord:
         """
         模拟下单（立即成交）。
@@ -252,7 +253,7 @@ class PaperBroker(BaseBroker):
                 # 新建持仓
                 self._portfolio.positions[stock_code] = Position(
                     stock_code=stock_code,
-                    stock_name=stock_code,  # 名称由外部更新
+                    stock_name=stock_name or stock_code,
                     quantity=quantity,
                     avg_cost=price,
                     current_price=price,
