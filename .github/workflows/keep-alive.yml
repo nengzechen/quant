@@ -1,0 +1,29 @@
+# 把这个文件放到 GitHub 仓库的 .github/workflows/keep-alive.yml
+# 作用：每 6 小时 ping 一次 HF Space，防止 48h 不活跃自动休眠
+# 完全免费（GitHub Actions 公开仓库无限额度）
+
+name: Keep HF Space Awake
+
+on:
+  schedule:
+    # 每 6 小时一次（UTC）
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ping HF Space
+        run: |
+          URL="https://hisky1-stock-analysis.hf.space/"
+          echo "Pinging $URL"
+          # 给 60s 超时（冷启动可能要几十秒）
+          STATUS=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 60 "$URL" || echo "timeout")
+          echo "HTTP status: $STATUS"
+          # 200/302/307 都算正常（HF 可能 redirect）
+          case "$STATUS" in
+            200|301|302|307|308) exit 0 ;;
+            *) echo "::warning::Space returned $STATUS"; exit 0 ;;
+          esac

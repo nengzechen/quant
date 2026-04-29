@@ -1,0 +1,97 @@
+# 把这个文件放到 GitHub 仓库的 .github/workflows/daily-phase1.yml
+# 作用：每天北京时间 8:00 在 GitHub Actions 上跑 Phase1 全市场扫描
+# 扫描结果（data/seed_pool_*.json）自动 commit 回 main 分支
+# HF Space 通过 Factory rebuild 拉新数据展示
+#
+# 启用前：
+#   1. 在 GitHub 仓库 Settings → Secrets 添加：TUSHARE_TOKEN, GEMINI_API_KEY 等
+#   2. Settings → Actions → General → Workflow permissions 选 "Read and write"
+
+name: Daily Phase1 Screening
+
+on:
+  schedule:
+    # UTC 00:00 = 北京时间 08:00（周一到周五）
+    - cron: '0 0 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Phase1 目标种子数'
+        default: '100'
+
+concurrency:
+  group: phase1-screening
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180  # 3小时上限
+
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install deps
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Phase1
+        env:
+          TUSHARE_TOKEN: ${{ secrets.TUSHARE_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL }}
+          AIHUBMIX_KEY: ${{ secrets.AIHUBMIX_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          STOCK_LIST: ${{ vars.STOCK_LIST || '600519,300750,002594' }}
+          MAX_WORKERS: '3'
+        run: |
+          mkdir -p data logs reports
+          TARGET="${{ github.event.inputs.target || '100' }}"
+          python main.py --phase1 --phase1-target "$TARGET"
+
+      - name: Commit seed pool back
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/seed_pool_*.json reports/screening/*.md 2>/dev/null || true
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(phase1): seed pool $(TZ=Asia/Shanghai date +%F)"
+            git push
+          else
+            echo "no changes"
+          fi
+
+      - name: Trigger HF Space factory rebuild
+        if: success()
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          if [ -z "$HF_TOKEN" ]; then
+            echo "HF_TOKEN not set, skipping rebuild"
+            exit 0
+          fi
+          curl -fsS -X POST \
+            -H "Authorization: Bearer $HF_TOKEN" \
+            "https://huggingface.co/api/spaces/hisky1/stock_analysis/restart?factory=true" \
+          && echo "HF Space rebuild triggered"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: phase1-${{ github.run_number }}
+          path: |
+            data/seed_pool_*.json
+            reports/screening/
+            logs/
+          retention-days: 14
