@@ -11,6 +11,14 @@
 
 ---
 
+## 在线 Demo
+
+部署地址：https://hisky1-stock-analysis.hf.space/screening
+
+> 部署在 Hugging Face Space (Free)，每天 08:00（北京时间）通过 GitHub Actions 自动跑 Phase1 全市场扫描，结果同步至 Web UI。
+
+---
+
 ## 架构总览
 
 ```
