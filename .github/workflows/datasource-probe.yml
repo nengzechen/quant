@@ -21,7 +21,7 @@ jobs:
       - name: Install deps
         run: |
           pip install --upgrade pip
-          pip install akshare tushare baostock pandas
+          pip install -r requirements.txt
 
       - name: Probe
         env:

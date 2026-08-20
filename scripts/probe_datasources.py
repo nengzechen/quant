@@ -89,6 +89,18 @@ def probe_baostock_codes():
         bs.logout()
 
 
+def probe_phase1_codes():
+    """端到端验证 Phase1 的取码链路（含 baostock 回退）与名称登记"""
+    from src.screening.indicators import get_stock_name
+    from src.screening.pipeline.phase1 import _fetch_all_a_codes
+
+    codes = _fetch_all_a_codes()
+    if not codes:
+        raise RuntimeError("取不到任何代码")
+    named = sum(1 for c in codes[:200] if get_stock_name(c))
+    return f"{len(codes)} 只，前 200 只中 {named} 只有名称"
+
+
 def probe_baostock_daily():
     import baostock as bs
     lg = bs.login()
@@ -118,6 +130,7 @@ PROBES = [
     ("tushare  日线", probe_tushare_daily),
     ("baostock 全量代码", probe_baostock_codes),
     ("baostock 日线", probe_baostock_daily),
+    ("Phase1  取码链路 + 名称登记", probe_phase1_codes),
 ]
 
 
