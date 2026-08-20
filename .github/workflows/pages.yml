@@ -18,6 +18,9 @@ on:
       - 'scripts/build_demo_data.py'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
+  # 供 daily-phase1.yml 跑完扫描后直接调用：
+  # 它提交种子池用的是 GITHUB_TOKEN，这种 push 不会触发其它 workflow
+  workflow_call:
 
 permissions:
   contents: read
@@ -26,13 +29,18 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: true
+  # 部署过程不打断，避免把已经在发布的版本取消掉
+  cancel-in-progress: false
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      # 取分支最新提交而不是触发提交：被 daily-phase1.yml 调用时，
+      # 触发 SHA 还不包含该次扫描刚提交的种子池
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
 
       - uses: actions/setup-node@v4
         with:

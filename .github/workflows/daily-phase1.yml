@@ -103,3 +103,13 @@ jobs:
             reports/screening/
             logs/
           retention-days: 14
+
+  # 种子池是用 GITHUB_TOKEN 提交的，这类 push 不会触发 pages.yml，
+  # 所以扫描成功后直接调用它把新数据发布到 GitHub Pages
+  deploy-demo:
+    needs: scan
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/pages.yml
