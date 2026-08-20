@@ -1,0 +1,29 @@
+# 手动触发：在 GitHub 托管 runner（海外 IP）上探测各行情数据源是否可达。
+# Phase1 空跑时先跑它，能直接看出是哪个数据源被墙/被拒。
+
+name: Datasource Probe
+
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install deps
+        run: |
+          pip install --upgrade pip
+          pip install akshare tushare baostock pandas
+
+      - name: Probe
+        env:
+          TUSHARE_TOKEN: ${{ secrets.TUSHARE_TOKEN }}
+        run: python scripts/probe_datasources.py
