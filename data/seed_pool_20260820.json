@@ -1,0 +1,69 @@
+{
+  "date": "2026-08-20",
+  "created_at": "2026-08-20 11:06:51",
+  "count": 2,
+  "entries": [
+    {
+      "code": "300189",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=5.43 MA10=5.17 MA20=4.79 MA60=4.67",
+        "KDJ金叉(J>0)": "K=70.3 D=63.1 J=84.5，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=55.9 MDI=5.1 ADX=76.1，手拉手↑",
+        "量比>1": "量比=2.34（阈值>1.0）"
+      },
+      "created_at": "2026-08-20 11:04:16",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "603708",
+      "name": "家家悦",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "回踩关键均线",
+        "底分型确认",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=9.52 MA10=9.49 MA20=9.43 MA60=9.26",
+        "KDJ金叉(J>0)": "K=46.0 D=48.1 J=41.7，近期金叉，J>0",
+        "回踩关键均线": "回踩MA20支撑 (9.43)，偏离-0.9%",
+        "底分型确认": "近期出现底分型",
+        "量比>1": "量比=5.28（阈值>1.0）"
+      },
+      "created_at": "2026-08-20 11:04:23",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    }
+  ]
+}
