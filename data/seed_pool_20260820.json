@@ -1,8 +1,40 @@
 {
   "date": "2026-08-20",
-  "created_at": "2026-08-20 11:06:51",
-  "count": 2,
+  "created_at": "2026-08-20 12:50:28",
+  "count": 55,
   "entries": [
+    {
+      "code": "002953",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 6,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "头肩底形态",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=10.25 MA10=10.06 MA20=9.86 MA60=9.56",
+        "KDJ金叉(J>0)": "K=71.8 D=57.4 J=100.7，近期金叉，J>0",
+        "头肩底形态": "头肩底已突破颈线",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=57.6 MDI=9.9 ADX=25.6，手拉手↑",
+        "量比>1": "量比=4.13（阈值>1.0）"
+      },
+      "created_at": "2026-08-20 11:15:01",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
     {
       "code": "300189",
       "name": "",
@@ -29,14 +61,45 @@
         "DMI手拉手": "PDI=55.9 MDI=5.1 ADX=76.1，手拉手↑",
         "量比>1": "量比=2.34（阈值>1.0）"
       },
-      "created_at": "2026-08-20 11:04:16",
+      "created_at": "2026-08-20 11:16:12",
       "phase2_triggered": false,
       "phase2_trigger_time": "",
       "phase2_reason": ""
     },
     {
-      "code": "603708",
-      "name": "家家悦",
+      "code": "300313",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=11.16 MA10=9.76 MA20=8.79 MA60=8.54",
+        "KDJ金叉(J>0)": "K=89.1 D=86.0 J=95.1，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=73.9 MDI=1.4 ADX=78.6，手拉手↑",
+        "量比>1": "量比=4.36（阈值>1.0）"
+      },
+      "created_at": "2026-08-20 11:16:24",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "600233",
+      "name": "圆通速递",
       "model": "BottomSwing",
       "phase1_score": 5,
       "max_score": 13,
@@ -54,13 +117,1309 @@
         "DMI手拉手"
       ],
       "dim_details": {
-        "均线多头排列": "MA5=9.52 MA10=9.49 MA20=9.43 MA60=9.26",
-        "KDJ金叉(J>0)": "K=46.0 D=48.1 J=41.7，近期金叉，J>0",
-        "回踩关键均线": "回踩MA20支撑 (9.43)，偏离-0.9%",
+        "均线多头排列": "MA5=18.81 MA10=18.76 MA20=18.56 MA60=17.51",
+        "KDJ金叉(J>0)": "K=53.2 D=54.8 J=49.9，近期金叉，J>0",
+        "回踩关键均线": "回踩MA20支撑 (18.56)，偏离0.7%",
         "底分型确认": "近期出现底分型",
-        "量比>1": "量比=5.28（阈值>1.0）"
+        "量比>1": "量比=1.17（阈值>1.0）"
       },
-      "created_at": "2026-08-20 11:04:23",
+      "created_at": "2026-08-20 11:19:35",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "600313",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=6.27 MA10=6.04 MA20=5.81 MA60=5.67",
+        "KDJ金叉(J>0)": "K=73.8 D=62.1 J=97.1，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=58.5 MDI=6.5 ADX=58.8，手拉手↑",
+        "量比>1": "量比=5.44（阈值>1.0）"
+      },
+      "created_at": "2026-08-20 11:19:45",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "600354",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=6.46 MA10=6.33 MA20=6.12 MA60=5.52",
+        "KDJ金叉(J>0)": "K=62.2 D=58.9 J=68.8，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=50.2 MDI=5.3 ADX=68.2，手拉手↑",
+        "量比>1": "量比=2.89（阈值>1.0）"
+      },
+      "created_at": "2026-08-20 11:19:55",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "600371",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=7.76 MA10=7.48 MA20=7.05 MA60=6.91",
+        "KDJ金叉(J>0)": "K=91.8 D=86.6 J=102.2，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=56.1 MDI=2.4 ADX=85.4，手拉手↑",
+        "量比>1": "量比=6.19（阈值>1.0）"
+      },
+      "created_at": "2026-08-20 11:19:55",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "600740",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "MACD金叉>MA20",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=3.61 MA10=3.61 MA20=3.59 MA60=3.57",
+        "KDJ金叉(J>0)": "K=69.0 D=65.9 J=75.2，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "MACD金叉>MA20": "MACD金叉，收盘>MA20(3.59)",
+        "量比>1": "量比=3.87（阈值>1.0）"
+      },
+      "created_at": "2026-08-20 11:21:25",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002035",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=4.88 MA10=4.87 MA20=4.83 MA60=4.78",
+        "KDJ金叉(J>0)": "K=48.7 D=48.5 J=49.1，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=27.9 MDI=11.5 ADX=43.8，手拉手↑",
+        "量比>1": "量比=2.51（阈值>1.0）"
+      },
+      "created_at": "2026-08-20 11:13:08",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002041",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=9.15 MA10=9.02 MA20=8.82 MA60=8.52",
+        "KDJ金叉(J>0)": "K=60.3 D=50.2 J=80.4，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=48.5 MDI=8.1 ADX=53.2，手拉手↑",
+        "量比>1": "量比=3.75（阈值>1.0）"
+      },
+      "created_at": "2026-08-20 11:13:09",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002651",
+      "name": "利君股份",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "回踩关键均线",
+        "底分型确认",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=8.42 MA10=8.12 MA20=7.90 MA60=7.73",
+        "KDJ金叉(J>0)": "K=56.8 D=62.7 J=44.8，近期金叉，J>0",
+        "回踩关键均线": "回踩MA20支撑 (7.90)，偏离1.9%",
+        "底分型确认": "近期出现底分型",
+        "量比>1": "量比=1.47（阈值>1.0）"
+      },
+      "created_at": "2026-08-20 11:14:30",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002832",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "头肩底形态",
+        "底分型确认",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=26.04 MA10=25.88 MA20=25.31 MA60=22.19",
+        "KDJ金叉(J>0)": "K=54.2 D=62.7 J=37.4，近期金叉，J>0",
+        "头肩底形态": "头肩底已突破颈线",
+        "底分型确认": "近期出现底分型",
+        "量比>1": "量比=1.33（阈值>1.0）"
+      },
+      "created_at": "2026-08-20 11:14:42",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "000019",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=6.43 MA10=6.31 MA20=6.18 MA60=6.12",
+        "KDJ金叉(J>0)": "K=62.6 D=58.2 J=71.3，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=45.6 MDI=6.8 ADX=54.6，手拉手↑",
+        "量比>1": "量比=3.09（阈值>1.0）"
+      },
+      "created_at": "2026-08-20 11:11:40",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "000505",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=6.34 MA10=6.07 MA20=5.79 MA60=5.56",
+        "KDJ金叉(J>0)": "K=80.8 D=66.0 J=110.5，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=62.5 MDI=8.4 ADX=62.0，手拉手↑",
+        "量比>1": "量比=2.70（阈值>1.0）"
+      },
+      "created_at": "2026-08-20 11:11:53",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "000025",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "MACD金叉>MA20",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=15.17 MA10=15.15 MA20=14.97 MA60=14.54",
+        "KDJ金叉(J>0)": "K=39.6 D=39.6 J=39.7，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "MACD金叉>MA20": "MACD金叉，收盘>MA20(14.97)",
+        "量比>1": "量比=5.02（阈值>1.0）"
+      },
+      "created_at": "2026-08-20 11:11:42",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "000998",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=8.57 MA10=8.41 MA20=8.35 MA60=8.14",
+        "KDJ金叉(J>0)": "K=59.6 D=50.1 J=78.7，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=48.2 MDI=11.8 ADX=29.2，手拉手↑",
+        "量比>1": "量比=3.56（阈值>1.0）"
+      },
+      "created_at": "2026-08-20 11:12:43",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "300821",
+      "name": "",
+      "model": "LimitUpHunter",
+      "phase1_score": 3,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1",
+        "量能阶梯放大"
+      ],
+      "failed_dims": [
+        "高开2%-5%"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(17.53)/MA9(17.27)，近3根均为阳线",
+        "量比>1": "量比=2.11（阈值>1.0）",
+        "量能阶梯放大": "近5日量能递增4/4天"
+      },
+      "created_at": "2026-08-20 12:24:27",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "001277",
+      "name": "",
+      "model": "LimitUpHunter",
+      "phase1_score": 3,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1",
+        "量能阶梯放大"
+      ],
+      "failed_dims": [
+        "高开2%-5%"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(30.18)/MA9(29.64)，近3根均为阳线",
+        "量比>1": "量比=3.02（阈值>1.0）",
+        "量能阶梯放大": "近5日量能递增4/4天"
+      },
+      "created_at": "2026-08-20 12:10:39",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "300046",
+      "name": "",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(25.04)/MA9(24.91)，近3根均为阳线",
+        "量比>1": "量比=3.35（阈值>1.0）"
+      },
+      "created_at": "2026-08-20 12:16:55",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "300154",
+      "name": "",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(11.09)/MA9(10.34)，近3根均为阳线",
+        "量比>1": "量比=1.20（阈值>1.0）"
+      },
+      "created_at": "2026-08-20 12:17:24",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "688432",
+      "name": "",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(44.30)/MA9(42.56)，近3根均为阳线",
+        "量比>1": "量比=1.30（阈值>1.0）"
+      },
+      "created_at": "2026-08-20 12:46:24",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "688502",
+      "name": "",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(447.93)/MA9(424.91)，近3根均为阳线",
+        "量比>1": "量比=1.27（阈值>1.0）"
+      },
+      "created_at": "2026-08-20 12:46:45",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "688503",
+      "name": "",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(89.02)/MA9(82.86)，近3根均为阳线",
+        "量比>1": "量比=1.30（阈值>1.0）"
+      },
+      "created_at": "2026-08-20 12:46:54",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "603556",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "MACD金叉>MA20",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=26.38 MA10=25.99 MA20=25.43 MA60=23.73",
+        "KDJ金叉(J>0)": "K=54.4 D=46.2 J=70.8，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "MACD金叉>MA20": "MACD金叉，收盘>MA20(25.43)",
+        "量比>1": "量比=2.14（阈值>1.0）"
+      },
+      "created_at": "2026-08-20 11:24:25",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "605033",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "头肩底形态",
+        "底分型确认",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=19.50 MA10=19.19 MA20=18.40 MA60=18.22",
+        "KDJ金叉(J>0)": "K=56.6 D=54.1 J=61.7，近期金叉，J>0",
+        "头肩底形态": "头肩底已突破颈线",
+        "底分型确认": "近期出现底分型",
+        "量比>1": "量比=1.65（阈值>1.0）"
+      },
+      "created_at": "2026-08-20 11:25:48",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "601211",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 4,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "回踩关键均线",
+        "底分型确认",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "回踩关键均线": "回踩MA60支撑 (17.80)，偏离0.3%",
+        "底分型确认": "近期出现底分型",
+        "量比>1": "量比=2.00（阈值>1.0）"
+      },
+      "created_at": "2026-08-20 11:21:56",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "603382",
+      "name": "",
+      "model": "LimitUpHunter",
+      "phase1_score": 3,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1",
+        "量能阶梯放大"
+      ],
+      "failed_dims": [
+        "高开2%-5%"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(21.12)/MA9(20.26)，近3根均为阳线",
+        "量比>1": "量比=1.73（阈值>1.0）",
+        "量能阶梯放大": "近5日量能递增4/4天"
+      },
+      "created_at": "2026-08-20 12:39:02",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "603406",
+      "name": "",
+      "model": "LimitUpHunter",
+      "phase1_score": 3,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "高开2%-5%",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(28.05)/MA9(27.61)，近3根均为阳线",
+        "高开2%-5%": "高开2.67%（在目标区间[2.0%,5.0%]）",
+        "量比>1": "量比=5.43（阈值>1.0）"
+      },
+      "created_at": "2026-08-20 12:39:08",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "000421",
+      "name": "",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(5.52)/MA9(5.48)，近3根均为阳线",
+        "量比>1": "量比=1.43（阈值>1.0）"
+      },
+      "created_at": "2026-08-20 12:07:41",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "000919",
+      "name": "",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(6.80)/MA9(6.69)，近3根均为阳线",
+        "量比>1": "量比=1.87（阈值>1.0）"
+      },
+      "created_at": "2026-08-20 12:09:07",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "001221",
+      "name": "",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(41.01)/MA9(40.78)，近3根均为阳线",
+        "量比>1": "量比=1.40（阈值>1.0）"
+      },
+      "created_at": "2026-08-20 12:10:29",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "001280",
+      "name": "",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(66.22)/MA9(65.88)，近3根均为阳线",
+        "量比>1": "量比=1.29（阈值>1.0）"
+      },
+      "created_at": "2026-08-20 12:10:40",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "001301",
+      "name": "",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(56.58)/MA9(55.24)，近3根均为阳线",
+        "量比>1": "量比=3.15（阈值>1.0）"
+      },
+      "created_at": "2026-08-20 12:10:42",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "001338",
+      "name": "",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(8.83)/MA9(8.80)，近3根均为阳线",
+        "量比>1": "量比=5.72（阈值>1.0）"
+      },
+      "created_at": "2026-08-20 12:10:49",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002271",
+      "name": "",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(11.59)/MA9(11.66)，近3根均为阳线",
+        "量比>1": "量比=1.71（阈值>1.0）"
+      },
+      "created_at": "2026-08-20 12:13:06",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002811",
+      "name": "",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(11.49)/MA9(11.02)，近3根均为阳线",
+        "量比>1": "量比=1.84（阈值>1.0）"
+      },
+      "created_at": "2026-08-20 12:15:08",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "300373",
+      "name": "",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(99.08)/MA9(97.70)，近3根均为阳线",
+        "量比>1": "量比=2.52（阈值>1.0）"
+      },
+      "created_at": "2026-08-20 12:20:00",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "300394",
+      "name": "",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(276.05)/MA9(255.17)，近3根均为阳线",
+        "量比>1": "量比=1.09（阈值>1.0）"
+      },
+      "created_at": "2026-08-20 12:20:16",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "300452",
+      "name": "",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(13.12)/MA9(12.94)，近3根均为阳线",
+        "量比>1": "量比=4.16（阈值>1.0）"
+      },
+      "created_at": "2026-08-20 12:21:02",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "300505",
+      "name": "",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(19.91)/MA9(19.62)，近3根均为阳线",
+        "量比>1": "量比=1.61（阈值>1.0）"
+      },
+      "created_at": "2026-08-20 12:21:38",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "300843",
+      "name": "",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(128.43)/MA9(125.64)，近3根均为阳线",
+        "量比>1": "量比=1.54（阈值>1.0）"
+      },
+      "created_at": "2026-08-20 12:24:47",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "300865",
+      "name": "",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(26.14)/MA9(25.12)，近3根均为阳线",
+        "量比>1": "量比=3.14（阈值>1.0）"
+      },
+      "created_at": "2026-08-20 12:24:53",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "300927",
+      "name": "",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(22.66)/MA9(22.55)，近3根均为阳线",
+        "量比>1": "量比=5.29（阈值>1.0）"
+      },
+      "created_at": "2026-08-20 12:25:07",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "301190",
+      "name": "",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(18.49)/MA9(18.73)，近3根均为阳线",
+        "量比>1": "量比=2.37（阈值>1.0）"
+      },
+      "created_at": "2026-08-20 12:27:06",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "301251",
+      "name": "",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(47.04)/MA9(45.66)，近3根均为阳线",
+        "量比>1": "量比=1.49（阈值>1.0）"
+      },
+      "created_at": "2026-08-20 12:28:02",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "600460",
+      "name": "",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(33.69)/MA9(33.12)，近3根均为阳线",
+        "量比>1": "量比=2.35（阈值>1.0）"
+      },
+      "created_at": "2026-08-20 12:35:01",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "600598",
+      "name": "",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(12.69)/MA9(12.42)，近3根均为阳线",
+        "量比>1": "量比=3.67（阈值>1.0）"
+      },
+      "created_at": "2026-08-20 12:36:14",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "601609",
+      "name": "",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(11.50)/MA9(10.97)，近3根均为阳线",
+        "量比>1": "量比=3.13（阈值>1.0）"
+      },
+      "created_at": "2026-08-20 12:36:54",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "600988",
+      "name": "",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(40.83)/MA9(41.25)，近3根均为阳线",
+        "量比>1": "量比=1.03（阈值>1.0）"
+      },
+      "created_at": "2026-08-20 12:36:57",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "601886",
+      "name": "",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(12.30)/MA9(10.98)，近3根均为阳线",
+        "量比>1": "量比=1.01（阈值>1.0）"
+      },
+      "created_at": "2026-08-20 12:37:19",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "603290",
+      "name": "",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(91.04)/MA9(89.61)，近3根均为阳线",
+        "量比>1": "量比=3.49（阈值>1.0）"
+      },
+      "created_at": "2026-08-20 12:38:51",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "603407",
+      "name": "",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(65.12)/MA9(64.99)，近3根均为阳线",
+        "量比>1": "量比=1.54（阈值>1.0）"
+      },
+      "created_at": "2026-08-20 12:39:10",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "603580",
+      "name": "",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(59.35)/MA9(58.07)，近3根均为阳线",
+        "量比>1": "量比=1.91（阈值>1.0）"
+      },
+      "created_at": "2026-08-20 12:39:20",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "603650",
+      "name": "",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(66.82)/MA9(65.94)，近3根均为阳线",
+        "量比>1": "量比=1.56（阈值>1.0）"
+      },
+      "created_at": "2026-08-20 12:39:33",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "603886",
+      "name": "",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(10.90)/MA9(10.82)，近3根均为阳线",
+        "量比>1": "量比=3.20（阈值>1.0）"
+      },
+      "created_at": "2026-08-20 12:39:53",
       "phase2_triggered": false,
       "phase2_trigger_time": "",
       "phase2_reason": ""
