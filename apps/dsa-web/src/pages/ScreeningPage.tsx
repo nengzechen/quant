@@ -5,6 +5,7 @@ import type { SeedPool, SeedEntry } from '../api/screening';
 import { getParsedApiError } from '../api/error';
 import type { ParsedApiError } from '../api/error';
 import { ApiErrorAlert } from '../components/common';
+import { IS_DEMO } from '../utils/demo';
 
 // ─── 工具函数 ─────────────────────────────────────────────
 
@@ -207,9 +208,10 @@ const ScreeningPage: React.FC = () => {
       .catch(() => {});
   }, [selectedDate]);
 
-  // 首次 + 每 15 秒刷新
+  // 首次 + 每 15 秒刷新（静态 Demo 是快照数据，不做轮询）
   useEffect(() => {
     void load(selectedDate || undefined);
+    if (IS_DEMO) return;
     const t = setInterval(() => void load(selectedDate || undefined), 15000);
     return () => clearInterval(t);
   }, [load, selectedDate]);
@@ -230,7 +232,11 @@ const ScreeningPage: React.FC = () => {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-lg font-semibold text-primary">选股监控</h1>
-          <p className="text-xs text-muted mt-0.5">每 15 秒自动刷新 · 最后更新 {lastUpdated}</p>
+          <p className="text-xs text-muted mt-0.5">
+            {IS_DEMO
+              ? `静态快照 · 每交易日 08:00（北京时间）更新 · 载入于 ${lastUpdated}`
+              : `每 15 秒自动刷新 · 最后更新 ${lastUpdated}`}
+          </p>
         </div>
         <div className="flex items-center gap-3">
           {/* 日期选择 */}
@@ -253,6 +259,15 @@ const ScreeningPage: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {IS_DEMO && (
+        <div className="terminal-card p-3 text-xs text-muted border-cyan/30">
+          <span className="text-cyan font-medium">在线 Demo（只读）</span>
+          ：本页部署于 GitHub Pages，为纯静态快照，展示 GitHub Actions 每交易日盘前跑出的 Phase1 种子池；
+          持仓、下单、盘中 Phase2 实时监控等功能需在本地运行完整服务，见
+          <a className="text-cyan underline ml-1" href="https://github.com/nengzechen/quant#快速开始" target="_blank" rel="noreferrer">仓库说明</a>。
+        </div>
+      )}
 
       {error && <ApiErrorAlert error={error} />}
 
@@ -322,7 +337,9 @@ const ScreeningPage: React.FC = () => {
         <p className="text-secondary font-medium mb-2">定时任务</p>
         <p>🕘 <span className="font-mono text-cyan">09:00</span> 北京时间 · Phase1 全市场扫描 → 生成种子池</p>
         <p>🕙 <span className="font-mono text-cyan">09:30</span> 北京时间 · Phase2 盘中监控启动 → 实时更新触发状态</p>
-        <p>🔄 本页面每 15 秒自动拉取最新数据，种子池有更新会自动显示</p>
+        <p>{IS_DEMO
+          ? '🔄 GitHub Actions 跑完 Phase1 后自动重新发布本页面'
+          : '🔄 本页面每 15 秒自动拉取最新数据，种子池有更新会自动显示'}</p>
       </div>
     </div>
   );

@@ -80,3 +80,4 @@ static/
 # OpenClaw 本地配置文件
 AGENTS.md
 SKILL.md
+/apps/dsa-web/dist-demo/

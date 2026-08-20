@@ -1,7 +1,6 @@
-# 把这个文件放到 GitHub 仓库的 .github/workflows/daily-phase1.yml
-# 作用：每天北京时间 8:00 在 GitHub Actions 上跑 Phase1 全市场扫描
-# 扫描结果（data/seed_pool_*.json）自动 commit 回 main 分支
-# HF Space 通过 Factory rebuild 拉新数据展示
+# 每天北京时间 8:00 在 GitHub Actions 上跑 Phase1 全市场扫描
+# 扫描结果（data/seed_pool_*.json）自动 commit 回 main 分支，
+# 该 push 会触发 pages.yml 重新发布 GitHub Pages 上的在线 Demo
 #
 # 启用前：
 #   1. 在 GitHub 仓库 Settings → Secrets 添加：TUSHARE_TOKEN, GEMINI_API_KEY 等
@@ -71,20 +70,6 @@ jobs:
           else
             echo "no changes"
           fi
-
-      - name: Trigger HF Space factory rebuild
-        if: success()
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: |
-          if [ -z "$HF_TOKEN" ]; then
-            echo "HF_TOKEN not set, skipping rebuild"
-            exit 0
-          fi
-          curl -fsS -X POST \
-            -H "Authorization: Bearer $HF_TOKEN" \
-            "https://huggingface.co/api/spaces/hisky1/stock_analysis/restart?factory=true" \
-          && echo "HF Space rebuild triggered"
 
       - uses: actions/upload-artifact@v4
         if: always()

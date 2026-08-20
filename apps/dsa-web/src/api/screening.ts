@@ -1,4 +1,5 @@
 import apiClient from './index';
+import { IS_DEMO, fetchDemoJson } from '../utils/demo';
 
 export interface SeedEntry {
   code: string;
@@ -24,13 +25,25 @@ export interface SeedPool {
 }
 
 export const screeningApi = {
-  getSeedPool: (date?: string) =>
-    apiClient
-      .get<SeedPool>('/api/v1/screening/seed-pool', { params: date ? { date } : {} })
-      .then((r) => r.data),
+  getSeedPool: async (date?: string): Promise<SeedPool> => {
+    if (IS_DEMO) {
+      const d = date || (await screeningApi.getDates()).dates[0];
+      if (!d) {
+        return { date: '—', created_at: '', count: 0, triggered_count: 0, entries: [] };
+      }
+      return fetchDemoJson<SeedPool>(`seed_pool_${d}.json`);
+    }
+    const r = await apiClient.get<SeedPool>('/api/v1/screening/seed-pool', {
+      params: date ? { date } : {},
+    });
+    return r.data;
+  },
 
-  getDates: () =>
-    apiClient
-      .get<{ dates: string[] }>('/api/v1/screening/dates')
-      .then((r) => r.data),
+  getDates: async (): Promise<{ dates: string[] }> => {
+    if (IS_DEMO) {
+      return fetchDemoJson<{ dates: string[] }>('dates.json');
+    }
+    const r = await apiClient.get<{ dates: string[] }>('/api/v1/screening/dates');
+    return r.data;
+  },
 };

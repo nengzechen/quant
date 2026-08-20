@@ -1,0 +1,81 @@
+# 在线 Demo：把前端以「静态快照模式」构建后发布到 GitHub Pages
+# https://nengzechen.github.io/quant/
+#
+# 数据来源：仓库里的 data/seed_pool_*.json（由 daily-phase1.yml 每交易日盘前提交）
+# 因为 Pages 只能托管静态文件，Demo 只提供只读的选股结果展示，
+# 持仓 / 下单 / Phase2 实时监控需要本地跑完整服务。
+#
+# 启用前：Settings → Pages → Source 选 "GitHub Actions"
+
+name: Deploy Demo to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/dsa-web/**'
+      - 'data/seed_pool_*.json'
+      - 'scripts/build_demo_data.py'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: apps/dsa-web/package-lock.json
+
+      - name: Install deps
+        working-directory: apps/dsa-web
+        run: npm ci
+
+      - name: Build (demo mode)
+        working-directory: apps/dsa-web
+        env:
+          VITE_DEMO: '1'
+          # 项目站点部署在 /<repo>/ 子路径下
+          VITE_BASE: /${{ github.event.repository.name }}/
+          VITE_OUT_DIR: dist-demo
+        run: npm run build
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # 必须在 vite build 之后：build 会清空输出目录
+      - name: Generate static seed-pool snapshots
+        run: python scripts/build_demo_data.py apps/dsa-web/dist-demo --keep 30
+
+      - name: SPA fallback + 禁用 Jekyll
+        run: |
+          cp apps/dsa-web/dist-demo/index.html apps/dsa-web/dist-demo/404.html
+          touch apps/dsa-web/dist-demo/.nojekyll
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: apps/dsa-web/dist-demo
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,4 +1,5 @@
 import apiClient from './index';
+import { IS_DEMO } from '../utils/demo';
 
 export type AuthStatusResponse = {
   authEnabled: boolean;
@@ -9,6 +10,10 @@ export type AuthStatusResponse = {
 
 export const authApi = {
   async getStatus(): Promise<AuthStatusResponse> {
+    // Demo 模式没有后端，直接返回“无鉴权”状态
+    if (IS_DEMO) {
+      return { authEnabled: false, loggedIn: false, passwordSet: false, passwordChangeable: false };
+    }
     const { data } = await apiClient.get<AuthStatusResponse>('/api/v1/auth/status');
     return data;
   },

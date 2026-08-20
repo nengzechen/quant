@@ -5,6 +5,7 @@ import PortfolioPage from './pages/PortfolioPage';
 import ScreeningPage from './pages/ScreeningPage';
 import { ApiErrorAlert } from './components/common';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { IS_DEMO } from './utils/demo';
 import './App.css';
 
 // 侧边导航图标
@@ -45,12 +46,13 @@ const NAV_ITEMS: DockItem[] = [
         to: '/screening',
         icon: ScreeningIcon,
     },
-    {
+    // 持仓依赖后端的模拟券商，静态 Demo 下不可用
+    ...(IS_DEMO ? [] : [{
         key: 'portfolio',
         label: '持仓',
         to: '/portfolio',
         icon: PortfolioIcon,
-    },
+    }]),
 ];
 
 // Dock 导航栏
@@ -150,7 +152,7 @@ const AppContent: React.FC = () => {
                 <Routes>
                     <Route path="/" element={<Navigate to="/screening" replace/>}/>
                     <Route path="/screening" element={<ScreeningPage/>}/>
-                    <Route path="/portfolio" element={<PortfolioPage/>}/>
+                    {!IS_DEMO && <Route path="/portfolio" element={<PortfolioPage/>}/>}
                     <Route path="/login" element={<LoginPage/>}/>
                     <Route path="*" element={<Navigate to="/screening" replace/>}/>
                 </Routes>
@@ -160,8 +162,10 @@ const AppContent: React.FC = () => {
 };
 
 const App: React.FC = () => {
+    // GitHub Pages 项目站点部署在 /<repo>/ 子路径下，basename 取构建时的 base
+    const basename = import.meta.env.BASE_URL.replace(/\/$/, '');
     return (
-        <Router>
+        <Router basename={basename || undefined}>
             <AuthProvider>
                 <AppContent/>
             </AuthProvider>

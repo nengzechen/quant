@@ -13,9 +13,12 @@
 
 ## 在线 Demo
 
-部署地址：https://hisky1-stock-analysis.hf.space/screening（挂了）
+**https://nengzechen.github.io/quant/**
 
-> 部署在 Hugging Face Space (Free)，每天 08:00（北京时间）通过 GitHub Actions 自动跑 Phase1 全市场扫描，结果同步至 Web UI。
+> 托管在 GitHub Pages，每交易日 08:00（北京时间）由 GitHub Actions 跑完 Phase1 全市场扫描后自动重新发布。
+>
+> Pages 只能托管静态文件，因此 Demo 是**只读快照**：可以查看每日种子池、模型分类、Phase1 各维度评分与命中详情、切换历史日期；
+> 持仓 / 下单、以及 Phase2 盘中实时监控需要在本地跑完整服务（见[快速开始](#快速开始)）。
 
 ---
 
@@ -164,6 +167,22 @@ crontab -e
 # Phase2：09:30 开盘后启动盘中监控
 30 1 * * 1-5 cd /opt/stock_quant && .venv/bin/python main.py --phase2 --phase2-rounds 330 --phase2-interval 60 >> logs/cron_phase2.log 2>&1
 ```
+
+### 静态 Demo（GitHub Pages）
+
+前端支持「静态快照模式」：不访问后端 API，改为读取构建时由 `data/seed_pool_*.json` 生成的 JSON。
+CI 流程见 [.github/workflows/pages.yml](.github/workflows/pages.yml)，本地复现：
+
+```bash
+cd apps/dsa-web
+VITE_DEMO=1 VITE_BASE=/quant/ VITE_OUT_DIR=dist-demo npm run build
+cd ../..
+# 必须在 build 之后执行：vite 会清空输出目录
+python scripts/build_demo_data.py apps/dsa-web/dist-demo --keep 30
+cp apps/dsa-web/dist-demo/index.html apps/dsa-web/dist-demo/404.html   # SPA 深链接回退
+```
+
+仓库 Settings → Pages → Source 选 **GitHub Actions** 即可启用。
 
 ---
 
