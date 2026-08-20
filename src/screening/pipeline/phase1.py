@@ -3,7 +3,7 @@
 Phase1：收盘后离线运行（全市场 → 种子池）
 
 执行顺序：
-  1. 获取全量 A 股代码（ak.stock_info_a_code_name，一次请求）
+  1. 获取全量 A 股代码（akshare 一次请求，失败回退 baostock）
   2. 过滤 ST / 北交所 / 退市，得到候选总池
   3. 用 prefilter_from_snapshot 分两路候选池（活跃股 / 超跌股）
      - 如快照拉取失败（非交易时段），直接使用全量代码
@@ -17,6 +17,7 @@ Phase1：收盘后离线运行（全市场 → 种子池）
     python main.py --phase1 --phase1-target 100
 """
 import logging
+import os
 import time
 from datetime import datetime
 from typing import List, Dict, Optional
@@ -94,33 +95,104 @@ def _select_top5_per_sector(entries: List, target_count: int = 100, top_n: int =
     return unique
 
 
+# baostock 的代码前缀 → A 股（排除指数 sh.000/sz.399、B 股 sh.9/sz.2、北交所 bj.*）
+_BS_A_SHARE_PREFIXES = ("sh.60", "sh.68", "sz.00", "sz.30")
+
+
+def _is_tradable_name(name: str) -> bool:
+    """排除 ST / *ST / 退市股"""
+    return "ST" not in name.upper() and "退" not in name
+
+
+def _fetch_all_a_codes_akshare() -> List[str]:
+    """主源：akshare（东财 / 上交所），国内网络可用"""
+    import akshare as ak
+    df = ak.stock_info_a_code_name()
+    if df is None or df.empty:
+        raise ValueError("返回空列表")
+
+    codes = []
+    for _, row in df.iterrows():
+        code = str(row.get("code", "")).zfill(6)
+        name = str(row.get("name", ""))
+        if code.startswith("8"):     # 北交所
+            continue
+        if not _is_tradable_name(name):
+            continue
+        codes.append(code)
+
+    logger.info(f"[Phase1] 全量代码（akshare）：{len(df)} 只 → 过滤后 {len(codes)} 只")
+    return codes
+
+
+def _fetch_all_a_codes_baostock() -> List[str]:
+    """
+    回退源：baostock。
+    akshare 依赖的东财 / 上交所接口对海外 IP 不可达（GitHub Actions 上必然失败），
+    baostock 自建服务则可以直连，用它兜底保证全市场扫描不至于空跑。
+    """
+    from datetime import date, timedelta
+
+    from src.screening.indicators import _BS_LOCK, _bs_ensure_login
+
+    if not _bs_ensure_login():
+        raise RuntimeError("baostock 登录失败")
+
+    import baostock as bs
+
+    # query_all_stock 必须传交易日，往前找最多 10 天以跳过周末 / 节假日
+    rows: List[List[str]] = []
+    used_day = ""
+    with _BS_LOCK:
+        for back in range(10):
+            day = (date.today() - timedelta(days=back)).strftime("%Y-%m-%d")
+            rs = bs.query_all_stock(day=day)
+            if rs.error_code != "0":
+                continue
+            day_rows = []
+            while rs.next():
+                day_rows.append(rs.get_row_data())
+            if day_rows:
+                rows, used_day = day_rows, day
+                break
+
+    if not rows:
+        raise RuntimeError("最近 10 天都取不到全量列表")
+
+    codes = []
+    for row in rows:
+        # row: [code, tradeStatus, code_name]
+        bs_code = row[0] if row else ""
+        name = row[2] if len(row) > 2 else ""
+        if not bs_code.startswith(_BS_A_SHARE_PREFIXES):
+            continue
+        if not _is_tradable_name(name):
+            continue
+        codes.append(bs_code.split(".")[-1])
+
+    logger.info(
+        f"[Phase1] 全量代码（baostock {used_day}）：{len(rows)} 条 → 过滤后 {len(codes)} 只"
+    )
+    return sorted(set(codes))
+
+
 def _fetch_all_a_codes() -> List[str]:
     """
-    获取全量 A 股代码列表（一次请求，约 5500 只）。
-    过滤：北交所（8开头）、ST / 退市（名称含 ST 或"退"）。
+    获取全量 A 股代码列表（约 5500 只）。
+    akshare 为主源，失败时回退 baostock；过滤北交所、ST / 退市。
     """
-    try:
-        import akshare as ak
-        df = ak.stock_info_a_code_name()
-        if df is None or df.empty:
-            logger.warning("[Phase1] 获取全量代码失败，返回空列表")
-            return []
+    for label, fetch in (("akshare", _fetch_all_a_codes_akshare),
+                         ("baostock", _fetch_all_a_codes_baostock)):
+        try:
+            codes = fetch()
+            if codes:
+                return codes
+            logger.warning(f"[Phase1] {label} 返回空代码列表")
+        except Exception as e:
+            logger.warning(f"[Phase1] {label} 获取全量代码失败: {e}")
 
-        codes = []
-        for _, row in df.iterrows():
-            code = str(row.get("code", "")).zfill(6)
-            name = str(row.get("name", ""))
-            if code.startswith("8"):
-                continue
-            if "ST" in name.upper() or "退" in name:
-                continue
-            codes.append(code)
-
-        logger.info(f"[Phase1] 全量代码：{len(df)} 只 → 过滤后 {len(codes)} 只")
-        return codes
-    except Exception as e:
-        logger.error(f"[Phase1] 获取全量代码失败: {e}")
-        return []
+    logger.error("[Phase1] 所有数据源都拿不到股票代码列表")
+    return []
 
 
 def _split_candidates(all_codes: List[str]):
@@ -147,6 +219,25 @@ def _split_candidates(all_codes: List[str]):
 
     logger.info(f"[Phase1] 候选池 s1(活跃)={len(s1_pool)} 只，s2(超跌)={len(s2_pool)} 只")
     return s1_pool, s2_pool
+
+
+def _apply_code_limit(all_codes: List[str]) -> List[str]:
+    """
+    PHASE1_MAX_CODES>0 时按等距抽样把候选池裁到该规模。
+    用于给算力/时长有限的环境（如 GitHub Actions）兜底：
+    等距抽样而非直接截断，是为了保留各板块代码段的分布。
+    """
+    try:
+        limit = int(os.environ.get("PHASE1_MAX_CODES", "0"))
+    except ValueError:
+        limit = 0
+    if limit <= 0 or len(all_codes) <= limit:
+        return all_codes
+
+    step = max(1, len(all_codes) // limit)
+    sampled = all_codes[::step][:limit]
+    logger.info(f"[Phase1] PHASE1_MAX_CODES={limit}，等距抽样 {len(all_codes)} → {len(sampled)} 只")
+    return sampled
 
 
 def run_phase1(
@@ -181,6 +272,7 @@ def run_phase1(
     if not all_codes:
         logger.error("[Phase1] 无法获取股票代码列表，终止")
         return []
+    all_codes = _apply_code_limit(all_codes)
 
     # Step 2: 分两路候选池
     s1_pool, s2_pool = _split_candidates(all_codes)

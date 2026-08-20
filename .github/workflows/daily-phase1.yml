@@ -17,6 +17,9 @@ on:
       target:
         description: 'Phase1 目标种子数'
         default: '100'
+      max_codes:
+        description: '候选池上限（等距抽样，0=全市场；调试时可设小值快速验证）'
+        default: '0'
 
 concurrency:
   group: phase1-screening
@@ -57,10 +60,11 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           STOCK_LIST: ${{ vars.STOCK_LIST || '600519,300750,002594' }}
           MAX_WORKERS: '3'
+          PHASE1_MAX_CODES: ${{ github.event.inputs.max_codes || '0' }}
         run: |
           mkdir -p data logs reports
           TARGET="${{ github.event.inputs.target || '100' }}"
-          python main.py --phase1 --phase1-target "$TARGET"
+          python main.py --phase1 --phase1-target "$TARGET" --workers 5
 
       - name: Commit seed pool back
         run: |
