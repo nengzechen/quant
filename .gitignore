@@ -47,7 +47,9 @@ env/
 .cursorrules
 
 # 数据和日志
-data/
+# data/ 整体不入库，但种子池快照要提交：GitHub Pages 的在线 Demo 直接读它
+data/*
+!data/seed_pool_*.json
 logs/
 *.db
 *.sqlite

@@ -1,0 +1,2513 @@
+{
+  "date": "2026-03-16",
+  "created_at": "2026-03-16 01:59:32",
+  "count": 80,
+  "entries": [
+    {
+      "code": "300422",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 7,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "回踩关键均线",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "均线多头排列": "MA5=5.22 MA10=5.16 MA20=5.16 MA60=4.91",
+        "KDJ金叉(J>0)": "K=61.9 D=55.8 J=74.2，近期金叉，J>0",
+        "回踩关键均线": "回踩MA20支撑 (5.16)，偏离1.2%",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=25.4 MDI=14.3 ADX=24.6，手拉手↑",
+        "量比>1": "量比=1.04（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:35:16",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002004",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 7,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "头肩底形态",
+        "底分型确认",
+        "MACD金叉>MA20",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=5.52 MA10=5.49 MA20=5.49 MA60=5.25",
+        "KDJ金叉(J>0)": "K=59.5 D=50.0 J=78.7，近期金叉，J>0",
+        "头肩底形态": "头肩底已突破颈线",
+        "底分型确认": "近期出现底分型",
+        "MACD金叉>MA20": "MACD金叉，收盘>MA20(5.49)",
+        "DMI手拉手": "PDI=27.2 MDI=8.8 ADX=30.0，手拉手↑",
+        "量比>1": "量比=1.10（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:26:11",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002173",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 7,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "头肩底形态",
+        "底分型确认",
+        "MACD金叉>MA20",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=30.23 MA10=29.59 MA20=29.46 MA60=27.37",
+        "KDJ金叉(J>0)": "K=69.9 D=63.6 J=82.7，近期金叉，J>0",
+        "头肩底形态": "头肩底已突破颈线",
+        "底分型确认": "近期出现底分型",
+        "MACD金叉>MA20": "MACD金叉，收盘>MA20(29.46)",
+        "DMI手拉手": "PDI=36.0 MDI=17.6 ADX=22.1，手拉手↑",
+        "量比>1": "量比=1.80（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:27:14",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002950",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 7,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "KDJ金叉(J>0)",
+        "回踩关键均线",
+        "底分型确认",
+        "MACD金叉>MA20",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "均线多头排列"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "KDJ金叉(J>0)": "K=46.8 D=34.0 J=72.4，近期金叉，J>0",
+        "回踩关键均线": "回踩MA60支撑 (11.26)，偏离0.4%",
+        "底分型确认": "近期出现底分型",
+        "MACD金叉>MA20": "MACD金叉，收盘>MA20(10.81)",
+        "DMI手拉手": "PDI=28.6 MDI=21.8 ADX=29.7，手拉手↑",
+        "量比>1": "量比=2.74（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:32:05",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "300174",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 6,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "头肩底形态",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=17.10 MA10=16.87 MA20=16.80 MA60=16.28",
+        "KDJ金叉(J>0)": "K=75.0 D=66.2 J=92.6，近期金叉，J>0",
+        "头肩底形态": "头肩底已突破颈线",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=28.1 MDI=13.6 ADX=26.1，手拉手↑",
+        "量比>1": "量比=1.12（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:33:42",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "300400",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 6,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "头肩底形态",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=22.48 MA10=21.96 MA20=21.61 MA60=20.75",
+        "KDJ金叉(J>0)": "K=73.6 D=61.3 J=98.3，近期金叉，J>0",
+        "头肩底形态": "头肩底已突破颈线",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=37.0 MDI=15.3 ADX=38.9，手拉手↑",
+        "量比>1": "量比=2.04（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:35:07",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "300505",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 6,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "MACD金叉>MA20",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=35.35 MA10=34.80 MA20=32.75 MA60=27.73",
+        "KDJ金叉(J>0)": "K=51.9 D=47.6 J=60.5，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "MACD金叉>MA20": "MACD金叉，收盘>MA20(32.75)",
+        "DMI手拉手": "PDI=45.7 MDI=10.8 ADX=59.4，手拉手↑",
+        "量比>1": "量比=1.85（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:35:49",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "300664",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 6,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "头肩底形态",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=6.16 MA10=6.03 MA20=5.88 MA60=5.68",
+        "KDJ金叉(J>0)": "K=77.4 D=73.4 J=85.5，近期金叉，J>0",
+        "头肩底形态": "头肩底已突破颈线",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=46.0 MDI=5.8 ADX=56.4，手拉手↑",
+        "量比>1": "量比=1.43（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:36:49",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "600423",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 6,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "头肩底形态",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=4.02 MA10=3.98 MA20=3.96 MA60=3.86",
+        "KDJ金叉(J>0)": "K=68.0 D=58.1 J=87.7，近期金叉，J>0",
+        "头肩底形态": "头肩底已突破颈线",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=33.2 MDI=14.3 ADX=26.2，手拉手↑",
+        "量比>1": "量比=1.72（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:44:16",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "600425",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 6,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "头肩底形态",
+        "底分型确认",
+        "MACD金叉>MA20",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=4.62 MA10=4.60 MA20=4.59 MA60=4.44",
+        "KDJ金叉(J>0)": "K=58.1 D=53.3 J=67.7，近期金叉，J>0",
+        "头肩底形态": "头肩底已突破颈线",
+        "底分型确认": "近期出现底分型",
+        "MACD金叉>MA20": "MACD金叉，收盘>MA20(4.59)",
+        "量比>1": "量比=1.99（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:44:17",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "600558",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 6,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "回踩关键均线",
+        "底分型确认",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "均线多头排列": "MA5=6.34 MA10=6.32 MA20=6.31 MA60=6.22",
+        "KDJ金叉(J>0)": "K=43.2 D=44.0 J=41.6，近期金叉，J>0",
+        "回踩关键均线": "回踩MA20支撑 (6.31)，偏离-0.1%",
+        "底分型确认": "近期出现底分型",
+        "量比>1": "量比=1.17（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:44:57",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "601618",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 6,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "头肩底形态",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=3.23 MA10=3.18 MA20=3.13 MA60=3.08",
+        "KDJ金叉(J>0)": "K=77.5 D=67.7 J=97.0，近期金叉，J>0",
+        "头肩底形态": "头肩底已突破颈线",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=36.2 MDI=7.9 ADX=43.5，手拉手↑",
+        "量比>1": "量比=1.60（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:48:29",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "603113",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 6,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "头肩底形态",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=7.82 MA10=7.55 MA20=7.35 MA60=6.75",
+        "KDJ金叉(J>0)": "K=68.4 D=64.1 J=77.2，近期金叉，J>0",
+        "头肩底形态": "头肩底已突破颈线",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=46.6 MDI=8.8 ADX=44.5，手拉手↑",
+        "量比>1": "量比=1.98（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:49:29",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "001203",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 6,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "MACD金叉>MA20",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=38.12 MA10=37.09 MA20=36.03 MA60=31.58",
+        "KDJ金叉(J>0)": "K=55.5 D=47.2 J=72.0，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "MACD金叉>MA20": "MACD金叉，收盘>MA20(36.03)",
+        "DMI手拉手": "PDI=43.3 MDI=14.6 ADX=46.7，手拉手↑",
+        "量比>1": "量比=1.24（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:25:32",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "000807",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 6,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "头肩底形态",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=34.00 MA10=33.86 MA20=32.55 MA60=31.91",
+        "KDJ金叉(J>0)": "K=63.6 D=61.7 J=67.4，近期金叉，J>0",
+        "头肩底形态": "头肩底已突破颈线",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=39.2 MDI=10.7 ADX=34.2，手拉手↑",
+        "量比>1": "量比=1.04（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:24:43",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "688295",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 6,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "头肩底形态",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=37.18 MA10=33.90 MA20=32.45 MA60=31.48",
+        "KDJ金叉(J>0)": "K=72.8 D=60.7 J=97.1，近期金叉，J>0",
+        "头肩底形态": "头肩底已突破颈线",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=62.8 MDI=10.2 ADX=35.9，手拉手↑",
+        "量比>1": "量比=3.84（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:54:26",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "688360",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 6,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "KDJ金叉(J>0)",
+        "回踩关键均线",
+        "底分型确认",
+        "MACD金叉>MA20",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "均线多头排列",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "KDJ金叉(J>0)": "K=48.0 D=35.6 J=72.8，近期金叉，J>0",
+        "回踩关键均线": "回踩MA20支撑 (19.14)，偏离1.6%",
+        "底分型确认": "近期出现底分型",
+        "MACD金叉>MA20": "MACD金叉，收盘>MA20(19.14)",
+        "量比>1": "量比=4.55（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:54:49",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002019",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=13.69 MA10=13.51 MA20=12.95 MA60=12.54",
+        "KDJ金叉(J>0)": "K=75.0 D=68.1 J=88.7，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=45.9 MDI=6.0 ADX=61.2，手拉手↑",
+        "量比>1": "量比=1.82（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:26:16",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002102",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "头肩底形态",
+        "底分型确认",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=3.58 MA10=3.52 MA20=3.50 MA60=3.46",
+        "KDJ金叉(J>0)": "K=66.0 D=56.8 J=84.5，近期金叉，J>0",
+        "头肩底形态": "头肩底已突破颈线",
+        "底分型确认": "近期出现底分型",
+        "量比>1": "量比=2.61（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:26:48",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "000933",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=36.35 MA10=35.62 MA20=33.52 MA60=30.79",
+        "KDJ金叉(J>0)": "K=71.5 D=73.5 J=67.4，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=43.9 MDI=12.8 ADX=36.6，手拉手↑",
+        "量比>1": "量比=1.05（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:25:15",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "000973",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=15.79 MA10=14.46 MA20=14.05 MA60=13.34",
+        "KDJ金叉(J>0)": "K=81.6 D=69.7 J=105.5，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=42.7 MDI=11.8 ADX=39.9，手拉手↑",
+        "量比>1": "量比=1.13（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:25:25",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "000975",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "DMI手拉手"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "形态支撑",
+        "MACD金叉>MA20",
+        "量比>1"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "均线多头排列": "MA5=32.61 MA10=32.16 MA20=31.33 MA60=29.27",
+        "KDJ金叉(J>0)": "K=69.7 D=62.0 J=85.2，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=28.6 MDI=10.2 ADX=35.3，手拉手↑"
+      },
+      "created_at": "2026-03-16 00:25:25",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "688080",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "回踩关键均线",
+        "底分型确认"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "MACD金叉>MA20",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "均线多头排列": "MA5=60.41 MA10=59.05 MA20=58.83 MA60=56.71",
+        "KDJ金叉(J>0)": "K=51.8 D=58.9 J=37.5，近期金叉，J>0",
+        "回踩关键均线": "回踩MA60支撑 (56.71)，偏离1.0%",
+        "底分型确认": "近期出现底分型"
+      },
+      "created_at": "2026-03-16 00:53:09",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "688101",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "回踩关键均线",
+        "底分型确认"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "MACD金叉>MA20",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "均线多头排列": "MA5=17.53 MA10=17.26 MA20=17.24 MA60=17.10",
+        "KDJ金叉(J>0)": "K=66.4 D=60.1 J=78.9，近期金叉，J>0",
+        "回踩关键均线": "回踩MA20支撑 (17.24)，偏离1.0%",
+        "底分型确认": "近期出现底分型"
+      },
+      "created_at": "2026-03-16 00:53:20",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "688131",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "KDJ金叉(J>0)",
+        "回踩关键均线",
+        "底分型确认",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "均线多头排列",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "KDJ金叉(J>0)": "K=36.8 D=23.1 J=64.3，近期金叉，J>0",
+        "回踩关键均线": "回踩MA20支撑 (66.98)，偏离-1.7%",
+        "底分型确认": "近期出现底分型",
+        "量比>1": "量比=3.05（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:53:31",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "301505",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 6,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "头肩底形态",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=25.26 MA10=25.19 MA20=25.18 MA60=24.09",
+        "KDJ金叉(J>0)": "K=40.0 D=37.1 J=45.8，近期金叉，J>0",
+        "头肩底形态": "头肩底已突破颈线",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=30.3 MDI=13.5 ADX=21.2，手拉手↑",
+        "量比>1": "量比=1.10（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:41:28",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "603366",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 6,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "头肩底形态",
+        "底分型确认",
+        "MACD金叉>MA20",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "均线多头排列",
+        "KDJ金叉(J>0)"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "头肩底形态": "头肩底已突破颈线",
+        "底分型确认": "近期出现底分型",
+        "MACD金叉>MA20": "MACD金叉，收盘>MA20(9.59)",
+        "DMI手拉手": "PDI=38.4 MDI=22.9 ADX=31.6，手拉手↑",
+        "量比>1": "量比=7.82（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:50:30",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "603639",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 6,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "回踩关键均线",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=14.39 MA10=14.39 MA20=14.35 MA60=13.54",
+        "KDJ金叉(J>0)": "K=48.7 D=46.1 J=53.8，近期金叉，J>0",
+        "回踩关键均线": "回踩MA20支撑 (14.35)，偏离0.7%",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=23.1 MDI=10.5 ADX=31.6，手拉手↑",
+        "量比>1": "量比=1.19（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:51:04",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "000912",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=5.71 MA10=5.58 MA20=5.15 MA60=4.59",
+        "KDJ金叉(J>0)": "K=72.5 D=69.8 J=77.8，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=39.4 MDI=16.3 ADX=38.0，手拉手↑",
+        "量比>1": "量比=1.56（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:25:08",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "000048",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "均线多头排列",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "KDJ金叉(J>0)",
+        "形态支撑",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "均线多头排列": "MA5=19.69 MA10=18.72 MA20=18.30 MA60=16.68",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=43.0 MDI=7.3 ADX=56.1，手拉手↑",
+        "量比>1": "量比=1.50（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:23:03",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "000422",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=18.61 MA10=18.22 MA20=17.36 MA60=15.81",
+        "KDJ金叉(J>0)": "K=66.4 D=62.7 J=73.7，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=42.5 MDI=10.4 ADX=51.7，手拉手↑",
+        "量比>1": "量比=1.08（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:23:20",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "000792",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=38.59 MA10=37.69 MA20=36.29 MA60=32.65",
+        "KDJ金叉(J>0)": "K=74.1 D=69.6 J=83.1，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=39.9 MDI=10.6 ADX=50.2，手拉手↑",
+        "量比>1": "量比=1.79（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:24:39",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "000990",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=9.28 MA10=9.04 MA20=8.87 MA60=8.40",
+        "KDJ金叉(J>0)": "K=61.7 D=51.1 J=83.0，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=55.0 MDI=11.6 ADX=53.9，手拉手↑",
+        "量比>1": "量比=3.11（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:25:29",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "000012",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "头肩底形态",
+        "底分型确认",
+        "DMI手拉手"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "MACD金叉>MA20",
+        "资金流入",
+        "量比>1"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=4.89 MA10=4.86 MA20=4.84 MA60=4.63",
+        "KDJ金叉(J>0)": "K=53.9 D=48.3 J=65.3，近期金叉，J>0",
+        "头肩底形态": "头肩底已突破颈线",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=32.3 MDI=13.5 ADX=29.3，手拉手↑"
+      },
+      "created_at": "2026-03-16 00:22:55",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "000404",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "回踩关键均线",
+        "底分型确认",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=7.30 MA10=7.23 MA20=7.22 MA60=7.00",
+        "KDJ金叉(J>0)": "K=68.4 D=66.4 J=72.4，近期金叉，J>0",
+        "回踩关键均线": "回踩MA20支撑 (7.22)，偏离1.7%",
+        "底分型确认": "近期出现底分型",
+        "量比>1": "量比=1.44（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:23:15",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "000883",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=4.94 MA10=4.87 MA20=4.74 MA60=4.64",
+        "KDJ金叉(J>0)": "K=84.2 D=85.1 J=82.4，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=36.3 MDI=6.2 ADX=49.9，手拉手↑",
+        "量比>1": "量比=1.02（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:24:59",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "001333",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "头肩底形态",
+        "底分型确认",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=26.82 MA10=26.57 MA20=26.20 MA60=24.40",
+        "KDJ金叉(J>0)": "K=64.1 D=60.0 J=72.3，近期金叉，J>0",
+        "头肩底形态": "头肩底已突破颈线",
+        "底分型确认": "近期出现底分型",
+        "量比>1": "量比=1.73（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:25:57",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "001259",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "KDJ金叉(J>0)",
+        "回踩关键均线",
+        "底分型确认",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "均线多头排列",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "KDJ金叉(J>0)": "K=65.6 D=58.8 J=79.1，近期金叉，J>0",
+        "回踩关键均线": "回踩MA20支撑 (34.64)，偏离-0.3%",
+        "底分型确认": "近期出现底分型",
+        "量比>1": "量比=1.09（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:25:43",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "000823",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "MACD金叉>MA20",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=15.55 MA10=15.39 MA20=15.29 MA60=14.54",
+        "KDJ金叉(J>0)": "K=67.1 D=53.9 J=93.7，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "MACD金叉>MA20": "MACD金叉，收盘>MA20(15.29)",
+        "量比>1": "量比=1.34（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:24:47",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "001324",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=20.30 MA10=20.10 MA20=19.96 MA60=19.09",
+        "KDJ金叉(J>0)": "K=58.0 D=52.9 J=68.2，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=34.9 MDI=7.8 ADX=47.2，手拉手↑",
+        "量比>1": "量比=3.10（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:25:54",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "001286",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=11.11 MA10=11.04 MA20=10.55 MA60=10.05",
+        "KDJ金叉(J>0)": "K=72.2 D=75.7 J=65.1，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=42.9 MDI=7.9 ADX=66.8，手拉手↑",
+        "量比>1": "量比=1.29（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:25:47",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002106",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "MACD金叉>MA20",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=12.44 MA10=12.29 MA20=12.20 MA60=11.53",
+        "KDJ金叉(J>0)": "K=63.5 D=58.1 J=74.5，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "MACD金叉>MA20": "MACD金叉，收盘>MA20(12.20)",
+        "量比>1": "量比=1.71（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:26:49",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002108",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "回踩关键均线",
+        "底分型确认",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=5.03 MA10=5.02 MA20=5.01 MA60=4.97",
+        "KDJ金叉(J>0)": "K=60.2 D=54.0 J=72.7，近期金叉，J>0",
+        "回踩关键均线": "回踩MA20支撑 (5.01)，偏离1.3%",
+        "底分型确认": "近期出现底分型",
+        "量比>1": "量比=1.12（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:26:50",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002136",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=14.32 MA10=14.23 MA20=13.89 MA60=13.01",
+        "KDJ金叉(J>0)": "K=58.4 D=57.2 J=60.6，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=28.6 MDI=9.6 ADX=35.7，手拉手↑",
+        "量比>1": "量比=1.49（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:27:01",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002192",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=56.76 MA10=56.14 MA20=55.17 MA60=54.46",
+        "KDJ金叉(J>0)": "K=58.3 D=54.4 J=66.2，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=28.0 MDI=15.5 ADX=23.1，手拉手↑",
+        "量比>1": "量比=1.38（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:27:21",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002226",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "头肩底形态",
+        "底分型确认",
+        "DMI手拉手"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "MACD金叉>MA20",
+        "量比>1"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=6.32 MA10=6.25 MA20=6.20 MA60=6.06",
+        "KDJ金叉(J>0)": "K=53.4 D=52.9 J=54.5，近期金叉，J>0",
+        "头肩底形态": "头肩底已突破颈线",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=33.3 MDI=16.3 ADX=20.6，手拉手↑"
+      },
+      "created_at": "2026-03-16 00:27:33",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002240",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "回踩关键均线",
+        "底分型确认",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=40.29 MA10=40.03 MA20=39.81 MA60=36.70",
+        "KDJ金叉(J>0)": "K=52.9 D=46.1 J=66.5，近期金叉，J>0",
+        "回踩关键均线": "回踩MA20支撑 (39.81)，偏离1.4%",
+        "底分型确认": "近期出现底分型",
+        "量比>1": "量比=1.26（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:27:38",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002259",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "均线多头排列",
+        "回踩关键均线",
+        "底分型确认",
+        "DMI手拉手"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "KDJ金叉(J>0)",
+        "MACD金叉>MA20",
+        "量比>1"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "均线多头排列": "MA5=5.78 MA10=5.75 MA20=5.74 MA60=4.78",
+        "回踩关键均线": "回踩MA20支撑 (5.74)，偏离1.0%",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=28.4 MDI=9.8 ADX=33.7，手拉手↑"
+      },
+      "created_at": "2026-03-16 00:27:45",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002274",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=6.85 MA10=6.74 MA20=6.55 MA60=6.12",
+        "KDJ金叉(J>0)": "K=59.3 D=54.2 J=69.5，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=44.6 MDI=14.4 ADX=38.5，手拉手↑",
+        "量比>1": "量比=1.36（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:27:50",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002309",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "回踩关键均线",
+        "底分型确认",
+        "DMI手拉手"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "MACD金叉>MA20",
+        "量比>1"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=3.51 MA10=3.46 MA20=3.42 MA60=3.29",
+        "KDJ金叉(J>0)": "K=53.7 D=52.3 J=56.6，近期金叉，J>0",
+        "回踩关键均线": "回踩MA20支撑 (3.42)，偏离1.3%",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=24.5 MDI=12.9 ADX=24.4，手拉手↑"
+      },
+      "created_at": "2026-03-16 00:28:02",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002311",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "头肩底形态",
+        "底分型确认",
+        "DMI手拉手"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "MACD金叉>MA20",
+        "量比>1"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=55.43 MA10=54.81 MA20=54.35 MA60=53.56",
+        "KDJ金叉(J>0)": "K=74.5 D=66.1 J=91.2，近期金叉，J>0",
+        "头肩底形态": "头肩底已突破颈线",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=24.0 MDI=8.7 ADX=22.4，手拉手↑"
+      },
+      "created_at": "2026-03-16 00:28:03",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002360",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=6.17 MA10=5.88 MA20=5.76 MA60=5.26",
+        "KDJ金叉(J>0)": "K=83.0 D=73.1 J=102.7，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=35.3 MDI=13.3 ADX=33.3，手拉手↑",
+        "量比>1": "量比=2.25（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:28:19",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002391",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=6.64 MA10=6.58 MA20=6.53 MA60=6.23",
+        "KDJ金叉(J>0)": "K=66.9 D=62.8 J=75.2，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=29.6 MDI=10.6 ADX=27.7，手拉手↑",
+        "量比>1": "量比=1.33（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:28:30",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002445",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=3.74 MA10=3.29 MA20=3.02 MA60=2.77",
+        "KDJ金叉(J>0)": "K=93.5 D=83.0 J=114.6，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=73.0 MDI=8.4 ADX=52.4，手拉手↑",
+        "量比>1": "量比=4.62（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:28:50",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002449",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "头肩底形态",
+        "底分型确认",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=8.90 MA10=8.67 MA20=8.64 MA60=8.62",
+        "KDJ金叉(J>0)": "K=68.0 D=59.3 J=85.3，近期金叉，J>0",
+        "头肩底形态": "头肩底已突破颈线",
+        "底分型确认": "近期出现底分型",
+        "量比>1": "量比=1.08（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:28:51",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002469",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=9.67 MA10=9.47 MA20=9.26 MA60=8.91",
+        "KDJ金叉(J>0)": "K=61.9 D=59.4 J=66.8，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=56.2 MDI=10.3 ADX=44.1，手拉手↑",
+        "量比>1": "量比=1.82（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:28:58",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002487",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "MACD金叉>MA20",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=70.31 MA10=69.76 MA20=67.13 MA60=60.03",
+        "KDJ金叉(J>0)": "K=76.8 D=64.7 J=100.9，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "MACD金叉>MA20": "MACD金叉，收盘>MA20(67.13)",
+        "量比>1": "量比=2.58（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:29:04",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002558",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "均线多头排列",
+        "形态支撑",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "CYS<-15且上行": "CYS=-16.04（阈值<-15.0），上行↑（5日前=-17.88）",
+        "KDJ金叉(J>0)": "K=46.7 D=36.3 J=67.5，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "量比>1": "量比=1.05（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:29:32",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002585",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "回踩关键均线",
+        "底分型确认",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=7.56 MA10=7.51 MA20=7.50 MA60=7.18",
+        "KDJ金叉(J>0)": "K=49.8 D=41.0 J=67.5，近期金叉，J>0",
+        "回踩关键均线": "回踩MA20支撑 (7.50)，偏离1.8%",
+        "底分型确认": "近期出现底分型",
+        "量比>1": "量比=1.06（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:29:42",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002588",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=11.27 MA10=11.06 MA20=10.99 MA60=10.41",
+        "KDJ金叉(J>0)": "K=61.6 D=50.9 J=83.0，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=34.4 MDI=16.5 ADX=22.0，手拉手↑",
+        "量比>1": "量比=1.49（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:29:43",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002637",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑",
+        "量比>1"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=15.00 MA10=14.44 MA20=14.19 MA60=12.32",
+        "KDJ金叉(J>0)": "K=66.3 D=57.1 J=84.8，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "MACD金叉>MA20": "MACD金叉，收盘>MA20(14.19)",
+        "DMI手拉手": "PDI=35.5 MDI=13.2 ADX=37.1，手拉手↑"
+      },
+      "created_at": "2026-03-16 00:30:01",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002779",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "资金流入",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "均线多头排列",
+        "形态支撑",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "KDJ金叉(J>0)": "K=23.5 D=21.7 J=27.1，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "资金流入": "近5日主力净流入: 0.62亿",
+        "量比>1": "量比=1.95（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:30:55",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002903",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=29.27 MA10=27.32 MA20=25.23 MA60=23.66",
+        "KDJ金叉(J>0)": "K=67.1 D=67.6 J=66.1，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=48.8 MDI=7.2 ADX=76.2，手拉手↑",
+        "量比>1": "量比=1.82（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:31:45",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "003002",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "KDJ金叉(J>0)",
+        "头肩底形态",
+        "底分型确认",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "均线多头排列",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "KDJ金叉(J>0)": "K=33.8 D=31.0 J=39.5，近期金叉，J>0",
+        "头肩底形态": "头肩底已突破颈线",
+        "底分型确认": "近期出现底分型",
+        "量比>1": "量比=3.24（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:32:28",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "003030",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "KDJ金叉(J>0)",
+        "回踩关键均线",
+        "底分型确认",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "均线多头排列",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "KDJ金叉(J>0)": "K=41.1 D=36.8 J=49.8，近期金叉，J>0",
+        "回踩关键均线": "回踩MA60支撑 (20.99)，偏离-1.2%",
+        "底分型确认": "近期出现底分型",
+        "量比>1": "量比=1.11（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:32:39",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "300003",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "KDJ金叉(J>0)",
+        "回踩关键均线",
+        "底分型确认",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "均线多头排列",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "KDJ金叉(J>0)": "K=49.4 D=39.6 J=69.0，近期金叉，J>0",
+        "回踩关键均线": "回踩MA20支撑 (17.65)，偏离0.1%",
+        "底分型确认": "近期出现底分型",
+        "量比>1": "量比=2.03（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:32:45",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "300080",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=5.75 MA10=5.61 MA20=5.46 MA60=5.18",
+        "KDJ金叉(J>0)": "K=76.0 D=67.0 J=94.0，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=36.7 MDI=9.6 ADX=26.8，手拉手↑",
+        "量比>1": "量比=1.95（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:33:10",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "300201",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=10.28 MA10=9.95 MA20=9.32 MA60=7.80",
+        "KDJ金叉(J>0)": "K=82.0 D=79.5 J=87.0，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=34.3 MDI=6.4 ADX=70.3，手拉手↑",
+        "量比>1": "量比=1.53（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:33:53",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "300230",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "回踩关键均线",
+        "底分型确认",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=5.31 MA10=5.26 MA20=5.26 MA60=5.06",
+        "KDJ金叉(J>0)": "K=63.7 D=58.0 J=74.9，近期金叉，J>0",
+        "回踩关键均线": "回踩MA20支撑 (5.26)，偏离0.6%",
+        "底分型确认": "近期出现底分型",
+        "量比>1": "量比=1.01（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:34:03",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "300267",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=4.08 MA10=4.06 MA20=3.98 MA60=3.84",
+        "KDJ金叉(J>0)": "K=43.4 D=38.6 J=53.1，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=32.9 MDI=13.8 ADX=34.2，手拉手↑",
+        "量比>1": "量比=1.61（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:34:18",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "300296",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=8.76 MA10=8.58 MA20=8.10 MA60=7.12",
+        "KDJ金叉(J>0)": "K=66.4 D=62.9 J=73.4，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=39.3 MDI=11.6 ADX=46.1，手拉手↑",
+        "量比>1": "量比=1.56（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:34:29",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "300430",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "KDJ金叉(J>0)",
+        "回踩关键均线",
+        "底分型确认",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "均线多头排列",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "KDJ金叉(J>0)": "K=50.6 D=43.5 J=64.8，近期金叉，J>0",
+        "回踩关键均线": "回踩MA20支撑 (21.20)，偏离-1.4%",
+        "底分型确认": "近期出现底分型",
+        "量比>1": "量比=1.97（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:35:19",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "300437",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=20.30 MA10=19.80 MA20=18.14 MA60=17.33",
+        "KDJ金叉(J>0)": "K=70.0 D=73.5 J=63.1，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=37.3 MDI=7.2 ADX=61.3，手拉手↑",
+        "量比>1": "量比=1.16（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:35:22",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "300453",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=9.86 MA10=9.77 MA20=9.57 MA60=9.30",
+        "KDJ金叉(J>0)": "K=65.8 D=62.8 J=71.6，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=34.7 MDI=10.2 ADX=33.5，手拉手↑",
+        "量比>1": "量比=2.47（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:35:28",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "300464",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=7.31 MA10=7.20 MA20=7.09 MA60=6.79",
+        "KDJ金叉(J>0)": "K=73.4 D=67.2 J=85.9，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=31.1 MDI=10.4 ADX=29.1，手拉手↑",
+        "量比>1": "量比=1.96（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:35:32",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "300468",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "回踩关键均线",
+        "底分型确认",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=36.38 MA10=36.10 MA20=35.35 MA60=34.76",
+        "KDJ金叉(J>0)": "K=55.3 D=56.2 J=53.5，近期金叉，J>0",
+        "回踩关键均线": "回踩MA20支撑 (35.35)，偏离1.6%",
+        "底分型确认": "近期出现底分型",
+        "量比>1": "量比=1.05（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:35:34",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "300517",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "KDJ金叉(J>0)",
+        "头肩底形态",
+        "底分型确认",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "均线多头排列",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "KDJ金叉(J>0)": "K=55.6 D=51.4 J=63.9，近期金叉，J>0",
+        "头肩底形态": "头肩底已突破颈线",
+        "底分型确认": "近期出现底分型",
+        "量比>1": "量比=1.09（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:35:53",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "300599",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "MACD金叉>MA20",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=10.24 MA10=10.18 MA20=10.14 MA60=9.53",
+        "KDJ金叉(J>0)": "K=50.9 D=45.1 J=62.4，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "MACD金叉>MA20": "MACD金叉，收盘>MA20(10.14)",
+        "量比>1": "量比=1.74（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:36:24",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "300611",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "回踩关键均线",
+        "底分型确认",
+        "MACD金叉>MA20",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "回踩关键均线": "回踩MA20支撑 (26.91)，偏离1.7%",
+        "底分型确认": "近期出现底分型",
+        "MACD金叉>MA20": "MACD金叉，收盘>MA20(26.91)",
+        "量比>1": "量比=2.60（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:36:29",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "300672",
+      "name": "",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "MACD金叉>MA20",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=148.97 MA10=146.06 MA20=145.49 MA60=129.34",
+        "KDJ金叉(J>0)": "K=60.0 D=42.8 J=94.3，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "MACD金叉>MA20": "MACD金叉，收盘>MA20(145.49)",
+        "量比>1": "量比=1.53（阈值>1.0）"
+      },
+      "created_at": "2026-03-16 00:36:51",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    }
+  ]
+}
