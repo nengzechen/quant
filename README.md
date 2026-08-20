@@ -188,9 +188,14 @@ cp apps/dsa-web/dist-demo/index.html apps/dsa-web/dist-demo/404.html   # SPA 深
 [daily-phase1.yml](.github/workflows/daily-phase1.yml) 每交易日盘前跑完 Phase1 后把结果提交回 `main`，
 这次 push 会自动触发 Pages 重新发布。
 
-> ⚠️ GitHub 托管 runner 是海外 IP，AKShare / 东方财富的行情接口常直接 reset 连接，
-> Phase1 会拿不到股票列表而空跑。想让在线 Demo 持续有新数据，可以在本地（或国内服务器）跑
-> `python main.py --phase1`，再把 `data/seed_pool_*.json` push 上去，同样会自动发布。
+> ℹ️ GitHub 托管 runner 是海外 IP，东方财富 / 上交所的接口不可达（可用
+> [Datasource Probe](.github/workflows/datasource-probe.yml) 工作流实测）。
+> 因此全量代码走 baostock 兜底、日线走新浪源，两者海外可直连；
+> 但**板块涨幅榜、涨停板块这类只有东财提供的指标会被跳过**，海外跑出的评分会比国内略保守。
+> 想要完整评分，在本地或国内服务器跑 `python main.py --phase1`，
+> 再把 `data/seed_pool_*.json` push 上去即可，同样会自动发布到 Pages。
+>
+> 调试时可用 `PHASE1_MAX_CODES=200` 等距抽样缩小候选池，快速跑通全流程。
 
 ---
 
