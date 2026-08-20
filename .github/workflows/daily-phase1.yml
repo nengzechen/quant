@@ -26,6 +26,9 @@ jobs:
   scan:
     runs-on: ubuntu-latest
     timeout-minutes: 180  # 3小时上限
+    # 种子池文件名按运行时的本地日期生成，统一到北京时间，避免跨日错位
+    env:
+      TZ: Asia/Shanghai
 
     permissions:
       contents: write
@@ -69,6 +72,22 @@ jobs:
             git push
           else
             echo "no changes"
+          fi
+
+      # Phase1 拿不到行情时会记 ERROR 后正常退出（0 只入池），
+      # 不做校验的话 job 仍是绿的，问题会被掩盖
+      - name: Verify seed pool
+        run: |
+          FILE="data/seed_pool_$(date +%Y%m%d).json"
+          if [ ! -s "$FILE" ]; then
+            echo "::error::Phase1 未生成 $FILE。常见原因：GitHub 托管 runner 的海外 IP 被 AKShare/东财行情接口拒绝（Connection reset by peer）"
+            exit 1
+          fi
+          COUNT=$(python -c "import json,sys;print(len(json.load(open('$FILE'))['entries']))")
+          echo "种子池：$COUNT 只"
+          if [ "$COUNT" -eq 0 ]; then
+            echo "::error::种子池为空"
+            exit 1
           fi
 
       - uses: actions/upload-artifact@v4

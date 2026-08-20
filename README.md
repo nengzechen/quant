@@ -184,6 +184,14 @@ cp apps/dsa-web/dist-demo/index.html apps/dsa-web/dist-demo/404.html   # SPA 深
 
 仓库 Settings → Pages → Source 选 **GitHub Actions** 即可启用。
 
+数据来源是仓库里的 `data/seed_pool_*.json`：
+[daily-phase1.yml](.github/workflows/daily-phase1.yml) 每交易日盘前跑完 Phase1 后把结果提交回 `main`，
+这次 push 会自动触发 Pages 重新发布。
+
+> ⚠️ GitHub 托管 runner 是海外 IP，AKShare / 东方财富的行情接口常直接 reset 连接，
+> Phase1 会拿不到股票列表而空跑。想让在线 Demo 持续有新数据，可以在本地（或国内服务器）跑
+> `python main.py --phase1`，再把 `data/seed_pool_*.json` push 上去，同样会自动发布。
+
 ---
 
 ## 主要配置项
