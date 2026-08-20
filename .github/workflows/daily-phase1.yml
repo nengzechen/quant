@@ -64,19 +64,30 @@ jobs:
         run: |
           mkdir -p data logs reports
           TARGET="${{ github.event.inputs.target || '100' }}"
-          python main.py --phase1 --phase1-target "$TARGET" --workers 5
+          python main.py --phase1 --phase1-target "$TARGET" --workers 8
 
+      # 全市场扫描要跑一个多小时，期间 main 很可能已经前进，
+      # 直接 push 会 non-fast-forward 失败并丢掉当天数据，所以带 rebase 重试
       - name: Commit seed pool back
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/seed_pool_*.json reports/screening/*.md 2>/dev/null || true
-          if ! git diff --cached --quiet; then
-            git commit -m "chore(phase1): seed pool $(TZ=Asia/Shanghai date +%F)"
-            git push
-          else
+          if git diff --cached --quiet; then
             echo "no changes"
+            exit 0
           fi
+          git commit -m "chore(phase1): seed pool $(TZ=Asia/Shanghai date +%F)"
+          for attempt in 1 2 3; do
+            if git push; then
+              echo "pushed (attempt $attempt)"
+              exit 0
+            fi
+            echo "push 被拒，rebase 到最新 ${GITHUB_REF_NAME} 后重试"
+            git pull --rebase origin "$GITHUB_REF_NAME"
+          done
+          echo "::error::种子池提交失败（连续 3 次 push 被拒）"
+          exit 1
 
       # Phase1 拿不到行情时会记 ERROR 后正常退出（0 只入池），
       # 不做校验的话 job 仍是绿的，问题会被掩盖
