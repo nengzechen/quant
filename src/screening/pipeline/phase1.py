@@ -10,7 +10,8 @@ Phase1：收盘后离线运行（全市场 → 种子池）
   4. 三个模型并发评分（BottomSwing 用超跌池；StrongTrend+LimitUpHunter 用活跃池）
   5. 各模型用自己的 is_qualified_seed() 判断是否进种子池
   6. 合并去重（同一股票取最高分模型）
-  7. 截取 top N，保存到 data/seed_pool_YYYYMMDD.json
+  7. 截取 top N，补齐股票名称
+  8. 保存到 data/seed_pool_YYYYMMDD.json
 
 使用方式：
     python main.py --phase1
@@ -107,11 +108,13 @@ def _is_tradable_name(name: str) -> bool:
 def _fetch_all_a_codes_akshare() -> List[str]:
     """主源：akshare（东财 / 上交所），国内网络可用"""
     import akshare as ak
+    from src.screening.indicators import register_stock_names
     df = ak.stock_info_a_code_name()
     if df is None or df.empty:
         raise ValueError("返回空列表")
 
     codes = []
+    names: Dict[str, str] = {}
     for _, row in df.iterrows():
         code = str(row.get("code", "")).zfill(6)
         name = str(row.get("name", ""))
@@ -120,7 +123,9 @@ def _fetch_all_a_codes_akshare() -> List[str]:
         if not _is_tradable_name(name):
             continue
         codes.append(code)
+        names[code] = name
 
+    register_stock_names(names)
     logger.info(f"[Phase1] 全量代码（akshare）：{len(df)} 只 → 过滤后 {len(codes)} 只")
     return codes
 
@@ -133,7 +138,7 @@ def _fetch_all_a_codes_baostock() -> List[str]:
     """
     from datetime import date, timedelta
 
-    from src.screening.indicators import _BS_LOCK, _bs_ensure_login
+    from src.screening.indicators import _BS_LOCK, _bs_ensure_login, register_stock_names
 
     if not _bs_ensure_login():
         raise RuntimeError("baostock 登录失败")
@@ -160,6 +165,7 @@ def _fetch_all_a_codes_baostock() -> List[str]:
         raise RuntimeError("最近 10 天都取不到全量列表")
 
     codes = []
+    names: Dict[str, str] = {}
     for row in rows:
         # row: [code, tradeStatus, code_name]
         bs_code = row[0] if row else ""
@@ -168,8 +174,11 @@ def _fetch_all_a_codes_baostock() -> List[str]:
             continue
         if not _is_tradable_name(name):
             continue
-        codes.append(bs_code.split(".")[-1])
+        code = bs_code.split(".")[-1]
+        codes.append(code)
+        names[code] = name
 
+    register_stock_names(names)
     logger.info(
         f"[Phase1] 全量代码（baostock {used_day}）：{len(rows)} 条 → 过滤后 {len(codes)} 只"
     )
@@ -260,7 +269,7 @@ def run_phase1(
     from src.screening.pipeline.seed_pool import SeedEntry, save_seed_pool
     from src.screening.indicators import (
         get_daily_df, get_market_snapshot, get_top5_sectors, get_limitup_sector,
-        clear_data_cache, bs_logout,
+        get_stock_name, clear_data_cache, bs_logout,
     )
 
     logger.info("=" * 50)
@@ -338,7 +347,12 @@ def run_phase1(
     seeds = _select_top5_per_sector(list(dedup.values()), target_count)
     logger.info(f"[Phase1] 去重后 {len(dedup)} 只 → 按板块top5筛选后 {len(seeds)} 只进入种子池")
 
-    # Step 7: 保存 JSON
+    # Step 7: 补齐名称（东财的个股接口海外不可达，靠取全量代码时登记的映射兜底）
+    for entry in seeds:
+        if not entry.name:
+            entry.name = get_stock_name(entry.code)
+
+    # Step 8: 保存 JSON
     if save:
         path = save_seed_pool(seeds)
         logger.info(f"[Phase1] 种子池已保存: {path}")

@@ -619,8 +619,23 @@ def get_limitup_sector() -> str:
         return ""
 
 
+# 代码 → 名称。由 Phase1 拉全量代码时顺带登记（akshare / baostock 都会返回名称），
+# 避免逐只去问东财 —— 该接口对海外 IP 不可达，名称会全部落空。
+_NAME_CACHE: Dict[str, str] = {}
+
+
+def register_stock_names(mapping: Dict[str, str]) -> None:
+    """登记代码→名称映射，供 get_stock_name 优先使用"""
+    for code, name in mapping.items():
+        if code and name:
+            _NAME_CACHE[code] = name
+
+
 def get_stock_name(code: str) -> str:
-    """获取股票名称（复用 realtime_info 缓存，不额外请求）"""
+    """获取股票名称（优先用已登记的映射，再复用 realtime_info 缓存，不额外请求）"""
+    cached = _NAME_CACHE.get(code)
+    if cached:
+        return cached
     try:
         info = get_realtime_info(code)
         if info:
