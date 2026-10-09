@@ -16,6 +16,7 @@
 4. 单笔风险检查（最大 risk_per_trade_pct）
 5. 情感评分检查（评分过低阻止买入）
 6. 黑名单股票检查
+7. 卖出 T+1 检查（当日买入股份不可卖出）
 """
 
 import logging
@@ -158,6 +159,13 @@ class RiskGuard:
             return False, (
                 f"持仓不足: {stock_code} 持有 {pos.quantity} 股, "
                 f"尝试卖出 {quantity} 股"
+            )
+
+        sellable = pos.sellable_quantity()
+        if quantity > sellable:
+            return False, (
+                f"T+1 限制: {stock_code} 今日买入 {pos.quantity - sellable} 股不可卖出, "
+                f"可卖 {sellable} 股, 尝试卖出 {quantity} 股"
             )
 
         logger.info(f"卖出风险检查通过: {stock_code} 卖出 {quantity}股 @ {price:.2f}")

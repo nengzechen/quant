@@ -170,7 +170,10 @@ class PortfolioManager:
             return None
 
         pos = portfolio.positions[code_upper]
-        quantity = pos.quantity
+        quantity = pos.sellable_quantity()
+        if quantity <= 0:
+            logger.info(f"卖出信号顺延: {signal.stock_code} 今日买入，受 T+1 限制")
+            return None
         price = signal.ideal_buy_price if signal.ideal_buy_price > 0 else pos.current_price
 
         if price <= 0:
@@ -226,6 +229,10 @@ class PortfolioManager:
             pos = portfolio.positions[code]
             # 用当前价止损（或稍低，模拟滑点）
             sell_price = pos.current_price
+            sell_qty = pos.sellable_quantity()
+            if sell_qty <= 0:
+                logger.warning(f"止损顺延: {code} 今日买入，受 T+1 限制，下个交易日再止损")
+                continue
 
             logger.warning(
                 f"触发止损: {code} 当前价={sell_price:.2f} "
@@ -237,7 +244,7 @@ class PortfolioManager:
             passed, reason = self.risk_guard.check_sell(
                 portfolio=portfolio,
                 stock_code=code,
-                quantity=pos.quantity,
+                quantity=sell_qty,
                 price=sell_price,
             )
 
@@ -247,7 +254,7 @@ class PortfolioManager:
 
             record = self.executor.execute_sell(
                 stock_code=code,
-                quantity=pos.quantity,
+                quantity=sell_qty,
                 price=sell_price,
                 reason=f"止损触发: 跌破 {pos.stop_loss_price:.2f}",
             )

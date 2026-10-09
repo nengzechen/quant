@@ -53,6 +53,7 @@ class PaperBroker(BaseBroker):
         initial_capital: float = 1_000_000,
         max_positions: int = 10,
         risk_per_trade_pct: float = 0.02,
+        t_plus_one: bool = True,
     ):
         """
         初始化模拟券商。
@@ -62,6 +63,7 @@ class PaperBroker(BaseBroker):
             initial_capital: 初始资金
             max_positions: 最大持仓数量
             risk_per_trade_pct: 单笔最大风险比例
+            t_plus_one: 是否执行 A 股 T+1 规则（当日买入的股份当日不可卖出）
         """
         if account_path is None:
             account_path = os.path.expanduser("~/.stock_quant/paper_account.json")
@@ -70,6 +72,7 @@ class PaperBroker(BaseBroker):
         self.initial_capital = initial_capital
         self.max_positions = max_positions
         self.risk_per_trade_pct = risk_per_trade_pct
+        self.t_plus_one = t_plus_one
 
         # 确保账户数据目录存在
         self.account_path.parent.mkdir(parents=True, exist_ok=True)
@@ -86,6 +89,7 @@ class PaperBroker(BaseBroker):
                 with open(self.account_path, 'r', encoding='utf-8') as f:
                     data = json.load(f)
                 portfolio = Portfolio.from_dict(data['portfolio'])
+                self._migrate_buy_dates(portfolio)
                 logger.info(
                     f"模拟账户已加载: 总资产={portfolio.total_assets:.2f}, "
                     f"可用现金={portfolio.available_cash:.2f}"
@@ -95,6 +99,18 @@ class PaperBroker(BaseBroker):
                 logger.warning(f"加载模拟账户失败，将重新初始化: {e}")
 
         return self._init_account()
+
+    @staticmethod
+    def _migrate_buy_dates(portfolio: Portfolio) -> None:
+        """
+        旧账户文件没有 last_buy_date：用建仓时间回填，保证当日建仓的持仓也受 T+1 约束。
+
+        旧数据无法区分当日加仓股数，回填时按整笔持仓冻结（偏保守）。
+        """
+        for pos in portfolio.positions.values():
+            if pos.last_buy_date is None and pos.open_time:
+                pos.last_buy_date = pos.open_time[:10]
+                pos.today_buy_qty = pos.quantity
 
     def _init_account(self) -> Portfolio:
         """初始化新账户"""
@@ -250,6 +266,7 @@ class PaperBroker(BaseBroker):
                 pos.market_value = total_qty * price
                 pos.pnl = (price - avg_cost) * total_qty
                 pos.pnl_pct = (price - avg_cost) / avg_cost * 100 if avg_cost > 0 else 0
+                pos.record_buy(quantity)
             else:
                 # 新建持仓
                 self._portfolio.positions[stock_code] = Position(
@@ -265,6 +282,7 @@ class PaperBroker(BaseBroker):
                     highest_price=price,
                     model=model or None,
                 )
+                self._portfolio.positions[stock_code].record_buy(quantity)
 
             self._portfolio.recalculate()
             self._save()
@@ -316,6 +334,25 @@ class PaperBroker(BaseBroker):
                     price=price,
                     commission=0.0,
                     reason="持仓数量不足",
+                    status=TradeStatus.REJECTED,
+                )
+                self._save_trade_record(record)
+                return record
+
+            sellable = pos.sellable_quantity() if self.t_plus_one else pos.quantity
+            if quantity > sellable:
+                logger.warning(
+                    f"T+1 限制: {stock_code} 持有 {pos.quantity} 股, "
+                    f"今日买入冻结 {pos.quantity - sellable} 股, "
+                    f"可卖 {sellable} 股, 尝试卖出 {quantity} 股"
+                )
+                record = TradeRecord.create(
+                    stock_code=stock_code,
+                    action=trade_action,
+                    quantity=quantity,
+                    price=price,
+                    commission=0.0,
+                    reason=f"T+1 限制：今日买入股份不可卖出（可卖 {sellable} 股）",
                     status=TradeStatus.REJECTED,
                 )
                 self._save_trade_record(record)

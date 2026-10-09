@@ -121,6 +121,8 @@ class Position:
     take_profit_price: Optional[float] = None
     highest_price: Optional[float] = None   # 持仓期间最高价（移动止损用）
     model: Optional[str] = None             # 触发买入的模型名称
+    last_buy_date: Optional[str] = None     # 最近一次买入日期 YYYY-MM-DD（T+1 用）
+    today_buy_qty: int = 0                  # last_buy_date 当日买入的股数（T+1 冻结部分）
 
     def to_dict(self) -> dict:
         """序列化为字典"""
@@ -131,6 +133,31 @@ class Position:
         """从字典反序列化（兼容旧格式：忽略未知字段，缺省字段用默认值）"""
         known = {f.name for f in cls.__dataclass_fields__.values()}
         return cls(**{k: v for k, v in data.items() if k in known})
+
+    def locked_quantity(self, today: Optional[str] = None) -> int:
+        """
+        T+1 冻结股数：当日买入的部分当日不可卖出。
+
+        Args:
+            today: 当前日期 YYYY-MM-DD（默认取系统日期，便于测试注入）
+        """
+        today = today or datetime.now().strftime('%Y-%m-%d')
+        if self.last_buy_date != today:
+            return 0
+        return min(max(self.today_buy_qty, 0), self.quantity)
+
+    def sellable_quantity(self, today: Optional[str] = None) -> int:
+        """可卖股数 = 持仓 - T+1 冻结股数"""
+        return self.quantity - self.locked_quantity(today)
+
+    def record_buy(self, quantity: int, today: Optional[str] = None) -> None:
+        """登记一笔买入，用于 T+1 冻结计算（同日多次买入累加）"""
+        today = today or datetime.now().strftime('%Y-%m-%d')
+        if self.last_buy_date == today:
+            self.today_buy_qty += quantity
+        else:
+            self.last_buy_date = today
+            self.today_buy_qty = quantity
 
     def update_price(self, price: float) -> None:
         """

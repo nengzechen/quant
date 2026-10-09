@@ -58,13 +58,20 @@ def tmp_account_path(tmp_path):
 
 @pytest.fixture
 def paper_broker(tmp_account_path):
-    """提供已初始化的模拟盘 Broker"""
+    """提供已初始化的模拟盘 Broker（关闭 T+1，便于同日买卖的基础用例）"""
     return PaperBroker(
         account_path=tmp_account_path,
         initial_capital=1_000_000,
         max_positions=10,
         risk_per_trade_pct=0.02,
+        t_plus_one=False,
     )
+
+
+@pytest.fixture
+def t1_broker(tmp_account_path):
+    """开启 T+1 的模拟盘 Broker（默认行为）"""
+    return PaperBroker(account_path=tmp_account_path, initial_capital=1_000_000)
 
 
 @pytest.fixture
@@ -815,3 +822,76 @@ class TestQuantOrchestrator:
         assert 'positions' in report
         assert 'recent_trades' in report
         assert 'broker_type' in report
+
+
+# ===================================================================
+# A 股 T+1 规则
+# ===================================================================
+
+class TestTPlusOne:
+    """当日买入的股份当日不可卖出"""
+
+    def test_same_day_sell_rejected(self, t1_broker):
+        t1_broker.place_order("600519", "BUY", 100, 1800.0)
+        record = t1_broker.place_order("600519", "SELL", 100, 1850.0)
+        assert record.status == TradeStatus.REJECTED
+        assert "T+1" in record.reason
+        assert t1_broker.get_portfolio().positions["600519"].quantity == 100
+
+    def test_previous_day_position_sellable(self, t1_broker):
+        t1_broker.place_order("600519", "BUY", 100, 1800.0)
+        pos = t1_broker._portfolio.positions["600519"]
+        pos.last_buy_date = "2000-01-01"
+        record = t1_broker.place_order("600519", "SELL", 100, 1850.0)
+        assert record.status == TradeStatus.FILLED
+
+    def test_add_today_locks_only_new_shares(self, t1_broker):
+        t1_broker.place_order("600519", "BUY", 100, 1800.0)
+        t1_broker._portfolio.positions["600519"].last_buy_date = "2000-01-01"
+        t1_broker.place_order("600519", "BUY", 200, 1800.0)
+
+        pos = t1_broker.get_portfolio().positions["600519"]
+        assert pos.sellable_quantity() == 100
+        assert t1_broker.place_order("600519", "SELL", 200, 1850.0).status == TradeStatus.REJECTED
+        assert t1_broker.place_order("600519", "SELL", 100, 1850.0).status == TradeStatus.FILLED
+        assert t1_broker.get_portfolio().positions["600519"].quantity == 200
+
+    def test_same_day_buys_accumulate(self):
+        pos = Position(
+            stock_code="600519", stock_name="", quantity=300, avg_cost=10.0,
+            current_price=10.0, market_value=3000.0, pnl=0.0, pnl_pct=0.0,
+            open_time="2026-01-05T10:00:00",
+        )
+        pos.record_buy(100, today="2026-01-05")
+        pos.record_buy(100, today="2026-01-05")
+        assert pos.locked_quantity("2026-01-05") == 200
+        assert pos.sellable_quantity("2026-01-06") == 300
+
+    def test_t_plus_one_persists_across_instances(self, tmp_account_path):
+        PaperBroker(account_path=tmp_account_path).place_order("600519", "BUY", 100, 1800.0)
+        reloaded = PaperBroker(account_path=tmp_account_path)
+        record = reloaded.place_order("600519", "SELL", 100, 1850.0)
+        assert record.status == TradeStatus.REJECTED
+
+    def test_legacy_account_backfilled_from_open_time(self, tmp_account_path):
+        from datetime import datetime
+        broker = PaperBroker(account_path=tmp_account_path)
+        broker.place_order("600519", "BUY", 100, 1800.0)
+        with open(tmp_account_path, encoding="utf-8") as f:
+            data = json.load(f)
+        legacy = data["portfolio"]["positions"]["600519"]
+        legacy.pop("last_buy_date")
+        legacy.pop("today_buy_qty")
+        legacy["open_time"] = datetime.now().isoformat()
+        with open(tmp_account_path, "w", encoding="utf-8") as f:
+            json.dump(data, f)
+
+        reloaded = PaperBroker(account_path=tmp_account_path)
+        assert reloaded.get_portfolio().positions["600519"].sellable_quantity() == 0
+
+    def test_risk_guard_rejects_locked_shares(self, t1_broker):
+        t1_broker.place_order("600519", "BUY", 100, 1800.0)
+        passed, reason = RiskGuard().check_sell(t1_broker.get_portfolio(), "600519", 100, 1850.0)
+        assert not passed
+        assert "T+1" in reason
+

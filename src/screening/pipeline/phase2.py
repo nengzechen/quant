@@ -111,10 +111,15 @@ def _check_sell_signals(broker) -> int:
                 pass
 
         if sell_reason:
+            # A 股 T+1：当日买入的股份冻结，只卖可卖部分；全部冻结则留到下个交易日
+            sell_qty = pos.sellable_quantity()
+            if sell_qty <= 0:
+                logger.info(f"[Phase2] {code} 触发卖出但受 T+1 限制，顺延至下个交易日 | {sell_reason}")
+                continue
             record = broker.place_order(
                 stock_code=code,
                 action="SELL",
-                quantity=pos.quantity,
+                quantity=sell_qty,
                 price=current_price,
                 stock_name=pos.stock_name,
             )
