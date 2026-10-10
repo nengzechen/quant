@@ -249,6 +249,59 @@ def _apply_code_limit(all_codes: List[str]) -> List[str]:
     return sampled
 
 
+def _build_code_models(models_config) -> Dict[str, List]:
+    """(模型, 候选池) 列表 → {代码: [适用模型]}，保持代码首次出现的顺序"""
+    code_models: Dict[str, List] = {}
+    for model, pool in models_config:
+        for code in pool:
+            code_models.setdefault(code, []).append(model)
+    return code_models
+
+
+def _time_budget_seconds() -> float:
+    """
+    PHASE1_TIME_BUDGET_MIN>0 时返回评分阶段的时长上限（秒），否则 0 表示不限。
+    给 GitHub Actions 这类有硬超时的环境用：到点就停止评分、用已有结果出种子池，
+    避免整个 job 被 cancel 导致当天一只都不产出。
+    """
+    try:
+        minutes = float(os.environ.get("PHASE1_TIME_BUDGET_MIN", "0"))
+    except ValueError:
+        minutes = 0
+    return minutes * 60 if minutes > 0 else 0
+
+
+def _run_scoring(code_models: Dict[str, List], score_fn, max_workers: int,
+                 budget_sec: float = 0, started: Optional[float] = None) -> List:
+    """并发执行 score_fn(code, models)，超出时间预算时取消尚未开始的任务"""
+    started = time.monotonic() if started is None else started
+    results: List = []
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = {}
+        for code, models in code_models.items():
+            futures[executor.submit(score_fn, code, models)] = code
+            time.sleep(0.01)   # 轻微限速，避免触发 API 频率限制
+
+        total = len(futures)
+        done = 0
+        for f in as_completed(futures):
+            done += 1
+            if done % 100 == 0:
+                logger.info(f"[Phase1] 进度 {done}/{total}")
+            try:
+                results.extend(f.result() or [])
+            except Exception as e:
+                logger.debug(f"[Phase1] {futures[f]} 评分异常: {e}")
+            if budget_sec and time.monotonic() - started > budget_sec:
+                cancelled = sum(1 for pending in futures if pending.cancel())
+                logger.warning(
+                    f"[Phase1] ⚠️ 超出时间预算 {budget_sec / 60:.0f} 分钟，"
+                    f"已完成 {done}/{total}，取消剩余 {cancelled} 只，用已有结果生成种子池"
+                )
+                break
+    return results
+
+
 def run_phase1(
     target_count: int = 80,
     max_workers: int = 3,
@@ -298,39 +351,27 @@ def run_phase1(
         (StrongTrend(),   s1_pool),
         (LimitUpHunter(), s1_pool),
     ]
+    code_models = _build_code_models(models_config)
 
+    def _score_code(code: str, models: List) -> List:
+        """单线程任务：一只股票只取一次日线，跑完所有适用模型"""
+        df = get_daily_df(code, days=120)
+        entries = []
+        for model_instance in models:
+            try:
+                result = model_instance.run(code, df=df)
+                if model_instance.is_qualified_seed(result):
+                    entries.append(SeedEntry.from_model_result(result))
+            except Exception as e:
+                logger.debug(f"[Phase1] {code}/{model_instance.NAME} 评分异常: {e}")
+        return entries
+
+    # Step 4: 并发评分（按代码去重提交，baostock 本身是串行的，重复取数纯属浪费）
+    budget_sec = _time_budget_seconds()
+    started = time.monotonic()
     all_results: List = []
-
-    def _score_one(model_instance, code: str):
-        """单线程任务：对一只股票运行一个模型"""
-        try:
-            df = get_daily_df(code, days=120)
-            result = model_instance.run(code, df=df)
-            if model_instance.is_qualified_seed(result):
-                return SeedEntry.from_model_result(result)
-        except Exception as e:
-            logger.debug(f"[Phase1] {code}/{model_instance.NAME} 评分异常: {e}")
-        return None
-
-    # Step 4: 并发评分（四个模型共用线程池，但各自的候选池可能不同）
     try:
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = {}
-            for model, pool in models_config:
-                for code in pool:
-                    f = executor.submit(_score_one, model, code)
-                    futures[f] = code
-                    time.sleep(0.01)   # 轻微限速，避免触发 API 频率限制
-
-            done = 0
-            total = len(futures)
-            for f in as_completed(futures):
-                done += 1
-                if done % 100 == 0:
-                    logger.info(f"[Phase1] 进度 {done}/{total}")
-                entry = f.result()
-                if entry:
-                    all_results.append(entry)
+        all_results = _run_scoring(code_models, _score_code, max_workers, budget_sec, started)
     finally:
         clear_data_cache()
         bs_logout()

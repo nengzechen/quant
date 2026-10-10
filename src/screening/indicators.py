@@ -63,17 +63,28 @@ def _bs_ensure_login():
             logger.warning(f"baostock login 失败: {e}")
     return False
 
-def _bs_force_reconnect():
-    """强制重置 baostock 连接（断线后调用）"""
+def _bs_reconnect_locked() -> bool:
+    """重置 baostock 连接，调用方必须已持有 _BS_LOCK"""
     global _BS_LOGGED_IN
-    with _BS_LOCK:
+    try:
+        import baostock as bs
         try:
-            import baostock as bs
             bs.logout()
         except Exception:
             pass
         _BS_LOGGED_IN = False
-    return _bs_ensure_login()
+        lg = bs.login()
+        _BS_LOGGED_IN = lg.error_code == "0"
+    except Exception as e:
+        logger.warning(f"baostock 重连失败: {e}")
+        _BS_LOGGED_IN = False
+    return _BS_LOGGED_IN
+
+
+def _bs_force_reconnect():
+    """强制重置 baostock 连接（断线后调用）"""
+    with _BS_LOCK:
+        return _bs_reconnect_locked()
 
 
 def bs_logout():
@@ -353,49 +364,48 @@ def _get_daily_df_baostock(code: str, days: int = 100) -> Optional[pd.DataFrame]
 
     def _do_query():
         import baostock as bs
-        with _BS_LOCK:
-            rs = bs.query_history_k_data_plus(
-                bs_code,
-                "date,open,high,low,close,volume,amount,turn,pctChg",
-                start_date=start_date,
-                end_date=end_date,
-                frequency="d",
-                adjustflag="2",
-            )
-            if rs.error_code != "0":
-                raise RuntimeError(f"baostock error {rs.error_code}")
-            rows = []
-            while rs.next():
-                rows.append(rs.get_row_data())
-            return rows
+        rs = bs.query_history_k_data_plus(
+            bs_code,
+            "date,open,high,low,close,volume,amount,turn,pctChg",
+            start_date=start_date,
+            end_date=end_date,
+            frequency="d",
+            adjustflag="2",
+        )
+        if rs.error_code != "0":
+            raise RuntimeError(f"baostock error {rs.error_code}")
+        rows = []
+        while rs.next():
+            rows.append(rs.get_row_data())
+        return rows
 
+    # 先在调用线程里拿锁，再在锁内跑带超时的查询：
+    # 超时只计查询本身，不能把排队等锁的时间算进去。否则多线程争锁时会大量"假超时"，
+    # 每次假超时又去 logout 共享会话、打断正在查询的线程，连锁反应下 Phase1 慢到跑不完。
+    rows = None
     for attempt in range(2):
         if not _bs_ensure_login():
             return None
-        try:
+        with _BS_LOCK:
             rows = _run_with_timeout(_do_query, timeout_sec=8)
-            if rows is None:
-                if attempt == 0:
-                    logger.debug(f"baostock {code} 超时，强制重连")
-                    _bs_force_reconnect()
-                    continue
-                return None
-        except Exception as e:
+            if rows is not None:
+                break
             if attempt == 0:
-                logger.debug(f"baostock {code} 异常({e})，强制重连")
-                _bs_force_reconnect()
-                continue
-            logger.debug(f"baostock 获取{code}日线数据失败: {e}")
-            return None
-        if not rows:
-            return None
-        df = pd.DataFrame(rows, columns=["date", "open", "high", "low", "close",
-                                          "volume", "amount", "turnover", "pct_change"])
-        for col in ["open", "high", "low", "close", "volume", "amount", "turnover", "pct_change"]:
-            df[col] = pd.to_numeric(df[col], errors="coerce")
-        df["date"] = pd.to_datetime(df["date"])
-        df = df.sort_values("date").reset_index(drop=True)
-        return df.tail(days)
+                logger.debug(f"baostock {code} 超时或异常，强制重连")
+                _bs_reconnect_locked()
+    else:
+        logger.debug(f"baostock 获取{code}日线数据失败")
+        return None
+
+    if not rows:
+        return None
+    df = pd.DataFrame(rows, columns=["date", "open", "high", "low", "close",
+                                      "volume", "amount", "turnover", "pct_change"])
+    for col in ["open", "high", "low", "close", "volume", "amount", "turnover", "pct_change"]:
+        df[col] = pd.to_numeric(df[col], errors="coerce")
+    df["date"] = pd.to_datetime(df["date"])
+    df = df.sort_values("date").reset_index(drop=True)
+    return df.tail(days)
 
 
 def get_daily_df(code: str, days: int = 100) -> Optional[pd.DataFrame]:

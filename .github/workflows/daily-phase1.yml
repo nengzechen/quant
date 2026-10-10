@@ -61,6 +61,8 @@ jobs:
           STOCK_LIST: ${{ vars.STOCK_LIST || '600519,300750,002594' }}
           MAX_WORKERS: '3'
           PHASE1_MAX_CODES: ${{ github.event.inputs.max_codes || '0' }}
+          # 评分阶段的时长上限：留出余量给提交/部署，到点用已有结果出池，避免被 180 分钟硬超时整体 cancel
+          PHASE1_TIME_BUDGET_MIN: '150'
         run: |
           mkdir -p data logs reports
           TARGET="${{ github.event.inputs.target || '100' }}"
