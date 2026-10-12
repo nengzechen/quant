@@ -427,6 +427,32 @@ class TestRiskGuard:
         )
         assert not passed  # 因为现金也不够
 
+    @pytest.mark.parametrize("stop_loss", [1800.0, 1850.0])
+    def test_inverted_stop_loss_rejected(self, sample_portfolio, buy_signal, stop_loss):
+        """止损价不低于买入价时拒绝买入（成交后会立刻触发止损）"""
+        guard = RiskGuard()
+        buy_signal.stop_loss_price = stop_loss
+        passed, reason = guard.check_buy(
+            portfolio=sample_portfolio,
+            signal=buy_signal,
+            quantity=100,
+            price=1800.0,
+        )
+        assert not passed
+        assert "止损价无效" in reason
+
+    def test_unknown_stop_loss_not_blocked(self, sample_portfolio, buy_signal):
+        """止损价为 0（未知）时不因止损有效性检查被拒"""
+        guard = RiskGuard()
+        buy_signal.stop_loss_price = 0.0
+        passed, _ = guard.check_buy(
+            portfolio=sample_portfolio,
+            signal=buy_signal,
+            quantity=100,
+            price=1800.0,
+        )
+        assert passed
+
     def test_check_sell_pass(self):
         """正常卖出请求应通过"""
         guard = RiskGuard()
@@ -703,6 +729,21 @@ class TestPortfolioManager:
         assert record.status == TradeStatus.FILLED
         # 30% * 1,000,000 / 15 = 20,000 股
         assert record.quantity == 20_000
+
+    def test_inverted_stop_loss_signal_not_bought(self, tmp_account_path):
+        """止损价倒挂的买入信号不应成交，避免建仓后立即被止损卖出"""
+        from quant.agents.portfolio_manager import PortfolioManager
+
+        broker = PaperBroker(account_path=tmp_account_path, initial_capital=1_000_000)
+        pm = PortfolioManager(broker=broker, sizing_method="atr_based")
+        signal = OrderSignal(
+            stock_code="000001", stock_name="平安银行",
+            signal_type=SignalType.BUY, confidence=ConfidenceLevel.HIGH,
+            sentiment_score=75, ideal_buy_price=15.0, stop_loss_price=15.5,
+            take_profit_price=18.0, buy_reason="测试止损倒挂",
+        )
+        assert pm.process_signal(signal) is None
+        assert "000001" not in broker.get_portfolio().positions
 
     def test_add_on_buy_capped_by_existing_position(self, tmp_account_path):
         """已持仓接近集中度上限时，加仓只买剩余额度；无额度则跳过"""

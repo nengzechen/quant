@@ -17,6 +17,7 @@
 5. 情感评分检查（评分过低阻止买入）
 6. 黑名单股票检查
 7. 卖出 T+1 检查（当日买入股份不可卖出）
+8. 止损价有效性检查（止损价不低于买入价的买入信号视为无效）
 """
 
 import logging
@@ -89,6 +90,11 @@ class RiskGuard:
 
         # 检查1: 黑名单
         passed, reason = self._check_blacklist(signal.stock_code)
+        if not passed:
+            return False, reason
+
+        # 检查1.5: 止损价有效性（止损价 >= 买入价时成交后会立刻触发止损）
+        passed, reason = self._check_stop_loss_price(signal, price)
         if not passed:
             return False, reason
 
@@ -253,6 +259,25 @@ class RiskGuard:
         """检查黑名单"""
         if stock_code.upper() in self.blacklist:
             return False, f"股票 {stock_code} 在黑名单中，禁止交易"
+        return True, ""
+
+    def _check_stop_loss_price(
+        self,
+        signal: OrderSignal,
+        price: float,
+    ) -> Tuple[bool, str]:
+        """
+        检查止损价是否位于买入价下方。
+
+        止损价来自 LLM 解析，可能倒挂（如解析错位、买入价回退为现价后高于原止损）。
+        倒挂时单笔风险检查会被跳过、成交后止损价写入持仓，下次止损检查必然触发，
+        等于买入即止损，因此直接拒绝。止损价为 0 表示未知，不在此拦截。
+        """
+        if signal.stop_loss_price > 0 and signal.stop_loss_price >= price:
+            return False, (
+                f"止损价无效: {signal.stock_code} 止损 {signal.stop_loss_price:.2f} "
+                f"不低于买入价 {price:.2f}，拒绝买入"
+            )
         return True, ""
 
     def _check_sentiment(self, signal: OrderSignal) -> Tuple[bool, str]:
