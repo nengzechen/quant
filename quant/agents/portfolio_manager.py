@@ -121,7 +121,27 @@ class PortfolioManager:
         quantity = lots * SHARES_PER_LOT
         price = signal.ideal_buy_price
 
-        # Step 2: 风险检查
+        # Step 2: 按风控限额收敛数量（如止损很近时 ATR 仓位会超过 30% 集中度，
+        # 直接下单会被整单拒绝），收敛后不足一手才放弃
+        max_qty = self.risk_guard.max_buy_quantity(
+            portfolio=portfolio,
+            signal=signal,
+            price=price,
+            lot_size=SHARES_PER_LOT,
+        )
+        if quantity > max_qty:
+            if max_qty <= 0:
+                logger.info(
+                    f"风控限额内不足一手，跳过买入: {signal.stock_code} "
+                    f"(建议 {quantity} 股)"
+                )
+                return None
+            logger.info(
+                f"仓位按风控限额下调: {signal.stock_code} {quantity} -> {max_qty} 股"
+            )
+            quantity = max_qty
+
+        # Step 3: 风险检查
         passed, reason = self.risk_guard.check_buy(
             portfolio=portfolio,
             signal=signal,
@@ -133,7 +153,7 @@ class PortfolioManager:
             logger.info(f"风险检查未通过，拒绝买入 {signal.stock_code}: {reason}")
             return None
 
-        # Step 3: 执行买入
+        # Step 4: 执行买入
         record = self.executor.execute_buy(signal=signal, quantity=quantity)
 
         if record.status == TradeStatus.FILLED:

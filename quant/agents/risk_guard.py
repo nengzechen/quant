@@ -122,6 +122,57 @@ class RiskGuard:
         )
         return True, "风险检查通过"
 
+    def max_buy_quantity(
+        self,
+        portfolio: Portfolio,
+        signal: OrderSignal,
+        price: float,
+        lot_size: int = 100,
+    ) -> int:
+        """
+        在资金、单股集中度、单笔风险三项限额内最多可买的股数（按整手向下取整）。
+
+        供仓位管理在下单前把建议数量收敛到限额内，避免整单被 check_buy 拒绝。
+        与 _check_cash / _check_concentration / _check_single_trade_risk 口径一致。
+
+        Args:
+            portfolio: 当前投资组合
+            signal: 交易信号（用于股票代码和止损价）
+            price: 买入价格
+            lot_size: 每手股数
+
+        Returns:
+            可买股数（lot_size 的整数倍，最小为 0）
+        """
+        if price <= 0 or lot_size <= 0:
+            return 0
+
+        # 资金：price*q + max(price*q*0.0003, 5) <= available * buffer
+        available = portfolio.available_cash * CASH_BUFFER_RATIO
+        limits = [
+            (available - 5.0) / price,
+            available / (price * 1.0003),
+        ]
+
+        # 集中度：existing + price*q <= total_assets * ratio
+        total_assets = portfolio.total_assets
+        if total_assets > 0:
+            pos = portfolio.positions.get(signal.stock_code.upper())
+            existing_value = pos.market_value if pos else 0.0
+            limits.append(
+                (total_assets * self.max_single_stock_ratio - existing_value) / price
+            )
+
+        # 单笔风险：(price - stop) * q <= total_capital * risk_per_trade_pct
+        risk_per_share = price - signal.stop_loss_price
+        if signal.stop_loss_price > 0 and risk_per_share > 0:
+            limits.append(
+                portfolio.total_capital * portfolio.risk_per_trade_pct / risk_per_share
+            )
+
+        max_shares = int(min(limits))
+        return max(0, max_shares // lot_size * lot_size)
+
     def check_sell(
         self,
         portfolio: Portfolio,

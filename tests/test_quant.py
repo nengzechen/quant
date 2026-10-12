@@ -685,6 +685,66 @@ class TestPortfolioManager:
         # 取较小值：1333手 → 133,300 股
         assert record.status == TradeStatus.FILLED
 
+    def test_tight_stop_buy_capped_by_concentration(self, tmp_account_path):
+        """止损很近时 ATR 仓位超过 30% 集中度，应下调到限额内成交而非整单拒绝"""
+        from quant.agents.portfolio_manager import PortfolioManager
+
+        broker = PaperBroker(account_path=tmp_account_path, initial_capital=1_000_000)
+        pm = PortfolioManager(broker=broker, sizing_method="atr_based")
+        signal = OrderSignal(
+            stock_code="000001", stock_name="平安银行",
+            signal_type=SignalType.BUY, confidence=ConfidenceLevel.HIGH,
+            sentiment_score=75, ideal_buy_price=15.0, stop_loss_price=14.7,
+            take_profit_price=18.0, buy_reason="测试紧止损",
+        )
+        # ATR: 20,000 / 0.3 = 66,666 股，现金上限 63,300 股，均远超 30% 集中度
+        record = pm.process_signal(signal)
+        assert record is not None
+        assert record.status == TradeStatus.FILLED
+        # 30% * 1,000,000 / 15 = 20,000 股
+        assert record.quantity == 20_000
+
+    def test_add_on_buy_capped_by_existing_position(self, tmp_account_path):
+        """已持仓接近集中度上限时，加仓只买剩余额度；无额度则跳过"""
+        from quant.agents.portfolio_manager import PortfolioManager
+
+        broker = PaperBroker(account_path=tmp_account_path, initial_capital=1_000_000)
+        broker.place_order("000001", "BUY", 19_000, 15.0)  # 285,000 ≈ 28.5%
+        pm = PortfolioManager(broker=broker, sizing_method="fixed_fraction")
+        signal = OrderSignal(
+            stock_code="000001", stock_name="平安银行",
+            signal_type=SignalType.BUY, confidence=ConfidenceLevel.HIGH,
+            sentiment_score=75, ideal_buy_price=15.0, stop_loss_price=0.0,
+            take_profit_price=18.0, buy_reason="测试加仓",
+        )
+        record = pm.process_signal(signal)
+        assert record.status == TradeStatus.FILLED
+        # 总资产 ≈ 999,914.5，30% 额度 ≈ 299,974 - 285,000 → 998 股 → 900 股
+        assert record.quantity == 900
+
+        assert pm.process_signal(signal) is None
+
+    def test_max_buy_quantity_respects_cash_and_risk(self, sample_portfolio, buy_signal):
+        """max_buy_quantity 同时受现金与单笔风险约束，并按整手取整"""
+        guard = RiskGuard()
+        # 集中度 300,000 / 1800 = 166 股，风险 20,000 / 90 = 222 股 → 取小 → 100 股
+        assert guard.max_buy_quantity(sample_portfolio, buy_signal, 1800.0) == 100
+        # 止损放宽到 1500：风险 20,000 / 300 = 66 股 → 不足一手
+        wide = OrderSignal.from_dict({**buy_signal.to_dict(), "stop_loss_price": 1500.0})
+        assert guard.max_buy_quantity(sample_portfolio, wide, 1800.0) == 0
+
+        poor = Portfolio(
+            total_capital=1_000_000, available_cash=100_000,
+            total_market_value=900_000, total_pnl=0,
+        )
+        no_stop = OrderSignal.from_dict({**buy_signal.to_dict(), "stop_loss_price": 0.0})
+        # 现金：95,000 / 1800 ≈ 52 股 → 不足一手
+        assert guard.max_buy_quantity(poor, no_stop, 1800.0) == 0
+        qty = guard.max_buy_quantity(poor, no_stop, 18.0)
+        assert qty % 100 == 0
+        assert guard._check_cash(poor, qty, 18.0)[0]
+        assert not guard._check_cash(poor, qty + 100, 18.0)[0]
+
     def test_process_hold_signal(self, tmp_account_path, buy_signal):
         """HOLD 信号不产生交易"""
         from quant.agents.portfolio_manager import PortfolioManager
