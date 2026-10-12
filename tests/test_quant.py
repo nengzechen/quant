@@ -895,3 +895,28 @@ class TestTPlusOne:
         assert not passed
         assert "T+1" in reason
 
+    def test_rebalance_sells_only_sellable_shares(self, t1_broker):
+        """昨日持仓 100 股 + 今日加仓 200 股，亏损超 5% 时只卖出可卖的 100 股"""
+        from quant.agents.portfolio_manager import PortfolioManager
+
+        t1_broker.place_order("600519", "BUY", 100, 1800.0)
+        t1_broker._portfolio.positions["600519"].last_buy_date = "2000-01-01"
+        t1_broker.place_order("600519", "BUY", 200, 1800.0)
+        t1_broker.update_position_prices({"600519": 1600.0})
+
+        records = PortfolioManager(broker=t1_broker).rebalance()
+        assert len(records) == 1
+        assert records[0].status == TradeStatus.FILLED
+        assert records[0].quantity == 100
+        assert t1_broker.get_portfolio().positions["600519"].quantity == 200
+
+    def test_rebalance_defers_fully_locked_position(self, t1_broker):
+        """当日建仓即亏损超 5%，再平衡应顺延而不是下单被拒"""
+        from quant.agents.portfolio_manager import PortfolioManager
+
+        t1_broker.place_order("600519", "BUY", 100, 1800.0)
+        t1_broker.update_position_prices({"600519": 1600.0})
+
+        assert PortfolioManager(broker=t1_broker).rebalance() == []
+        assert t1_broker.get_portfolio().positions["600519"].quantity == 100
+

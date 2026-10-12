@@ -286,23 +286,31 @@ class PortfolioManager:
                     f"再平衡: {code} 亏损 {pos.pnl_pct:.2f}%，准备卖出"
                 )
                 sell_price = pos.current_price
+                sell_qty = pos.sellable_quantity()
+                if sell_qty <= 0:
+                    logger.info(f"再平衡顺延: {code} 今日买入，受 T+1 限制")
+                    continue
+
                 passed, reason = self.risk_guard.check_sell(
                     portfolio=portfolio,
                     stock_code=code,
-                    quantity=pos.quantity,
+                    quantity=sell_qty,
                     price=sell_price,
                 )
 
-                if passed:
-                    record = self.executor.execute_sell(
-                        stock_code=code,
-                        quantity=pos.quantity,
-                        price=sell_price,
-                        reason=f"再平衡: 亏损 {pos.pnl_pct:.2f}%",
-                    )
-                    records.append(record)
-                    # 重新获取 portfolio（因为持仓已变化）
-                    portfolio = self.broker.get_portfolio()
+                if not passed:
+                    logger.info(f"再平衡卖出检查未通过 {code}: {reason}")
+                    continue
+
+                record = self.executor.execute_sell(
+                    stock_code=code,
+                    quantity=sell_qty,
+                    price=sell_price,
+                    reason=f"再平衡: 亏损 {pos.pnl_pct:.2f}%",
+                )
+                records.append(record)
+                # 重新获取 portfolio（因为持仓已变化）
+                portfolio = self.broker.get_portfolio()
 
         logger.info(f"再平衡完成: 执行 {len(records)} 笔卖出")
         return records
