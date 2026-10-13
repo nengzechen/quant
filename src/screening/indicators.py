@@ -43,6 +43,20 @@ _CACHE_TTL = 1800                     # 30分钟有效期（日内复用）
 # ============================================================
 _BS_LOCK = threading.Lock()
 _BS_LOGGED_IN = False
+_BS_SESSION_TIMEOUT = 15   # login/logout 超时（秒）：baostock socket 无超时，网络异常时会无限阻塞
+
+
+def _bs_call_with_timeout(name: str):
+    """
+    带超时调用 bs.login / bs.logout，超时或异常返回 None。
+    这两个调用都在 _BS_LOCK 内执行，一旦阻塞会让所有 worker 卡在锁上，
+    Phase1 的时间预算也就永远等不到任务完成（2026-10-13 的 run 因此跑满 180 分钟被 cancel）。
+    """
+    import baostock as bs
+    result = _run_with_timeout(getattr(bs, name), timeout_sec=_BS_SESSION_TIMEOUT)
+    if result is None:
+        logger.warning(f"baostock {name} 超时或失败")
+    return result
 
 def _bs_ensure_login():
     """确保 baostock 处于登录状态（线程安全，只登录一次）"""
@@ -53,9 +67,8 @@ def _bs_ensure_login():
         if _BS_LOGGED_IN:
             return True
         try:
-            import baostock as bs
-            lg = bs.login()
-            if lg.error_code == "0":
+            lg = _bs_call_with_timeout("login")
+            if lg is not None and lg.error_code == "0":
                 _BS_LOGGED_IN = True
                 logger.debug("baostock 已登录")
                 return True
@@ -67,14 +80,10 @@ def _bs_reconnect_locked() -> bool:
     """重置 baostock 连接，调用方必须已持有 _BS_LOCK"""
     global _BS_LOGGED_IN
     try:
-        import baostock as bs
-        try:
-            bs.logout()
-        except Exception:
-            pass
+        _bs_call_with_timeout("logout")
         _BS_LOGGED_IN = False
-        lg = bs.login()
-        _BS_LOGGED_IN = lg.error_code == "0"
+        lg = _bs_call_with_timeout("login")
+        _BS_LOGGED_IN = lg is not None and lg.error_code == "0"
     except Exception as e:
         logger.warning(f"baostock 重连失败: {e}")
         _BS_LOGGED_IN = False
@@ -92,16 +101,18 @@ def bs_logout():
     global _BS_LOGGED_IN
     if not _BS_LOGGED_IN:
         return
-    with _BS_LOCK:
+    # 有 worker 卡死在锁内时不能跟着一起卡住：等不到锁就放弃登出（进程退出会断开连接）
+    if not _BS_LOCK.acquire(timeout=_BS_SESSION_TIMEOUT):
+        logger.warning("baostock 登出时拿不到锁（可能有查询卡死），跳过登出")
+        return
+    try:
         if not _BS_LOGGED_IN:
             return
-        try:
-            import baostock as bs
-            bs.logout()
-            _BS_LOGGED_IN = False
-            logger.debug("baostock 已登出")
-        except Exception:
-            pass
+        _bs_call_with_timeout("logout")
+        _BS_LOGGED_IN = False
+        logger.debug("baostock 已登出")
+    finally:
+        _BS_LOCK.release()
 
 # get_daily_df 数据源：优先 baostock（本地、稳定）；AKShare 作为备选
 # 服务器上 AKShare 对部分股票会无限挂起，已禁用以防 Phase1 卡死
@@ -784,17 +795,25 @@ def check_high_open(df: pd.DataFrame) -> IndicatorResult:
 
 
 def _run_with_timeout(fn, timeout_sec: int = 10):
-    """在子线程中执行 fn，超时后返回 None（防止 AKShare 无限阻塞）。"""
-    from concurrent.futures import ThreadPoolExecutor, TimeoutError as FTimeout
-    exe = ThreadPoolExecutor(max_workers=1)
-    fut = exe.submit(fn)
-    try:
-        result = fut.result(timeout=timeout_sec)
-        exe.shutdown(wait=False)
-        return result
-    except (FTimeout, Exception):
-        exe.shutdown(wait=False)
+    """
+    在子线程中执行 fn，超时或异常返回 None（防止 AKShare / baostock 无限阻塞）。
+    用 daemon 线程而非 ThreadPoolExecutor：后者的线程在解释器退出时会被 join，
+    超时后仍卡着的调用会让进程退不出去（Phase1 种子池已保存，job 却被硬超时 cancel）。
+    """
+    box: Dict[str, Any] = {}
+
+    def _target():
+        try:
+            box["result"] = fn()
+        except Exception as e:
+            box["error"] = e
+
+    t = threading.Thread(target=_target, name="run-with-timeout", daemon=True)
+    t.start()
+    t.join(timeout_sec)
+    if t.is_alive() or "error" in box:
         return None
+    return box.get("result")
 
 
 def check_intraday_strong(code: str) -> IndicatorResult:

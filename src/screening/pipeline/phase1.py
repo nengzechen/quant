@@ -22,7 +22,8 @@ import os
 import time
 from datetime import datetime
 from typing import List, Dict, Optional
-from concurrent.futures import ThreadPoolExecutor, as_completed
+import queue
+import threading
 
 logger = logging.getLogger(__name__)
 
@@ -272,33 +273,73 @@ def _time_budget_seconds() -> float:
 
 
 def _run_scoring(code_models: Dict[str, List], score_fn, max_workers: int,
-                 budget_sec: float = 0, started: Optional[float] = None) -> List:
-    """并发执行 score_fn(code, models)，超出时间预算时取消尚未开始的任务"""
-    started = time.monotonic() if started is None else started
-    results: List = []
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        futures = {}
-        for code, models in code_models.items():
-            futures[executor.submit(score_fn, code, models)] = code
-            time.sleep(0.01)   # 轻微限速，避免触发 API 频率限制
+                 budget_sec: float = 0, started: Optional[float] = None,
+                 poll_sec: float = 5.0) -> List:
+    """
+    并发执行 score_fn(code, models)，超出时间预算时放弃剩余任务、返回已有结果。
 
-        total = len(futures)
-        done = 0
-        for f in as_completed(futures):
+    不用 ThreadPoolExecutor：它只在有任务完成时才能检查预算，worker 全部卡死
+    （如 baostock socket 无限阻塞）时 as_completed 永远不返回；退出 with 块和解释器
+    退出时还会 join 卡死的线程。这里用 daemon 线程 + 带超时的结果队列，主线程每
+    poll_sec 秒醒来检查一次预算，卡死的 worker 直接丢弃，不阻塞出池和进程退出。
+    """
+    started = time.monotonic() if started is None else started
+    tasks: "queue.Queue" = queue.Queue()
+    for item in code_models.items():
+        tasks.put(item)
+    total = len(code_models)
+    done_q: "queue.Queue" = queue.Queue()
+    stop = threading.Event()
+
+    def _worker():
+        while not stop.is_set():
+            try:
+                code, models = tasks.get_nowait()
+            except queue.Empty:
+                return
+            try:
+                done_q.put((code, score_fn(code, models), None))
+            except Exception as e:
+                done_q.put((code, None, e))
+
+    for i in range(max(1, min(max_workers, total))):
+        threading.Thread(target=_worker, name=f"phase1-score-{i}", daemon=True).start()
+
+    results: List = []
+    done = 0
+    while done < total:
+        timeout = poll_sec
+        if budget_sec:
+            remaining = budget_sec - (time.monotonic() - started)
+            timeout = max(0.0, min(poll_sec, remaining))
+        try:
+            code, entries, err = done_q.get(timeout=timeout) if timeout > 0 else done_q.get_nowait()
+        except queue.Empty:
+            code = None
+        if code is not None:
             done += 1
             if done % 100 == 0:
                 logger.info(f"[Phase1] 进度 {done}/{total}")
-            try:
-                results.extend(f.result() or [])
-            except Exception as e:
-                logger.debug(f"[Phase1] {futures[f]} 评分异常: {e}")
-            if budget_sec and time.monotonic() - started > budget_sec:
-                cancelled = sum(1 for pending in futures if pending.cancel())
-                logger.warning(
-                    f"[Phase1] ⚠️ 超出时间预算 {budget_sec / 60:.0f} 分钟，"
-                    f"已完成 {done}/{total}，取消剩余 {cancelled} 只，用已有结果生成种子池"
-                )
-                break
+            if err is not None:
+                logger.debug(f"[Phase1] {code} 评分异常: {err}")
+            else:
+                results.extend(entries or [])
+        if budget_sec and time.monotonic() - started > budget_sec:
+            stop.set()
+            # 收下已经算完、还在队列里的结果
+            while True:
+                try:
+                    code, entries, err = done_q.get_nowait()
+                except queue.Empty:
+                    break
+                done += 1
+                if err is None:
+                    results.extend(entries or [])
+            logger.warning(
+                f"[Phase1] ⚠️ 超出时间预算 {budget_sec / 60:.0f} 分钟，"
+                f"已完成 {done}/{total}，放弃剩余 {total - done} 只，用已有结果生成种子池"
+            )
+            break
     return results
 
 

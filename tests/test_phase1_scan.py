@@ -6,6 +6,7 @@ Phase1 全市场扫描的并发/超时逻辑测试（不访问网络）
 - 同一代码被多个模型共用时只提交一次任务
 - 时间预算耗尽后取消剩余任务、保留已有结果
 - baostock 取数：等锁时间不计入查询超时，避免"假超时"触发重连
+- worker 全部卡死时时间预算照样生效；baostock login/logout 卡死不会拖住锁
 """
 
 import threading
@@ -54,13 +55,33 @@ def test_run_scoring_stops_when_budget_exceeded():
         return [code]
 
     code_models = {f"{i:06d}": [] for i in range(200)}
-    # 预算设为已经过去：第一个任务完成后就应停止
+    # 全跑完需要约 5 秒，预算 0.3 秒：中途停止，保留已完成的结果
     results = phase1._run_scoring(
-        code_models, score, max_workers=2, budget_sec=1, started=time.monotonic() - 10,
+        code_models, score, max_workers=2, budget_sec=0.3, poll_sec=0.05,
     )
-    # 提交阶段 worker 已在跑，只要求预算触发后剩余任务被取消
     assert 1 <= len(results) < len(code_models)
     assert len(calls) < len(code_models)
+
+
+def test_run_scoring_budget_fires_when_all_workers_hang():
+    """worker 全部卡死（没有任何任务完成）时，到预算也必须返回已有结果"""
+    release = threading.Event()
+
+    def score(code, models):
+        if code != "000000":
+            release.wait(5)   # 模拟 socket 无限阻塞
+        return [code]
+
+    code_models = {f"{i:06d}": [] for i in range(10)}
+    t0 = time.monotonic()
+    try:
+        results = phase1._run_scoring(
+            code_models, score, max_workers=3, budget_sec=0.3, poll_sec=0.05,
+        )
+    finally:
+        release.set()
+    assert time.monotonic() - t0 < 2
+    assert results == ["000000"]
 
 
 def test_time_budget_env(monkeypatch):
@@ -144,3 +165,34 @@ def test_baostock_real_timeout_reconnects_once(monkeypatch):
 
     assert df is None
     assert state["logins"] == 1
+
+
+def test_baostock_login_hang_does_not_hold_lock(monkeypatch):
+    """login 卡死时按超时放弃并释放锁，而不是让所有 worker 永远等锁"""
+    fake, _ = _fake_bs(query_delay=0)
+    fake.login = lambda: time.sleep(5)
+    monkeypatch.setitem(__import__("sys").modules, "baostock", fake)
+    monkeypatch.setattr(indicators, "_BS_LOGGED_IN", False)
+    monkeypatch.setattr(indicators, "_BS_SESSION_TIMEOUT", 0.1)
+
+    t0 = time.monotonic()
+    assert indicators._bs_ensure_login() is False
+    assert time.monotonic() - t0 < 2
+    assert not indicators._BS_LOCK.locked()
+
+
+def test_bs_logout_skips_when_lock_stuck(monkeypatch):
+    """收尾登出时锁被卡死的 worker 占着，应超时跳过而不是挂住整个进程"""
+    fake, _ = _fake_bs(query_delay=0)
+    monkeypatch.setitem(__import__("sys").modules, "baostock", fake)
+    monkeypatch.setattr(indicators, "_BS_LOGGED_IN", True)
+    monkeypatch.setattr(indicators, "_BS_SESSION_TIMEOUT", 0.1)
+
+    indicators._BS_LOCK.acquire()
+    try:
+        t0 = time.monotonic()
+        indicators.bs_logout()
+        assert time.monotonic() - t0 < 2
+    finally:
+        indicators._BS_LOCK.release()
+    assert indicators._BS_LOGGED_IN is True
