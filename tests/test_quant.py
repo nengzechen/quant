@@ -278,6 +278,38 @@ class TestPaperBroker:
         assert "600519" in portfolio.positions
         assert portfolio.positions["600519"].quantity == 100
 
+    def test_corrupt_account_file_backed_up_before_reinit(self, tmp_account_path):
+        """账户文件损坏时应先备份再重新初始化，不能直接覆盖掉原数据"""
+        from pathlib import Path
+
+        Path(tmp_account_path).write_text('{"portfolio": {"total_cap', encoding='utf-8')
+
+        broker = PaperBroker(account_path=tmp_account_path, initial_capital=1_000_000)
+
+        assert broker.get_portfolio().available_cash == 1_000_000
+        backups = list(Path(tmp_account_path).parent.glob("test_account.json.corrupt-*"))
+        assert len(backups) == 1
+        assert backups[0].read_text(encoding='utf-8') == '{"portfolio": {"total_cap'
+
+    def test_save_is_atomic_on_write_failure(self, paper_broker, tmp_account_path, monkeypatch):
+        """写入中途失败时原账户文件应保持完整，且不残留临时文件"""
+        from pathlib import Path
+
+        paper_broker.place_order("600519", "BUY", 100, 1800.0)
+        before = Path(tmp_account_path).read_text(encoding='utf-8')
+
+        def boom(*args, **kwargs):
+            raise OSError("disk full")
+
+        monkeypatch.setattr("quant.broker.paper_broker.json.dump", boom)
+        paper_broker.update_stop_loss("600519", 1710.0)  # _save 内部吞掉异常
+
+        assert Path(tmp_account_path).read_text(encoding='utf-8') == before
+        leftovers = [p for p in Path(tmp_account_path).parent.iterdir() if p.suffix == ".tmp"]
+        assert leftovers == []
+        reloaded = PaperBroker(account_path=tmp_account_path)
+        assert reloaded.get_portfolio().positions["600519"].quantity == 100
+
     def test_update_stop_loss(self, paper_broker):
         """更新止损价应正确保存"""
         paper_broker.place_order("600519", "BUY", 100, 1800.0)

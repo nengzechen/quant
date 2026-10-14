@@ -16,6 +16,7 @@
 import json
 import logging
 import os
+import tempfile
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -96,9 +97,50 @@ class PaperBroker(BaseBroker):
                 )
                 return portfolio
             except Exception as e:
-                logger.warning(f"加载模拟账户失败，将重新初始化: {e}")
+                backup = self._backup_corrupt_file()
+                logger.error(f"加载模拟账户失败，将重新初始化: {e}（原文件备份: {backup}）")
 
         return self._init_account()
+
+    def _backup_corrupt_file(self) -> Optional[Path]:
+        """
+        把无法解析的账户文件改名备份，避免重新初始化时覆盖掉持仓和交易记录。
+
+        Returns:
+            备份文件路径，备份失败返回 None
+        """
+        stamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        backup = self.account_path.with_name(f"{self.account_path.name}.corrupt-{stamp}")
+        try:
+            os.replace(self.account_path, backup)
+            return backup
+        except OSError as e:
+            logger.error(f"备份损坏的模拟账户文件失败: {e}")
+            return None
+
+    def _write_json(self, data: dict) -> None:
+        """
+        原子写入账户文件：先写同目录临时文件再 os.replace。
+
+        直接覆盖写时进程中断/磁盘写满会留下截断的 JSON，下次启动加载失败。
+        """
+        fd, tmp_path = tempfile.mkstemp(
+            dir=str(self.account_path.parent),
+            prefix=f".{self.account_path.name}.",
+            suffix=".tmp",
+        )
+        try:
+            with os.fdopen(fd, 'w', encoding='utf-8') as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+                f.flush()
+                os.fsync(f.fileno())
+            os.replace(tmp_path, self.account_path)
+        except BaseException:
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+            raise
 
     @staticmethod
     def _migrate_buy_dates(portfolio: Portfolio) -> None:
@@ -147,8 +189,7 @@ class PaperBroker(BaseBroker):
                 'trade_records': trade_records,
                 'last_updated': datetime.now().isoformat(),
             }
-            with open(self.account_path, 'w', encoding='utf-8') as f:
-                json.dump(data, f, ensure_ascii=False, indent=2)
+            self._write_json(data)
         except Exception as e:
             logger.error(f"保存模拟账户数据失败: {e}")
 
@@ -165,8 +206,7 @@ class PaperBroker(BaseBroker):
             data['trade_records'] = records
             data['last_updated'] = datetime.now().isoformat()
 
-            with open(self.account_path, 'w', encoding='utf-8') as f:
-                json.dump(data, f, ensure_ascii=False, indent=2)
+            self._write_json(data)
         except Exception as e:
             logger.error(f"保存交易记录失败: {e}")
 
@@ -446,8 +486,7 @@ class PaperBroker(BaseBroker):
                 'trade_records': [],
                 'last_updated': datetime.now().isoformat(),
             }
-            with open(self.account_path, 'w', encoding='utf-8') as f:
-                json.dump(data, f, ensure_ascii=False, indent=2)
+            self._write_json(data)
         except Exception as e:
             logger.error(f"重置账户失败: {e}")
         logger.info(f"模拟账户已重置，初始资金: {self.initial_capital:.2f}")
