@@ -241,26 +241,73 @@ class PortfolioManager:
             logger.debug("止损检查：无需止损")
             return []
 
+        return self._exit_positions(
+            portfolio,
+            stop_loss_codes,
+            label="止损",
+            reason_fn=lambda pos: f"止损触发: 跌破 {pos.stop_loss_price:.2f}",
+        )
+
+    def check_and_take_profit(self) -> List[TradeRecord]:
+        """
+        检查所有持仓是否达到止盈价，自动止盈（卖出全部可卖股份）。
+
+        Returns:
+            止盈产生的交易记录列表
+        """
+        portfolio = self.broker.get_portfolio()
+        take_profit_codes = self.risk_guard.check_take_profit(portfolio)
+
+        if not take_profit_codes:
+            logger.debug("止盈检查：无需止盈")
+            return []
+
+        return self._exit_positions(
+            portfolio,
+            take_profit_codes,
+            label="止盈",
+            reason_fn=lambda pos: f"止盈触发: 达到 {pos.take_profit_price:.2f}",
+        )
+
+    def _exit_positions(
+        self,
+        portfolio: Portfolio,
+        codes: List[str],
+        label: str,
+        reason_fn,
+    ) -> List[TradeRecord]:
+        """
+        按当前价卖出指定持仓的全部可卖股份（止损 / 止盈共用）。
+
+        Args:
+            portfolio: 当前投资组合
+            codes: 需要卖出的股票代码
+            label: 日志用的动作名称（"止损" / "止盈"）
+            reason_fn: 根据持仓生成交易原因的函数
+
+        Returns:
+            卖出产生的交易记录列表
+        """
         records = []
-        for code in stop_loss_codes:
+        for code in codes:
             if code not in portfolio.positions:
                 continue
 
             pos = portfolio.positions[code]
-            # 用当前价止损（或稍低，模拟滑点）
+            # 用当前价卖出（或稍低，模拟滑点）
             sell_price = pos.current_price
             sell_qty = pos.sellable_quantity()
             if sell_qty <= 0:
-                logger.warning(f"止损顺延: {code} 今日买入，受 T+1 限制，下个交易日再止损")
+                logger.warning(f"{label}顺延: {code} 今日买入，受 T+1 限制，下个交易日再{label}")
                 continue
 
             logger.warning(
-                f"触发止损: {code} 当前价={sell_price:.2f} "
-                f"止损价={pos.stop_loss_price:.2f} "
-                f"亏损={pos.pnl:.2f}({pos.pnl_pct:.2f}%)"
+                f"触发{label}: {code} 当前价={sell_price:.2f} "
+                f"止损价={pos.stop_loss_price or 0:.2f} "
+                f"止盈价={pos.take_profit_price or 0:.2f} "
+                f"盈亏={pos.pnl:.2f}({pos.pnl_pct:.2f}%)"
             )
 
-            # 执行止损卖出
             passed, reason = self.risk_guard.check_sell(
                 portfolio=portfolio,
                 stock_code=code,
@@ -269,14 +316,14 @@ class PortfolioManager:
             )
 
             if not passed:
-                logger.error(f"止损检查意外失败: {code} - {reason}")
+                logger.error(f"{label}检查意外失败: {code} - {reason}")
                 continue
 
             record = self.executor.execute_sell(
                 stock_code=code,
                 quantity=sell_qty,
                 price=sell_price,
-                reason=f"止损触发: 跌破 {pos.stop_loss_price:.2f}",
+                reason=reason_fn(pos),
             )
             records.append(record)
 

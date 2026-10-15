@@ -200,6 +200,20 @@ class QuantOrchestrator:
             logger.error(f"止损检查失败: {e}")
             report["errors"].append(f"止损检查失败: {e}")
 
+        # ===== Step 2.5: 止盈检查（止损之后，避免同一持仓重复卖出） =====
+        try:
+            if not dry_run:
+                logger.info("Step 2.5: 执行止盈检查...")
+                take_profit_records = self._portfolio_manager.check_and_take_profit()
+                if take_profit_records:
+                    logger.info(f"触发止盈 {len(take_profit_records)} 笔")
+                    report["executed_trades"].extend(
+                        [r.to_dict() for r in take_profit_records]
+                    )
+        except Exception as e:
+            logger.error(f"止盈检查失败: {e}")
+            report["errors"].append(f"止盈检查失败: {e}")
+
         # ===== Step 3: 处理卖出信号 =====
         if not dry_run:
             try:

@@ -88,13 +88,20 @@ class OrderExecutor:
                 price=signal.ideal_buy_price,
                 order_type="LIMIT",
             )
-            # 更新券商持仓中的股票名称
+            # 成交后更新券商持仓中的股票名称、止损价和止盈价
+            # （未成交时不能写，否则会覆盖已有持仓的止损/止盈）
             try:
-                if hasattr(self.broker, 'update_position_name'):
-                    self.broker.update_position_name(signal.stock_code, signal.stock_name)
-                # 同时设置止损价
-                if signal.stop_loss_price > 0 and hasattr(self.broker, 'update_stop_loss'):
-                    self.broker.update_stop_loss(signal.stock_code, signal.stop_loss_price)
+                if record.status == TradeStatus.FILLED:
+                    if hasattr(self.broker, 'update_position_name'):
+                        self.broker.update_position_name(signal.stock_code, signal.stock_name)
+                    if signal.stop_loss_price > 0 and hasattr(self.broker, 'update_stop_loss'):
+                        self.broker.update_stop_loss(signal.stock_code, signal.stop_loss_price)
+                    # 止盈价不高于买入价时成交即触发止盈，视为无效不写入
+                    if (
+                        signal.take_profit_price > signal.ideal_buy_price
+                        and hasattr(self.broker, 'update_take_profit')
+                    ):
+                        self.broker.update_take_profit(signal.stock_code, signal.take_profit_price)
             except Exception:
                 pass
 

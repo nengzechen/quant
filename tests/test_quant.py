@@ -1053,3 +1053,84 @@ class TestTPlusOne:
         assert PortfolioManager(broker=t1_broker).rebalance() == []
         assert t1_broker.get_portfolio().positions["600519"].quantity == 100
 
+
+
+# ===================================================================
+# 止盈
+# ===================================================================
+
+class TestTakeProfit:
+    """信号止盈价写入持仓，价格达到止盈价时自动卖出"""
+
+    def _tp_signal(self, take_profit=18.0, buy_price=15.0):
+        return OrderSignal(
+            stock_code="000001", stock_name="平安银行",
+            signal_type=SignalType.BUY, confidence=ConfidenceLevel.HIGH,
+            sentiment_score=75, ideal_buy_price=buy_price, stop_loss_price=13.5,
+            take_profit_price=take_profit, buy_reason="测试止盈",
+        )
+
+    def test_buy_fill_records_take_profit(self, paper_broker):
+        from quant.agents.order_executor import OrderExecutor
+
+        record = OrderExecutor(paper_broker).execute_buy(self._tp_signal(), 1000)
+        assert record.status == TradeStatus.FILLED
+        pos = paper_broker.get_portfolio().positions["000001"]
+        assert pos.take_profit_price == 18.0
+        assert pos.stop_loss_price == 13.5
+
+    def test_invalid_take_profit_not_recorded(self, paper_broker):
+        """止盈价不高于买入价时不写入，避免买入即止盈"""
+        from quant.agents.order_executor import OrderExecutor
+
+        OrderExecutor(paper_broker).execute_buy(self._tp_signal(take_profit=14.0), 1000)
+        assert paper_broker.get_portfolio().positions["000001"].take_profit_price is None
+
+    def test_rejected_add_on_keeps_existing_exit_prices(self, paper_broker):
+        """加仓被拒时不能用新信号覆盖已有持仓的止损/止盈"""
+        from quant.agents.order_executor import OrderExecutor
+
+        executor = OrderExecutor(paper_broker)
+        executor.execute_buy(self._tp_signal(), 1000)
+        huge = OrderSignal.from_dict({
+            **self._tp_signal().to_dict(), "stop_loss_price": 14.0, "take_profit_price": 30.0,
+        })
+        record = executor.execute_buy(huge, 10_000_000)  # 资金不足被拒
+        assert record.status == TradeStatus.REJECTED
+        pos = paper_broker.get_portfolio().positions["000001"]
+        assert pos.stop_loss_price == 13.5
+        assert pos.take_profit_price == 18.0
+
+    def test_risk_guard_detects_take_profit(self, paper_broker):
+        paper_broker.place_order("000001", "BUY", 1000, 15.0)
+        paper_broker.update_take_profit("000001", 18.0)
+        guard = RiskGuard()
+
+        paper_broker.update_position_prices({"000001": 17.9})
+        assert guard.check_take_profit(paper_broker.get_portfolio()) == []
+        paper_broker.update_position_prices({"000001": 18.0})
+        assert guard.check_take_profit(paper_broker.get_portfolio()) == ["000001"]
+
+    def test_check_and_take_profit_sells_position(self, paper_broker):
+        from quant.agents.portfolio_manager import PortfolioManager
+
+        paper_broker.place_order("000001", "BUY", 1000, 15.0)
+        paper_broker._portfolio.positions["000001"].last_buy_date = "2000-01-01"
+        paper_broker.update_take_profit("000001", 18.0)
+        paper_broker.update_position_prices({"000001": 18.5})
+
+        records = PortfolioManager(broker=paper_broker).check_and_take_profit()
+        assert len(records) == 1
+        assert records[0].status == TradeStatus.FILLED
+        assert records[0].quantity == 1000
+        assert "000001" not in paper_broker.get_portfolio().positions
+
+    def test_take_profit_defers_under_t_plus_one(self, t1_broker):
+        from quant.agents.portfolio_manager import PortfolioManager
+
+        t1_broker.place_order("000001", "BUY", 1000, 15.0)
+        t1_broker.update_take_profit("000001", 18.0)
+        t1_broker.update_position_prices({"000001": 18.5})
+
+        assert PortfolioManager(broker=t1_broker).check_and_take_profit() == []
+        assert t1_broker.get_portfolio().positions["000001"].quantity == 1000

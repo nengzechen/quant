@@ -6,7 +6,7 @@
 
 职责：
 1. 交易前多维度安全检查
-2. 持仓止损监控
+2. 持仓止损 / 止盈监控
 3. 防止过度集中和高风险操作
 
 检查项目：
@@ -252,6 +252,31 @@ class RiskGuard:
                     stop_loss_codes.append(code)
 
         return stop_loss_codes
+
+    def check_take_profit(self, portfolio: Portfolio) -> List[str]:
+        """
+        检查所有持仓是否触发止盈。
+
+        当前价格达到或超过止盈价时，返回对应股票代码。
+
+        Args:
+            portfolio: 当前投资组合
+
+        Returns:
+            需要止盈的股票代码列表
+        """
+        take_profit_codes = []
+
+        for code, pos in portfolio.positions.items():
+            if pos.take_profit_price and pos.take_profit_price > 0:
+                if pos.current_price >= pos.take_profit_price:
+                    logger.info(
+                        f"止盈触发: {code} 当前价 {pos.current_price:.2f} "
+                        f"达到止盈价 {pos.take_profit_price:.2f}"
+                    )
+                    take_profit_codes.append(code)
+
+        return take_profit_codes
 
     # ===== 内部检查方法 =====
 

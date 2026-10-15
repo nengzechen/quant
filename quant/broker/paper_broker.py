@@ -518,3 +518,9 @@ class PaperBroker(BaseBroker):
         if stock_code in self._portfolio.positions:
             self._portfolio.positions[stock_code].stop_loss_price = stop_loss_price
             self._save()
+
+    def update_take_profit(self, stock_code: str, take_profit_price: float) -> None:
+        """更新持仓止盈价"""
+        if stock_code in self._portfolio.positions:
+            self._portfolio.positions[stock_code].take_profit_price = take_profit_price
+            self._save()
