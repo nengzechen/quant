@@ -15,6 +15,7 @@
 
 import json
 import logging
+import math
 import os
 import tempfile
 import uuid
@@ -501,11 +502,22 @@ class PaperBroker(BaseBroker):
         """
         批量更新持仓价格。
 
+        无效价格（None / 非数字 / <=0 / NaN）直接跳过、保留原价：行情失败或停牌时
+        返回 0，写入后会立刻触发止损并按 0 元卖出。
+
         Args:
             price_map: {stock_code: current_price} 字典
         """
         updated = False
         for code, price in price_map.items():
+            try:
+                price = float(price)
+            except (TypeError, ValueError):
+                logger.warning(f"忽略无效行情价格: {code}={price!r}")
+                continue
+            if not math.isfinite(price) or price <= 0:
+                logger.warning(f"忽略无效行情价格: {code}={price!r}")
+                continue
             if code in self._portfolio.positions:
                 self._portfolio.positions[code].update_price(price)
                 updated = True

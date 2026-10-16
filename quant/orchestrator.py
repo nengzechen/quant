@@ -31,7 +31,7 @@
 
 import logging
 from datetime import datetime
-from typing import List, Optional
+from typing import Callable, Dict, List, Optional
 
 from quant.agents.portfolio_manager import PortfolioManager
 from quant.agents.risk_guard import RiskGuard
@@ -56,6 +56,7 @@ class QuantOrchestrator:
         self,
         broker: Optional[BaseBroker] = None,
         config: Optional[QuantConfig] = None,
+        price_fetcher: Optional[Callable[[List[str]], Dict[str, float]]] = None,
     ):
         """
         初始化编排器。
@@ -63,8 +64,11 @@ class QuantOrchestrator:
         Args:
             broker: 券商接口（None 时根据 config 自动创建模拟盘）
             config: 量化配置（None 时从环境变量加载）
+            price_fetcher: 持仓行情获取函数 codes -> {code: price}
+                （None 时用 data_provider 的实时行情）
         """
         self._config = config or QuantConfig.from_env()
+        self._price_fetcher = price_fetcher or _fetch_realtime_prices
 
         # 初始化 Broker（默认模拟盘）
         if broker is not None:
@@ -189,6 +193,7 @@ class QuantOrchestrator:
         # ===== Step 2: 止损检查（先于新买入） =====
         try:
             if not dry_run:
+                self.refresh_position_prices()
                 logger.info("Step 2: 执行止损检查...")
                 stop_loss_records = self._portfolio_manager.check_and_stop_loss()
                 if stop_loss_records:
@@ -272,10 +277,44 @@ class QuantOrchestrator:
         """
         logger.info("运行止损检查...")
         try:
+            self.refresh_position_prices()
             return self._portfolio_manager.check_and_stop_loss()
         except Exception as e:
             logger.error(f"止损检查失败: {e}")
             return []
+
+    def refresh_position_prices(self) -> int:
+        """
+        用最新行情刷新持仓现价，供止损 / 止盈检查使用。
+
+        模拟盘持仓的 current_price 只在成交时写入，不刷新的话止损 / 止盈永远拿
+        买入价比较，几乎不会触发。仅对支持 update_position_prices 的券商生效
+        （富途持仓自带实时价）。行情失败的股票保留原价，不中断流程。
+
+        Returns:
+            成功获取到行情的持仓数量
+        """
+        update = getattr(self._broker, 'update_position_prices', None)
+        if update is None:
+            return 0
+
+        codes = [p.stock_code for p in self._broker.get_positions()]
+        if not codes:
+            return 0
+
+        try:
+            price_map = self._price_fetcher(codes) or {}
+        except Exception as e:
+            logger.error(f"刷新持仓行情失败，沿用旧价: {e}")
+            return 0
+
+        missing = [c for c in codes if c not in price_map]
+        if missing:
+            logger.warning(f"以下持仓未获取到行情，沿用旧价: {missing}")
+
+        update(price_map)
+        logger.info(f"持仓行情已刷新: {len(price_map)}/{len(codes)}")
+        return len(price_map)
 
     def get_report(self) -> dict:
         """
@@ -327,3 +366,21 @@ class QuantOrchestrator:
     def config(self) -> QuantConfig:
         """返回当前配置"""
         return self._config
+
+
+def _fetch_realtime_prices(codes: List[str]) -> Dict[str, float]:
+    """默认行情获取：逐只调用 data_provider 实时行情，失败的股票不返回。"""
+    from data_provider import DataFetcherManager
+
+    manager = DataFetcherManager()
+    prices = {}
+    for code in codes:
+        try:
+            quote = manager.get_realtime_quote(code)
+        except Exception as e:
+            logger.warning(f"获取实时行情失败 {code}: {e}")
+            continue
+        price = getattr(quote, 'price', None) if quote is not None else None
+        if price:
+            prices[code] = price
+    return prices

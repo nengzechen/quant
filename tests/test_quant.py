@@ -956,6 +956,84 @@ class TestQuantOrchestrator:
         assert 'recent_trades' in report
         assert 'broker_type' in report
 
+    @staticmethod
+    def _held_orchestrator(tmp_account_path, price_fetcher):
+        """建一个持有 600519（成本 1800，止损 1710，止盈 2000，已过 T+1）的编排器"""
+        from quant.config import QuantConfig
+        from quant.orchestrator import QuantOrchestrator
+
+        config = QuantConfig(paper_account_path=tmp_account_path)
+        broker = PaperBroker(account_path=tmp_account_path, initial_capital=1_000_000)
+        broker.place_order("600519", "BUY", 100, 1800.0)
+        pos = broker._portfolio.positions["600519"]
+        pos.last_buy_date = "2000-01-01"
+        broker.update_stop_loss("600519", 1710.0)
+        broker.update_take_profit("600519", 2000.0)
+        return QuantOrchestrator(broker=broker, config=config, price_fetcher=price_fetcher), broker
+
+    def test_run_refreshes_prices_before_stop_loss(self, tmp_account_path):
+        """跑流程前先刷新持仓现价，跌破止损价时能触发止损（此前一直用买入价比较）"""
+        fetcher = MagicMock(return_value={"600519": 1700.0})
+        orchestrator, broker = self._held_orchestrator(tmp_account_path, fetcher)
+
+        with patch.object(orchestrator._signal_aggregator, 'aggregate', return_value=[]):
+            report = orchestrator.run(["600519"], dry_run=False)
+
+        fetcher.assert_called_once_with(["600519"])
+        assert "600519" not in broker.get_portfolio().positions
+        assert len(report['executed_trades']) == 1
+        assert report['executed_trades'][0]['price'] == 1700.0
+
+    def test_run_refreshes_prices_before_take_profit(self, tmp_account_path):
+        """刷新后现价达到止盈价时触发止盈"""
+        orchestrator, broker = self._held_orchestrator(
+            tmp_account_path, lambda codes: {"600519": 2050.0}
+        )
+
+        with patch.object(orchestrator._signal_aggregator, 'aggregate', return_value=[]):
+            report = orchestrator.run(["600519"], dry_run=False)
+
+        assert "600519" not in broker.get_portfolio().positions
+        assert report['executed_trades'][0]['price'] == 2050.0
+
+    def test_refresh_fetcher_failure_keeps_old_price(self, tmp_account_path):
+        """行情获取异常时沿用旧价，不误触发止损，流程不报错"""
+        def boom(codes):
+            raise RuntimeError("network down")
+
+        orchestrator, broker = self._held_orchestrator(tmp_account_path, boom)
+
+        assert orchestrator.refresh_position_prices() == 0
+        assert orchestrator.run_stop_loss_check() == []
+        assert broker.get_portfolio().positions["600519"].current_price == 1800.0
+
+    def test_dry_run_skips_price_refresh(self, tmp_account_path):
+        """dry_run 不刷新行情（不需要止损止盈）"""
+        fetcher = MagicMock(return_value={})
+        orchestrator, _ = self._held_orchestrator(tmp_account_path, fetcher)
+
+        with patch.object(orchestrator._signal_aggregator, 'aggregate', return_value=[]):
+            orchestrator.run(["600519"], dry_run=True)
+
+        fetcher.assert_not_called()
+
+    def test_update_position_prices_ignores_invalid(self, paper_broker):
+        """0 / 负数 / None / NaN 价格被忽略，避免停牌返回 0 时误触发止损"""
+        paper_broker.place_order("600519", "BUY", 100, 1800.0)
+        paper_broker.update_stop_loss("600519", 1710.0)
+
+        paper_broker.update_position_prices({"600519": 0})
+        paper_broker.update_position_prices({"600519": -1})
+        paper_broker.update_position_prices({"600519": None})
+        paper_broker.update_position_prices({"600519": float("nan")})
+
+        pos = paper_broker.get_portfolio().positions["600519"]
+        assert pos.current_price == 1800.0
+        assert RiskGuard().check_stop_loss(paper_broker.get_portfolio()) == []
+
+        paper_broker.update_position_prices({"600519": "1850.5"})
+        assert paper_broker.get_portfolio().positions["600519"].current_price == 1850.5
+
 
 # ===================================================================
 # A 股 T+1 规则
