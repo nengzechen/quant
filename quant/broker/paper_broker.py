@@ -303,10 +303,7 @@ class PaperBroker(BaseBroker):
                 avg_cost = (pos.avg_cost * pos.quantity + price * quantity) / total_qty
                 pos.quantity = total_qty
                 pos.avg_cost = avg_cost
-                pos.current_price = price
-                pos.market_value = total_qty * price
-                pos.pnl = (price - avg_cost) * total_qty
-                pos.pnl_pct = (price - avg_cost) / avg_cost * 100 if avg_cost > 0 else 0
+                pos.update_price(price)
                 pos.record_buy(quantity)
             else:
                 # 新建持仓

@@ -1212,3 +1212,95 @@ class TestTakeProfit:
 
         assert PortfolioManager(broker=t1_broker).check_and_take_profit() == []
         assert t1_broker.get_portfolio().positions["000001"].quantity == 1000
+
+
+class TestTrailingStop:
+    """移动止损：持仓浮盈后从最高价回撤 trailing_stop_pct 即止损"""
+
+    def _position(self, current, highest, stop=13.5):
+        return Position(
+            stock_code="000001", stock_name="平安银行", quantity=1000,
+            avg_cost=15.0, current_price=current, market_value=current * 1000,
+            pnl=(current - 15.0) * 1000, pnl_pct=(current - 15.0) / 15.0 * 100,
+            open_time="2000-01-01", stop_loss_price=stop, highest_price=highest,
+            last_buy_date="2000-01-01", today_buy_qty=1000,
+        )
+
+    def _portfolio(self, pos):
+        return Portfolio(
+            total_capital=1_000_000, available_cash=985_000,
+            total_market_value=pos.market_value, total_pnl=pos.pnl,
+            positions={pos.stock_code: pos},
+        )
+
+    def test_disabled_by_default(self):
+        guard = RiskGuard()
+        pos = self._position(current=16.0, highest=20.0)
+        assert guard.effective_stop_price(pos) == 13.5
+        assert guard.check_stop_loss(self._portfolio(pos)) == []
+
+    def test_triggers_after_pullback_from_high(self):
+        guard = RiskGuard(trailing_stop_pct=0.10)
+        pos = self._position(current=17.9, highest=20.0)
+        assert guard.effective_stop_price(pos) == pytest.approx(18.0)
+        assert guard.check_stop_loss(self._portfolio(pos)) == ["000001"]
+
+    def test_no_trigger_within_pullback(self):
+        guard = RiskGuard(trailing_stop_pct=0.10)
+        pos = self._position(current=18.5, highest=20.0)
+        assert guard.check_stop_loss(self._portfolio(pos)) == []
+
+    def test_inactive_before_profit(self):
+        """最高价未超过成本价时只用信号止损价，不提前收紧初始风险"""
+        guard = RiskGuard(trailing_stop_pct=0.05)
+        pos = self._position(current=14.0, highest=15.0)
+        assert guard.effective_stop_price(pos) == 13.5
+        assert guard.check_stop_loss(self._portfolio(pos)) == []
+
+    def test_works_without_fixed_stop(self):
+        guard = RiskGuard(trailing_stop_pct=0.10)
+        pos = self._position(current=17.5, highest=20.0, stop=None)
+        assert guard.check_stop_loss(self._portfolio(pos)) == ["000001"]
+
+    def test_fixed_stop_wins_when_higher(self):
+        guard = RiskGuard(trailing_stop_pct=0.20)
+        pos = self._position(current=16.5, highest=16.0, stop=15.5)
+        assert guard.effective_stop_price(pos) == 15.5
+
+    def test_invalid_pct_disables(self):
+        assert RiskGuard(trailing_stop_pct=1.5).trailing_stop_pct == 0.0
+        assert RiskGuard(trailing_stop_pct=-0.1).trailing_stop_pct == 0.0
+
+    def test_reads_pct_from_config(self, monkeypatch):
+        from quant.config import QuantConfig
+
+        monkeypatch.setenv("QUANT_TRAILING_STOP_PCT", "0.08")
+        config = QuantConfig.from_env()
+        assert config.trailing_stop_pct == 0.08
+        assert RiskGuard(config=config).trailing_stop_pct == 0.08
+
+    def test_check_and_stop_loss_sells_on_trailing(self, paper_broker):
+        from quant.agents.portfolio_manager import PortfolioManager
+        from quant.config import QuantConfig
+
+        paper_broker.place_order("000001", "BUY", 1000, 15.0)
+        paper_broker._portfolio.positions["000001"].last_buy_date = "2000-01-01"
+        paper_broker.update_stop_loss("000001", 13.5)
+        paper_broker.update_position_prices({"000001": 20.0})
+        paper_broker.update_position_prices({"000001": 17.8})
+
+        manager = PortfolioManager(
+            broker=paper_broker, config=QuantConfig(trailing_stop_pct=0.10),
+        )
+        pos = paper_broker.get_portfolio().positions["000001"]
+        assert "移动止损" in manager._stop_loss_reason(pos)
+        records = manager.check_and_stop_loss()
+        assert len(records) == 1
+        assert records[0].status == TradeStatus.FILLED
+        assert "000001" not in paper_broker.get_portfolio().positions
+
+    def test_add_on_buy_updates_highest_price(self, paper_broker):
+        """加仓价高于历史最高价时同步刷新最高价"""
+        paper_broker.place_order("000001", "BUY", 1000, 15.0)
+        paper_broker.place_order("000001", "BUY", 1000, 16.0)
+        assert paper_broker.get_portfolio().positions["000001"].highest_price == 16.0

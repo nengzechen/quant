@@ -18,12 +18,13 @@
 6. 黑名单股票检查
 7. 卖出 T+1 检查（当日买入股份不可卖出）
 8. 止损价有效性检查（止损价不低于买入价的买入信号视为无效）
+9. 移动止损（持仓浮盈后从最高价回撤 trailing_stop_pct 即止损）
 """
 
 import logging
 from typing import List, Optional, Tuple
 
-from quant.models import OrderSignal, Portfolio, SignalType
+from quant.models import OrderSignal, Portfolio, Position, SignalType
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +47,7 @@ class RiskGuard:
         config=None,
         max_single_stock_ratio: float = MAX_SINGLE_STOCK_RATIO,
         min_buy_sentiment: float = MIN_BUY_SENTIMENT,
+        trailing_stop_pct: Optional[float] = None,
     ):
         """
         初始化风险守卫。
@@ -55,11 +57,18 @@ class RiskGuard:
             config: 量化配置（可选）
             max_single_stock_ratio: 单只股票最大仓位比例
             min_buy_sentiment: 最低买入情感评分（低于此值拒绝买入）
+            trailing_stop_pct: 移动止损回撤比例（None 时取 config.trailing_stop_pct，0 关闭）
         """
         self.blacklist = [c.upper() for c in (blacklist or [])]
         self._config = config
         self.max_single_stock_ratio = max_single_stock_ratio
         self.min_buy_sentiment = min_buy_sentiment
+        if trailing_stop_pct is None:
+            trailing_stop_pct = getattr(config, 'trailing_stop_pct', 0.0) or 0.0
+        if not 0 <= trailing_stop_pct < 1:
+            logger.warning(f"移动止损比例无效 {trailing_stop_pct}，已关闭移动止损")
+            trailing_stop_pct = 0.0
+        self.trailing_stop_pct = trailing_stop_pct
 
     def check_buy(
         self,
@@ -228,11 +237,29 @@ class RiskGuard:
         logger.info(f"卖出风险检查通过: {stock_code} 卖出 {quantity}股 @ {price:.2f}")
         return True, "卖出检查通过"
 
+    def effective_stop_price(self, pos: Position) -> float:
+        """
+        持仓的有效止损价：固定止损价与移动止损价取较高者，0 表示无止损。
+
+        移动止损价 = 持仓最高价 * (1 - trailing_stop_pct)，只在最高价超过成本价
+        （持仓曾浮盈）后生效：未盈利阶段仍由信号止损价控制初始风险，盈利后止损
+        跟随最高价上移、只升不降，锁住大部分浮盈。
+        """
+        stop = pos.stop_loss_price if pos.stop_loss_price and pos.stop_loss_price > 0 else 0.0
+        if (
+            self.trailing_stop_pct > 0
+            and pos.highest_price
+            and pos.avg_cost > 0
+            and pos.highest_price > pos.avg_cost
+        ):
+            stop = max(stop, pos.highest_price * (1 - self.trailing_stop_pct))
+        return stop
+
     def check_stop_loss(self, portfolio: Portfolio) -> List[str]:
         """
-        检查所有持仓是否触发止损。
+        检查所有持仓是否触发止损（含移动止损）。
 
-        当前价格跌破止损价时，返回对应股票代码。
+        当前价格跌破有效止损价时，返回对应股票代码。
 
         Args:
             portfolio: 当前投资组合
@@ -243,13 +270,13 @@ class RiskGuard:
         stop_loss_codes = []
 
         for code, pos in portfolio.positions.items():
-            if pos.stop_loss_price and pos.stop_loss_price > 0:
-                if pos.current_price <= pos.stop_loss_price:
-                    logger.warning(
-                        f"止损触发: {code} 当前价 {pos.current_price:.2f} "
-                        f"跌破止损价 {pos.stop_loss_price:.2f}"
-                    )
-                    stop_loss_codes.append(code)
+            stop = self.effective_stop_price(pos)
+            if stop > 0 and pos.current_price <= stop:
+                logger.warning(
+                    f"止损触发: {code} 当前价 {pos.current_price:.2f} "
+                    f"跌破止损价 {stop:.2f}"
+                )
+                stop_loss_codes.append(code)
 
         return stop_loss_codes
 

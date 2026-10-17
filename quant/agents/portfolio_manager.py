@@ -245,8 +245,20 @@ class PortfolioManager:
             portfolio,
             stop_loss_codes,
             label="止损",
-            reason_fn=lambda pos: f"止损触发: 跌破 {pos.stop_loss_price:.2f}",
+            reason_fn=self._stop_loss_reason,
         )
+
+    def _stop_loss_reason(self, pos) -> str:
+        """止损交易原因：区分固定止损和移动止损"""
+        stop = self.risk_guard.effective_stop_price(pos)
+        fixed = pos.stop_loss_price or 0.0
+        if stop > fixed:
+            return (
+                f"移动止损触发: 跌破 {stop:.2f}"
+                f"（最高价 {pos.highest_price:.2f} 回撤 "
+                f"{self.risk_guard.trailing_stop_pct * 100:.1f}%）"
+            )
+        return f"止损触发: 跌破 {stop:.2f}"
 
     def check_and_take_profit(self) -> List[TradeRecord]:
         """
@@ -303,7 +315,7 @@ class PortfolioManager:
 
             logger.warning(
                 f"触发{label}: {code} 当前价={sell_price:.2f} "
-                f"止损价={pos.stop_loss_price or 0:.2f} "
+                f"止损价={self.risk_guard.effective_stop_price(pos):.2f} "
                 f"止盈价={pos.take_profit_price or 0:.2f} "
                 f"盈亏={pos.pnl:.2f}({pos.pnl_pct:.2f}%)"
             )

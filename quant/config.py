@@ -36,6 +36,7 @@ class QuantConfig:
     - futu_port: 富途 OpenD 端口
     - futu_trade_env: 富途交易环境 SIMULATE/REAL
     - max_signal_workers: 信号聚合并发数
+    - trailing_stop_pct: 移动止损回撤比例（0.08 = 从持仓最高价回撤 8% 止损，0 关闭）
     """
     initial_capital: float = 1_000_000
     broker_type: str = "paper"
@@ -51,6 +52,7 @@ class QuantConfig:
     futu_port: int = 11111
     futu_trade_env: str = "SIMULATE"
     max_signal_workers: int = 3
+    trailing_stop_pct: float = 0.0
 
     @classmethod
     def from_env(cls) -> "QuantConfig":
@@ -62,7 +64,7 @@ class QuantConfig:
         QUANT_MAX_POSITIONS, QUANT_RISK_PER_TRADE_PCT, QUANT_SIZING_METHOD,
         QUANT_FIXED_FRACTION, QUANT_KELLY_WIN_RATE, QUANT_KELLY_WIN_LOSS_RATIO,
         QUANT_BLACKLIST (逗号分隔), QUANT_FUTU_HOST, QUANT_FUTU_PORT,
-        QUANT_FUTU_TRADE_ENV, QUANT_MAX_SIGNAL_WORKERS
+        QUANT_FUTU_TRADE_ENV, QUANT_MAX_SIGNAL_WORKERS, QUANT_TRAILING_STOP_PCT
         """
         blacklist_str = os.getenv("QUANT_BLACKLIST", "")
         blacklist = [c.strip().upper() for c in blacklist_str.split(",") if c.strip()]
@@ -84,4 +86,5 @@ class QuantConfig:
             futu_port=int(os.getenv("QUANT_FUTU_PORT", "11111")),
             futu_trade_env=os.getenv("QUANT_FUTU_TRADE_ENV", "SIMULATE"),
             max_signal_workers=int(os.getenv("QUANT_MAX_SIGNAL_WORKERS", "3")),
+            trailing_stop_pct=float(os.getenv("QUANT_TRAILING_STOP_PCT", "0")),
         )
