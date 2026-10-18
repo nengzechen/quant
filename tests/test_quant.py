@@ -1034,6 +1034,77 @@ class TestQuantOrchestrator:
         paper_broker.update_position_prices({"600519": "1850.5"})
         assert paper_broker.get_portfolio().positions["600519"].current_price == 1850.5
 
+    @staticmethod
+    def _rebuy_signal(code="600519", price=1700.0):
+        return OrderSignal(
+            stock_code=code, stock_name="测试", signal_type=SignalType.BUY,
+            confidence=ConfidenceLevel.HIGH, sentiment_score=80,
+            ideal_buy_price=price, stop_loss_price=price * 0.95,
+            take_profit_price=price * 1.2, buy_reason="同轮买回测试",
+        )
+
+    def test_no_rebuy_after_stop_loss_same_run(self, tmp_account_path):
+        """同一轮止损卖出的股票，即使有买入信号也不当日买回"""
+        orchestrator, broker = self._held_orchestrator(
+            tmp_account_path, lambda codes: {"600519": 1700.0}
+        )
+
+        with patch.object(
+            orchestrator._signal_aggregator, 'aggregate',
+            return_value=[self._rebuy_signal()],
+        ):
+            report = orchestrator.run(["600519"], dry_run=False)
+
+        assert "600519" not in broker.get_portfolio().positions
+        assert [t['action'] for t in report['executed_trades']] == ["SELL"]
+        assert report['blocked_rebuys'] == ["600519"]
+
+    def test_no_rebuy_after_take_profit_same_run(self, tmp_account_path):
+        """同一轮止盈卖出的股票也不当日买回"""
+        orchestrator, broker = self._held_orchestrator(
+            tmp_account_path, lambda codes: {"600519": 2050.0}
+        )
+
+        with patch.object(
+            orchestrator._signal_aggregator, 'aggregate',
+            return_value=[self._rebuy_signal(price=2050.0)],
+        ):
+            report = orchestrator.run(["600519"], dry_run=False)
+
+        assert "600519" not in broker.get_portfolio().positions
+        assert report['blocked_rebuys'] == ["600519"]
+
+    def test_other_buy_signals_unaffected_by_exit(self, tmp_account_path):
+        """止损只拦截离场股票本身，其他买入信号照常执行"""
+        orchestrator, broker = self._held_orchestrator(
+            tmp_account_path, lambda codes: {"600519": 1700.0}
+        )
+
+        with patch.object(
+            orchestrator._signal_aggregator, 'aggregate',
+            return_value=[self._rebuy_signal(), self._rebuy_signal("000001", 15.0)],
+        ):
+            report = orchestrator.run(["600519", "000001"], dry_run=False)
+
+        assert report['blocked_rebuys'] == ["600519"]
+        assert "000001" in broker.get_portfolio().positions
+
+    def test_deferred_exit_does_not_block_buy(self, tmp_account_path):
+        """T+1 顺延未成交的止损不算离场，不拦截买入（仍持仓，走正常加仓风控）"""
+        orchestrator, broker = self._held_orchestrator(
+            tmp_account_path, lambda codes: {"600519": 1700.0}
+        )
+        broker._portfolio.positions["600519"].last_buy_date = None
+        broker._portfolio.positions["600519"].record_buy(100)
+
+        with patch.object(
+            orchestrator._signal_aggregator, 'aggregate',
+            return_value=[self._rebuy_signal()],
+        ):
+            report = orchestrator.run(["600519"], dry_run=False)
+
+        assert report['blocked_rebuys'] == []
+
 
 # ===================================================================
 # A 股 T+1 规则

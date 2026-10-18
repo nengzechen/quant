@@ -39,7 +39,7 @@ from quant.agents.signal_aggregator import SignalAggregator
 from quant.broker.base import BaseBroker
 from quant.broker.paper_broker import PaperBroker
 from quant.config import QuantConfig
-from quant.models import OrderSignal, SignalType, TradeRecord
+from quant.models import OrderSignal, SignalType, TradeRecord, TradeStatus
 
 logger = logging.getLogger(__name__)
 
@@ -156,6 +156,7 @@ class QuantOrchestrator:
             "buy_signals": [],
             "sell_signals": [],
             "executed_trades": [],
+            "blocked_rebuys": [],
             "portfolio_summary": {},
             "errors": [],
         }
@@ -190,12 +191,16 @@ class QuantOrchestrator:
             report["portfolio_summary"] = self._portfolio_manager.get_portfolio_summary()
             return report
 
+        # 本轮止损 / 止盈已离场的股票，Step 4 不再买回
+        exited_codes = set()
+
         # ===== Step 2: 止损检查（先于新买入） =====
         try:
             if not dry_run:
                 self.refresh_position_prices()
                 logger.info("Step 2: 执行止损检查...")
                 stop_loss_records = self._portfolio_manager.check_and_stop_loss()
+                exited_codes.update(_filled_codes(stop_loss_records))
                 if stop_loss_records:
                     logger.warning(f"触发止损 {len(stop_loss_records)} 笔")
                     report["executed_trades"].extend(
@@ -210,6 +215,7 @@ class QuantOrchestrator:
             if not dry_run:
                 logger.info("Step 2.5: 执行止盈检查...")
                 take_profit_records = self._portfolio_manager.check_and_take_profit()
+                exited_codes.update(_filled_codes(take_profit_records))
                 if take_profit_records:
                     logger.info(f"触发止盈 {len(take_profit_records)} 笔")
                     report["executed_trades"].extend(
@@ -239,6 +245,13 @@ class QuantOrchestrator:
             try:
                 logger.info(f"Step 4: 处理 {len(buy_signals)} 个买入信号...")
                 for signal in buy_signals:
+                    # 刚止损 / 止盈卖出又按同一轮信号买回，等于止损白做、白付两次手续费
+                    if signal.stock_code.upper() in exited_codes:
+                        logger.info(
+                            f"跳过买入 {signal.stock_code}: 本轮已止损/止盈离场，不当日买回"
+                        )
+                        report["blocked_rebuys"].append(signal.stock_code)
+                        continue
                     try:
                         record = self._portfolio_manager.process_signal(signal)
                         if record is not None:
@@ -366,6 +379,11 @@ class QuantOrchestrator:
     def config(self) -> QuantConfig:
         """返回当前配置"""
         return self._config
+
+
+def _filled_codes(records: List[TradeRecord]) -> List[str]:
+    """成交记录对应的股票代码（大写），未成交的记录不算离场。"""
+    return [r.stock_code.upper() for r in records if r.status == TradeStatus.FILLED]
 
 
 def _fetch_realtime_prices(codes: List[str]) -> Dict[str, float]:
