@@ -777,6 +777,34 @@ class TestPortfolioManager:
         assert pm.process_signal(signal) is None
         assert "000001" not in broker.get_portfolio().positions
 
+    def test_sell_signal_uses_current_price(self, paper_broker, sell_signal):
+        """卖出信号按持仓现价成交，而非信号里的买入狙击点 ideal_buy_price"""
+        from quant.agents.portfolio_manager import PortfolioManager
+
+        paper_broker.place_order("000858", "BUY", 1000, 160.0)
+        paper_broker._portfolio.positions["000858"].last_buy_date = "2000-01-01"
+        paper_broker.update_position_prices({"000858": 170.0})
+        pm = PortfolioManager(broker=paper_broker)
+
+        # sell_signal.ideal_buy_price=150，低于现价 170
+        record = pm.process_signal(sell_signal)
+        assert record.status == TradeStatus.FILLED
+        assert record.price == 170.0
+        assert record.quantity == 1000
+
+    def test_sell_signal_falls_back_to_signal_price(self, paper_broker, sell_signal):
+        """持仓现价缺失时才用信号价格兜底"""
+        from quant.agents.portfolio_manager import PortfolioManager
+
+        paper_broker.place_order("000858", "BUY", 1000, 160.0)
+        paper_broker._portfolio.positions["000858"].last_buy_date = "2000-01-01"
+        paper_broker._portfolio.positions["000858"].current_price = 0.0
+        pm = PortfolioManager(broker=paper_broker)
+
+        record = pm.process_signal(sell_signal)
+        assert record.status == TradeStatus.FILLED
+        assert record.price == 150.0
+
     def test_add_on_buy_capped_by_existing_position(self, tmp_account_path):
         """已持仓接近集中度上限时，加仓只买剩余额度；无额度则跳过"""
         from quant.agents.portfolio_manager import PortfolioManager

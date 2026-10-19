@@ -194,10 +194,13 @@ class PortfolioManager:
         if quantity <= 0:
             logger.info(f"卖出信号顺延: {signal.stock_code} 今日买入，受 T+1 限制")
             return None
-        price = signal.ideal_buy_price if signal.ideal_buy_price > 0 else pos.current_price
+        # 卖出按持仓现价（编排流程已在 Step 2 刷新行情）。信号的 ideal_buy_price
+        # 是 LLM 给的买入狙击点，通常低于现价，拿来当卖出价会让模拟盘按市场
+        # 未到过的低价成交，只在现价缺失时兜底使用
+        price = pos.current_price if pos.current_price > 0 else signal.ideal_buy_price
 
         if price <= 0:
-            logger.warning(f"卖出价格无效: {signal.stock_code}，使用当前持仓价")
+            logger.warning(f"卖出价格无效: {signal.stock_code}，使用持仓成本价")
             price = pos.avg_cost
 
         # 风险检查（卖出检查较宽松）
