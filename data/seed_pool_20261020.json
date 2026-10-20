@@ -1,0 +1,1726 @@
+{
+  "date": "2026-10-20",
+  "created_at": "2026-10-20 11:09:32",
+  "count": 60,
+  "entries": [
+    {
+      "code": "300589",
+      "name": "江龙船艇",
+      "model": "BottomSwing",
+      "phase1_score": 6,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "头肩底形态",
+        "底分型确认",
+        "MACD金叉>MA20",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=13.94 MA10=13.66 MA20=13.64 MA60=13.27",
+        "KDJ金叉(J>0)": "K=69.4 D=57.5 J=93.2，近期金叉，J>0",
+        "头肩底形态": "头肩底已突破颈线",
+        "底分型确认": "近期出现底分型",
+        "MACD金叉>MA20": "MACD金叉，收盘>MA20(13.64)",
+        "量比>1": "量比=1.77（阈值>1.0）"
+      },
+      "created_at": "2026-10-20 10:37:23",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "000576",
+      "name": "甘化科工",
+      "model": "BottomSwing",
+      "phase1_score": 6,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "MACD金叉>MA20",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "形态支撑",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "均线多头排列": "MA5=8.60 MA10=8.37 MA20=8.33 MA60=7.69",
+        "KDJ金叉(J>0)": "K=77.6 D=61.9 J=109.0，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "MACD金叉>MA20": "MACD金叉，收盘>MA20(8.33)",
+        "量比>1": "量比=4.76（阈值>1.0）"
+      },
+      "created_at": "2026-10-20 10:32:04",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "600372",
+      "name": "中航机载",
+      "model": "BottomSwing",
+      "phase1_score": 6,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "KDJ金叉(J>0)",
+        "回踩关键均线",
+        "底分型确认",
+        "MACD金叉>MA20",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "均线多头排列",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "KDJ金叉(J>0)": "K=63.5 D=45.3 J=100.0，近期金叉，J>0",
+        "回踩关键均线": "回踩MA20支撑 (11.34)，偏离1.3%",
+        "底分型确认": "近期出现底分型",
+        "MACD金叉>MA20": "MACD金叉，收盘>MA20(11.34)",
+        "量比>1": "量比=1.03（阈值>1.0）"
+      },
+      "created_at": "2026-10-20 10:41:08",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002332",
+      "name": "仙琚制药",
+      "model": "BottomSwing",
+      "phase1_score": 6,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "回踩关键均线",
+        "底分型确认",
+        "MACD金叉>MA20",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=8.71 MA10=8.69 MA20=8.65 MA60=8.53",
+        "KDJ金叉(J>0)": "K=62.6 D=59.0 J=69.6，近期金叉，J>0",
+        "回踩关键均线": "回踩MA20支撑 (8.65)，偏离2.0%",
+        "底分型确认": "近期出现底分型",
+        "MACD金叉>MA20": "MACD金叉，收盘>MA20(8.65)",
+        "量比>1": "量比=1.69（阈值>1.0）"
+      },
+      "created_at": "2026-10-20 10:34:35",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "600693",
+      "name": "东百集团",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "均线多头排列",
+        "头肩底形态",
+        "底分型确认",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "KDJ金叉(J>0)",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "均线多头排列": "MA5=10.84 MA10=10.35 MA20=9.89 MA60=9.59",
+        "头肩底形态": "头肩底已突破颈线",
+        "底分型确认": "近期出现底分型",
+        "量比>1": "量比=1.00（阈值>1.0）"
+      },
+      "created_at": "2026-10-20 10:42:21",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "600843",
+      "name": "上工申贝",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=8.58 MA10=8.20 MA20=7.70 MA60=7.20",
+        "KDJ金叉(J>0)": "K=71.4 D=67.8 J=78.5，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=41.5 MDI=5.6 ADX=71.4，手拉手↑",
+        "量比>1": "量比=1.71（阈值>1.0）"
+      },
+      "created_at": "2026-10-20 10:43:20",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "300121",
+      "name": "阳谷华泰",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "头肩底形态",
+        "底分型确认",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=10.01 MA10=9.83 MA20=9.77 MA60=9.63",
+        "KDJ金叉(J>0)": "K=47.7 D=46.5 J=49.9，近期金叉，J>0",
+        "头肩底形态": "头肩底已突破颈线",
+        "底分型确认": "近期出现底分型",
+        "量比>1": "量比=1.15（阈值>1.0）"
+      },
+      "created_at": "2026-10-20 10:36:13",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "300411",
+      "name": "金盾股份",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=9.06 MA10=8.69 MA20=8.57 MA60=7.93",
+        "KDJ金叉(J>0)": "K=65.8 D=51.4 J=94.5，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=48.9 MDI=13.2 ADX=34.0，手拉手↑",
+        "量比>1": "量比=7.84（阈值>1.0）"
+      },
+      "created_at": "2026-10-20 10:36:40",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "300810",
+      "name": "中科海讯",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "KDJ金叉(J>0)",
+        "回踩关键均线",
+        "底分型确认",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "均线多头排列",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "KDJ金叉(J>0)": "K=49.1 D=35.5 J=76.4，近期金叉，J>0",
+        "回踩关键均线": "回踩MA20支撑 (24.22)，偏离1.7%",
+        "底分型确认": "近期出现底分型",
+        "量比>1": "量比=2.26（阈值>1.0）"
+      },
+      "created_at": "2026-10-20 10:37:56",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "300922",
+      "name": "天秦装备",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "KDJ金叉(J>0)",
+        "回踩关键均线",
+        "底分型确认",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "均线多头排列",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "KDJ金叉(J>0)": "K=54.6 D=40.3 J=83.2，近期金叉，J>0",
+        "回踩关键均线": "回踩MA20支撑 (17.47)，偏离0.7%",
+        "底分型确认": "近期出现底分型",
+        "量比>1": "量比=1.49（阈值>1.0）"
+      },
+      "created_at": "2026-10-20 10:38:09",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "000951",
+      "name": "中国重汽",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "KDJ金叉(J>0)",
+        "回踩关键均线",
+        "底分型确认",
+        "MACD金叉>MA20"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "均线多头排列",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "KDJ金叉(J>0)": "K=57.7 D=52.5 J=68.1，近期金叉，J>0",
+        "回踩关键均线": "回踩MA20支撑 (20.29)，偏离0.5%",
+        "底分型确认": "近期出现底分型",
+        "MACD金叉>MA20": "MACD金叉，收盘>MA20(20.29)"
+      },
+      "created_at": "2026-10-20 10:33:10",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "600435",
+      "name": "北方导航",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=11.79 MA10=11.39 MA20=11.36 MA60=11.00",
+        "KDJ金叉(J>0)": "K=73.9 D=58.1 J=105.4，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=36.6 MDI=17.3 ADX=20.3，手拉手↑",
+        "量比>1": "量比=3.44（阈值>1.0）"
+      },
+      "created_at": "2026-10-20 10:41:30",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "601606",
+      "name": "长城军工",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "MACD金叉>MA20",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "均线多头排列",
+        "形态支撑",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "KDJ金叉(J>0)": "K=54.9 D=35.0 J=94.8，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "MACD金叉>MA20": "MACD金叉，收盘>MA20(31.64)",
+        "量比>1": "量比=4.51（阈值>1.0）"
+      },
+      "created_at": "2026-10-20 10:44:47",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "600202",
+      "name": "哈空调",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "回踩关键均线",
+        "底分型确认",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=5.55 MA10=5.36 MA20=5.20 MA60=4.99",
+        "KDJ金叉(J>0)": "K=45.3 D=59.3 J=17.3，近期金叉，J>0",
+        "回踩关键均线": "回踩MA20支撑 (5.20)，偏离0.7%",
+        "底分型确认": "近期出现底分型",
+        "量比>1": "量比=1.15（阈值>1.0）"
+      },
+      "created_at": "2026-10-20 10:40:24",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "600668",
+      "name": "尖峰集团",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "头肩底形态",
+        "底分型确认",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=7.89 MA10=7.65 MA20=7.46 MA60=7.41",
+        "KDJ金叉(J>0)": "K=66.5 D=61.1 J=77.5，近期金叉，J>0",
+        "头肩底形态": "头肩底已突破颈线",
+        "底分型确认": "近期出现底分型",
+        "量比>1": "量比=3.05（阈值>1.0）"
+      },
+      "created_at": "2026-10-20 10:42:09",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "601825",
+      "name": "沪农商行",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "回踩关键均线",
+        "底分型确认",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=8.67 MA10=8.66 MA20=8.62 MA60=8.47",
+        "KDJ金叉(J>0)": "K=56.3 D=56.0 J=56.9，近期金叉，J>0",
+        "回踩关键均线": "回踩MA20支撑 (8.62)，偏离1.3%",
+        "底分型确认": "近期出现底分型",
+        "量比>1": "量比=1.25（阈值>1.0）"
+      },
+      "created_at": "2026-10-20 10:45:09",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "601886",
+      "name": "江河集团",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "KDJ金叉(J>0)",
+        "回踩关键均线",
+        "底分型确认",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "均线多头排列",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "KDJ金叉(J>0)": "K=42.4 D=33.0 J=61.2，近期金叉，J>0",
+        "回踩关键均线": "回踩MA20支撑 (13.04)，偏离0.7%",
+        "底分型确认": "近期出现底分型",
+        "量比>1": "量比=1.64（阈值>1.0）"
+      },
+      "created_at": "2026-10-20 10:45:14",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002078",
+      "name": "太阳纸业",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "KDJ金叉(J>0)",
+        "回踩关键均线",
+        "底分型确认",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "均线多头排列",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "KDJ金叉(J>0)": "K=37.0 D=34.7 J=41.5，近期金叉，J>0",
+        "回踩关键均线": "回踩MA20支撑 (13.74)，偏离-0.5%",
+        "底分型确认": "近期出现底分型",
+        "量比>1": "量比=1.17（阈值>1.0）"
+      },
+      "created_at": "2026-10-20 10:33:53",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002395",
+      "name": "双象股份",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "头肩底形态",
+        "底分型确认",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=13.87 MA10=13.67 MA20=13.24 MA60=12.66",
+        "KDJ金叉(J>0)": "K=55.8 D=47.2 J=72.9，近期金叉，J>0",
+        "头肩底形态": "头肩底已突破颈线",
+        "底分型确认": "近期出现底分型",
+        "量比>1": "量比=1.26（阈值>1.0）"
+      },
+      "created_at": "2026-10-20 10:34:41",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002545",
+      "name": "东方铁塔",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "均线多头排列",
+        "形态支撑",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "CYS<-15且上行": "CYS=-17.65（阈值<-15.0），上行↑（5日前=-20.19）",
+        "KDJ金叉(J>0)": "K=22.9 D=15.0 J=38.6，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "量比>1": "量比=1.09（阈值>1.0）"
+      },
+      "created_at": "2026-10-20 10:35:10",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002543",
+      "name": "万和电气",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=7.63 MA10=7.55 MA20=7.42 MA60=7.14",
+        "KDJ金叉(J>0)": "K=66.9 D=64.0 J=72.8，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=28.2 MDI=7.6 ADX=34.7，手拉手↑",
+        "量比>1": "量比=1.63（阈值>1.0）"
+      },
+      "created_at": "2026-10-20 10:35:16",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "000573",
+      "name": "粤宏远A",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "头肩底形态",
+        "底分型确认",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=4.22 MA10=4.06 MA20=3.90 MA60=3.75",
+        "KDJ金叉(J>0)": "K=74.8 D=77.5 J=69.4，近期金叉，J>0",
+        "头肩底形态": "头肩底已突破颈线",
+        "底分型确认": "近期出现底分型",
+        "量比>1": "量比=3.39（阈值>1.0）"
+      },
+      "created_at": "2026-10-20 10:32:08",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "000683",
+      "name": "博源化工",
+      "model": "BottomSwing",
+      "phase1_score": 4,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "KDJ金叉(J>0)",
+        "回踩关键均线",
+        "底分型确认"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "均线多头排列",
+        "MACD金叉>MA20",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "KDJ金叉(J>0)": "K=27.6 D=26.9 J=29.0，近期金叉，J>0",
+        "回踩关键均线": "回踩MA20支撑 (5.63)，偏离-1.9%",
+        "底分型确认": "近期出现底分型"
+      },
+      "created_at": "2026-10-20 10:32:39",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "601609",
+      "name": "金田股份",
+      "model": "BottomSwing",
+      "phase1_score": 4,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "均线多头排列",
+        "形态支撑",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "KDJ金叉(J>0)": "K=11.9 D=11.2 J=13.2，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "量比>1": "量比=1.13（阈值>1.0）"
+      },
+      "created_at": "2026-10-20 10:44:53",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "001299",
+      "name": "美能能源",
+      "model": "BottomSwing",
+      "phase1_score": 4,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "形态支撑",
+        "MACD金叉>MA20",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "均线多头排列": "MA5=10.64 MA10=10.35 MA20=10.29 MA60=10.12",
+        "KDJ金叉(J>0)": "K=57.1 D=55.2 J=60.9，近期金叉，J>0",
+        "底分型确认": "近期出现底分型"
+      },
+      "created_at": "2026-10-20 10:33:41",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002015",
+      "name": "协鑫能科",
+      "model": "BottomSwing",
+      "phase1_score": 4,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "均线多头排列",
+        "形态支撑",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "KDJ金叉(J>0)": "K=19.6 D=13.3 J=32.3，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "量比>1": "量比=2.18（阈值>1.0）"
+      },
+      "created_at": "2026-10-20 10:33:40",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "600821",
+      "name": "金开新能",
+      "model": "BottomSwing",
+      "phase1_score": 4,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "均线多头排列",
+        "形态支撑",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "KDJ金叉(J>0)": "K=21.0 D=15.2 J=32.6，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "量比>1": "量比=1.63（阈值>1.0）"
+      },
+      "created_at": "2026-10-20 10:43:06",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "688563",
+      "name": "航材股份",
+      "model": "BottomSwing",
+      "phase1_score": 4,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "均线多头排列",
+        "形态支撑",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "KDJ金叉(J>0)": "K=48.0 D=31.0 J=82.1，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "量比>1": "量比=2.08（阈值>1.0）"
+      },
+      "created_at": "2026-10-20 10:48:26",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "000099",
+      "name": "中信海直",
+      "model": "LimitUpHunter",
+      "phase1_score": 3,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "高开2%-5%",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(14.06)/MA9(13.51)，近3根均为阳线",
+        "高开2%-5%": "高开2.98%（在目标区间[2.0%,5.0%]）",
+        "量比>1": "量比=3.21（阈值>1.0）"
+      },
+      "created_at": "2026-10-20 10:32:47",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "000519",
+      "name": "中兵红箭",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(14.38)/MA9(14.26)，近3根均为阳线",
+        "量比>1": "量比=2.02（阈值>1.0）"
+      },
+      "created_at": "2026-10-20 10:32:34",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "600967",
+      "name": "内蒙一机",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(13.59)/MA9(13.16)，近3根均为阳线",
+        "量比>1": "量比=1.60（阈值>1.0）"
+      },
+      "created_at": "2026-10-20 10:43:55",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "000995",
+      "name": "皇台酒业",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(13.20)/MA9(12.39)，近3根均为阳线",
+        "量比>1": "量比=1.86（阈值>1.0）"
+      },
+      "created_at": "2026-10-20 10:34:00",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "001233",
+      "name": "海安集团",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(47.18)/MA9(45.81)，近3根均为阳线",
+        "量比>1": "量比=1.93（阈值>1.0）"
+      },
+      "created_at": "2026-10-20 10:49:30",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "688775",
+      "name": "影石创新",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(88.29)/MA9(88.95)，近3根均为阳线",
+        "量比>1": "量比=1.90（阈值>1.0）"
+      },
+      "created_at": "2026-10-20 11:07:42",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "000530",
+      "name": "冰山冷热",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(6.88)/MA9(6.15)，近3根均为阳线",
+        "量比>1": "量比=2.55（阈值>1.0）"
+      },
+      "created_at": "2026-10-20 10:32:40",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002748",
+      "name": "世龙实业",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=13.10 MA10=12.62 MA20=12.36 MA60=11.70",
+        "KDJ金叉(J>0)": "K=62.9 D=60.2 J=68.2，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=25.0 MDI=10.0 ADX=36.8，手拉手↑",
+        "量比>1": "量比=1.81（阈值>1.0）"
+      },
+      "created_at": "2026-10-20 10:35:25",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "301130",
+      "name": "西点药业",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "头肩底形态",
+        "底分型确认",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=28.47 MA10=28.19 MA20=27.92 MA60=27.59",
+        "KDJ金叉(J>0)": "K=53.4 D=51.9 J=56.4，近期金叉，J>0",
+        "头肩底形态": "头肩底已突破颈线",
+        "底分型确认": "近期出现底分型",
+        "量比>1": "量比=1.50（阈值>1.0）"
+      },
+      "created_at": "2026-10-20 10:38:26",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "603348",
+      "name": "文灿股份",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑",
+        "MACD金叉>MA20"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=14.97 MA10=14.77 MA20=14.47 MA60=14.31",
+        "KDJ金叉(J>0)": "K=74.0 D=62.9 J=96.1，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=46.9 MDI=15.1 ADX=22.8，手拉手↑",
+        "量比>1": "量比=2.75（阈值>1.0）"
+      },
+      "created_at": "2026-10-20 10:46:25",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "603995",
+      "name": "甬金股份",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "MACD金叉>MA20",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "形态支撑",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=25.43 MA10=25.21 MA20=25.21 MA60=23.70",
+        "KDJ金叉(J>0)": "K=74.9 D=63.6 J=97.5，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "MACD金叉>MA20": "MACD金叉，收盘>MA20(25.21)",
+        "量比>1": "量比=1.31（阈值>1.0）"
+      },
+      "created_at": "2026-10-20 10:46:58",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002028",
+      "name": "思源电气",
+      "model": "BottomSwing",
+      "phase1_score": 4,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "回踩关键均线",
+        "底分型确认",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "回踩关键均线": "回踩MA20支撑 (125.81)，偏离-0.6%",
+        "底分型确认": "近期出现底分型",
+        "量比>1": "量比=1.64（阈值>1.0）"
+      },
+      "created_at": "2026-10-20 10:33:45",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002190",
+      "name": "成飞集成",
+      "model": "BottomSwing",
+      "phase1_score": 4,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "回踩关键均线",
+        "底分型确认",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "回踩关键均线": "回踩MA20支撑 (23.51)，偏离-1.1%",
+        "底分型确认": "近期出现底分型",
+        "量比>1": "量比=1.35（阈值>1.0）"
+      },
+      "created_at": "2026-10-20 10:34:17",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002594",
+      "name": "比亚迪",
+      "model": "BottomSwing",
+      "phase1_score": 4,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "KDJ金叉(J>0)",
+        "回踩关键均线",
+        "底分型确认"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "均线多头排列",
+        "MACD金叉>MA20",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "KDJ金叉(J>0)": "K=40.2 D=33.4 J=53.8，近期金叉，J>0",
+        "回踩关键均线": "回踩MA20支撑 (83.85)，偏离-0.4%",
+        "底分型确认": "近期出现底分型"
+      },
+      "created_at": "2026-10-20 10:35:13",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002735",
+      "name": "王子新材",
+      "model": "BottomSwing",
+      "phase1_score": 4,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "均线多头排列",
+        "形态支撑",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "KDJ金叉(J>0)": "K=39.5 D=25.2 J=68.1，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "量比>1": "量比=2.37（阈值>1.0）"
+      },
+      "created_at": "2026-10-20 10:35:26",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "300008",
+      "name": "天海防务",
+      "model": "BottomSwing",
+      "phase1_score": 4,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "KDJ金叉(J>0)",
+        "回踩关键均线",
+        "底分型确认"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "均线多头排列",
+        "MACD金叉>MA20",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "KDJ金叉(J>0)": "K=37.3 D=29.9 J=52.0，近期金叉，J>0",
+        "回踩关键均线": "回踩MA20支撑 (6.26)，偏离-1.8%",
+        "底分型确认": "近期出现底分型"
+      },
+      "created_at": "2026-10-20 10:35:55",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "300527",
+      "name": "中船应急",
+      "model": "BottomSwing",
+      "phase1_score": 4,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "均线多头排列",
+        "形态支撑",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "KDJ金叉(J>0)": "K=26.1 D=20.3 J=37.7，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "量比>1": "量比=1.69（阈值>1.0）"
+      },
+      "created_at": "2026-10-20 10:36:55",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "300773",
+      "name": "拉卡拉",
+      "model": "BottomSwing",
+      "phase1_score": 4,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "KDJ金叉(J>0)",
+        "回踩关键均线",
+        "MACD金叉>MA20"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "均线多头排列",
+        "底分型确认",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "KDJ金叉(J>0)": "K=24.9 D=15.0 J=44.7，近期金叉，J>0",
+        "回踩关键均线": "回踩MA60支撑 (15.20)，偏离-1.1%",
+        "MACD金叉>MA20": "MACD金叉，收盘>MA20(14.68)"
+      },
+      "created_at": "2026-10-20 10:37:52",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "300855",
+      "name": "图南股份",
+      "model": "BottomSwing",
+      "phase1_score": 4,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "均线多头排列",
+        "形态支撑",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "KDJ金叉(J>0)": "K=21.4 D=19.3 J=25.7，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "量比>1": "量比=1.18（阈值>1.0）"
+      },
+      "created_at": "2026-10-20 10:38:04",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "600104",
+      "name": "上汽集团",
+      "model": "BottomSwing",
+      "phase1_score": 4,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "KDJ金叉(J>0)",
+        "回踩关键均线",
+        "底分型确认"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "均线多头排列",
+        "MACD金叉>MA20",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "KDJ金叉(J>0)": "K=39.1 D=33.2 J=51.0，近期金叉，J>0",
+        "回踩关键均线": "回踩MA20支撑 (10.96)，偏离-1.1%",
+        "底分型确认": "近期出现底分型"
+      },
+      "created_at": "2026-10-20 10:39:49",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "600346",
+      "name": "恒力石化",
+      "model": "BottomSwing",
+      "phase1_score": 4,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "均线多头排列",
+        "形态支撑",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "KDJ金叉(J>0)": "K=24.4 D=22.2 J=28.8，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "量比>1": "量比=1.01（阈值>1.0）"
+      },
+      "created_at": "2026-10-20 10:40:57",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "600428",
+      "name": "中远海特",
+      "model": "BottomSwing",
+      "phase1_score": 4,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "KDJ金叉(J>0)",
+        "回踩关键均线",
+        "底分型确认"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "均线多头排列",
+        "MACD金叉>MA20",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "KDJ金叉(J>0)": "K=43.9 D=38.3 J=55.0，近期金叉，J>0",
+        "回踩关键均线": "回踩MA20支撑 (10.95)，偏离-1.1%",
+        "底分型确认": "近期出现底分型"
+      },
+      "created_at": "2026-10-20 10:41:27",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "603330",
+      "name": "天洋新材",
+      "model": "BottomSwing",
+      "phase1_score": 4,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "KDJ金叉(J>0)",
+        "回踩关键均线",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "均线多头排列",
+        "底分型确认",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "KDJ金叉(J>0)": "K=49.4 D=34.4 J=79.3，近期金叉，J>0",
+        "回踩关键均线": "回踩MA20支撑 (9.27)，偏离1.7%",
+        "量比>1": "量比=1.21（阈值>1.0）"
+      },
+      "created_at": "2026-10-20 10:46:23",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002469",
+      "name": "三维化学",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(6.84)/MA9(6.55)，近3根均为阳线",
+        "量比>1": "量比=1.24（阈值>1.0）"
+      },
+      "created_at": "2026-10-20 10:35:19",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "003006",
+      "name": "百亚股份",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(23.48)/MA9(23.17)，近3根均为阳线",
+        "量比>1": "量比=1.35（阈值>1.0）"
+      },
+      "created_at": "2026-10-20 10:36:03",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "301357",
+      "name": "北方长龙",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(94.29)/MA9(91.07)，近3根均为阳线",
+        "量比>1": "量比=1.82（阈值>1.0）"
+      },
+      "created_at": "2026-10-20 10:39:10",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "603861",
+      "name": "白云电器",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(11.57)/MA9(11.30)，近3根均为阳线",
+        "量比>1": "量比=1.95（阈值>1.0）"
+      },
+      "created_at": "2026-10-20 10:47:03",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "603618",
+      "name": "杭电股份",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(31.36)/MA9(31.42)，近3根均为阳线",
+        "量比>1": "量比=1.71（阈值>1.0）"
+      },
+      "created_at": "2026-10-20 10:47:04",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002242",
+      "name": "九阳股份",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(17.83)/MA9(16.35)，近3根均为阳线",
+        "量比>1": "量比=1.39（阈值>1.0）"
+      },
+      "created_at": "2026-10-20 10:51:06",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002626",
+      "name": "金达威",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(16.25)/MA9(16.06)，近3根均为阳线",
+        "量比>1": "量比=4.27（阈值>1.0）"
+      },
+      "created_at": "2026-10-20 10:52:40",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "300747",
+      "name": "锐科激光",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(38.62)/MA9(36.95)，近3根均为阳线",
+        "量比>1": "量比=1.57（阈值>1.0）"
+      },
+      "created_at": "2026-10-20 10:57:42",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "301487",
+      "name": "盟固利",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(17.94)/MA9(17.77)，近3根均为阳线",
+        "量比>1": "量比=1.01（阈值>1.0）"
+      },
+      "created_at": "2026-10-20 11:00:34",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    }
+  ]
+}
