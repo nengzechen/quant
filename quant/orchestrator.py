@@ -30,8 +30,10 @@
 """
 
 import logging
+import math
+from dataclasses import replace
 from datetime import datetime
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Dict, List, Optional, Tuple
 
 from quant.agents.portfolio_manager import PortfolioManager
 from quant.agents.risk_guard import RiskGuard
@@ -157,6 +159,7 @@ class QuantOrchestrator:
             "sell_signals": [],
             "executed_trades": [],
             "blocked_rebuys": [],
+            "unfilled_limit_buys": [],
             "portfolio_summary": {},
             "errors": [],
         }
@@ -244,6 +247,7 @@ class QuantOrchestrator:
         if not dry_run:
             try:
                 logger.info(f"Step 4: 处理 {len(buy_signals)} 个买入信号...")
+                candidates = []
                 for signal in buy_signals:
                     # 刚止损 / 止盈卖出又按同一轮信号买回，等于止损白做、白付两次手续费
                     if signal.stock_code.upper() in exited_codes:
@@ -252,6 +256,12 @@ class QuantOrchestrator:
                         )
                         report["blocked_rebuys"].append(signal.stock_code)
                         continue
+                    candidates.append(signal)
+
+                candidates, unfilled = self._price_buy_signals(candidates)
+                report["unfilled_limit_buys"].extend(unfilled)
+
+                for signal in candidates:
                     try:
                         record = self._portfolio_manager.process_signal(signal)
                         if record is not None:
@@ -329,6 +339,49 @@ class QuantOrchestrator:
         logger.info(f"持仓行情已刷新: {len(price_map)}/{len(codes)}")
         return len(price_map)
 
+    def _price_buy_signals(
+        self,
+        signals: List[OrderSignal],
+    ) -> Tuple[List[OrderSignal], List[str]]:
+        """
+        按限价单语义用实时行情校正买入价。
+
+        信号的 ideal_buy_price 是 LLM 给的买入狙击点，通常低于现价。模拟盘限价单
+        按委托价立即成交，不看市价，等于按市场没到过的低价买入，系统性高估收益：
+        - 现价高于狙击点：限价单不会成交，本轮不买
+        - 现价不高于狙击点：按现价成交（限价买单遇到更低的市价按市价成交）
+        - 行情缺失 / 无效：沿用信号价，不阻断流程
+
+        Returns:
+            (可执行的买入信号, 狙击点未到而放弃的股票代码)
+        """
+        if not signals:
+            return [], []
+
+        codes = [s.stock_code for s in signals]
+        try:
+            price_map = self._price_fetcher(codes) or {}
+        except Exception as e:
+            logger.error(f"获取买入行情失败，沿用信号价: {e}")
+            price_map = {}
+
+        executable, unfilled = [], []
+        for signal in signals:
+            market = _valid_price(price_map.get(signal.stock_code))
+            limit = signal.ideal_buy_price
+            if market is None or limit <= 0:
+                logger.warning(f"{signal.stock_code} 无有效实时行情，按信号价 {limit:.2f} 买入")
+                executable.append(signal)
+            elif market > limit:
+                logger.info(
+                    f"狙击点未到，放弃买入 {signal.stock_code}: "
+                    f"现价 {market:.2f} 高于限价 {limit:.2f}"
+                )
+                unfilled.append(signal.stock_code)
+            else:
+                executable.append(replace(signal, ideal_buy_price=market))
+        return executable, unfilled
+
     def get_report(self) -> dict:
         """
         获取当前账户状态报告。
@@ -384,6 +437,17 @@ class QuantOrchestrator:
 def _filled_codes(records: List[TradeRecord]) -> List[str]:
     """成交记录对应的股票代码（大写），未成交的记录不算离场。"""
     return [r.stock_code.upper() for r in records if r.status == TradeStatus.FILLED]
+
+
+def _valid_price(price) -> Optional[float]:
+    """行情价转 float，None / 非数字 / <=0 / NaN 视为无效返回 None。"""
+    try:
+        price = float(price)
+    except (TypeError, ValueError):
+        return None
+    if not math.isfinite(price) or price <= 0:
+        return None
+    return price
 
 
 def _fetch_realtime_prices(codes: List[str]) -> Dict[str, float]:

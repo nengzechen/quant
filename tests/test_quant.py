@@ -1133,6 +1133,78 @@ class TestQuantOrchestrator:
 
         assert report['blocked_rebuys'] == []
 
+    @staticmethod
+    def _empty_orchestrator(tmp_account_path, price_fetcher):
+        from quant.config import QuantConfig
+        from quant.orchestrator import QuantOrchestrator
+
+        config = QuantConfig(paper_account_path=tmp_account_path)
+        broker = PaperBroker(account_path=tmp_account_path, initial_capital=1_000_000)
+        return QuantOrchestrator(broker=broker, config=config, price_fetcher=price_fetcher), broker
+
+    def test_buy_skipped_when_market_above_limit(self, tmp_account_path):
+        """现价高于狙击点时限价单不成交，不按市场没到过的低价买入"""
+        orchestrator, broker = self._empty_orchestrator(
+            tmp_account_path, lambda codes: {"000001": 15.5}
+        )
+
+        with patch.object(
+            orchestrator._signal_aggregator, 'aggregate',
+            return_value=[self._rebuy_signal("000001", 15.0)],
+        ):
+            report = orchestrator.run(["000001"], dry_run=False)
+
+        assert "000001" not in broker.get_portfolio().positions
+        assert report['executed_trades'] == []
+        assert report['unfilled_limit_buys'] == ["000001"]
+
+    def test_buy_fills_at_market_when_below_limit(self, tmp_account_path):
+        """现价低于狙击点时按现价成交，止损/止盈仍沿用信号价"""
+        orchestrator, broker = self._empty_orchestrator(
+            tmp_account_path, lambda codes: {"000001": 14.8}
+        )
+
+        with patch.object(
+            orchestrator._signal_aggregator, 'aggregate',
+            return_value=[self._rebuy_signal("000001", 15.0)],
+        ):
+            report = orchestrator.run(["000001"], dry_run=False)
+
+        pos = broker.get_portfolio().positions["000001"]
+        assert pos.avg_cost == 14.8
+        assert pos.stop_loss_price == 15.0 * 0.95
+        assert report['executed_trades'][0]['price'] == 14.8
+        assert report['unfilled_limit_buys'] == []
+
+    @pytest.mark.parametrize("prices", [{}, {"000001": 0}, {"000001": float("nan")}, None])
+    def test_buy_falls_back_to_signal_price_without_quote(self, tmp_account_path, prices):
+        """行情缺失 / 无效时沿用信号价买入，不阻断流程"""
+        orchestrator, broker = self._empty_orchestrator(tmp_account_path, lambda codes: prices)
+
+        with patch.object(
+            orchestrator._signal_aggregator, 'aggregate',
+            return_value=[self._rebuy_signal("000001", 15.0)],
+        ):
+            orchestrator.run(["000001"], dry_run=False)
+
+        assert broker.get_portfolio().positions["000001"].avg_cost == 15.0
+
+    def test_buy_quote_fetch_error_falls_back(self, tmp_account_path):
+        """行情接口异常时沿用信号价买入"""
+        def boom(codes):
+            raise RuntimeError("network down")
+
+        orchestrator, broker = self._empty_orchestrator(tmp_account_path, boom)
+
+        with patch.object(
+            orchestrator._signal_aggregator, 'aggregate',
+            return_value=[self._rebuy_signal("000001", 15.0)],
+        ):
+            report = orchestrator.run(["000001"], dry_run=False)
+
+        assert broker.get_portfolio().positions["000001"].avg_cost == 15.0
+        assert report['unfilled_limit_buys'] == []
+
 
 # ===================================================================
 # A 股 T+1 规则
