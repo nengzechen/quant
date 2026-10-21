@@ -9,7 +9,7 @@
 特性：
 - 账户状态持久化到 ~/.stock_quant/paper_account.json
 - 买卖立即成交（模拟限价单立即成交）
-- 手续费：买入万分之三 + 卖出万分之三 + 印花税千分之一（仅卖出）
+- 手续费：买入万分之三 + 卖出万分之三 + 印花税万分之五（仅卖出）
 - 支持完整的 BaseBroker 接口
 """
 
@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 # 手续费常量
 COMMISSION_RATE_BUY = 0.0003     # 买入佣金：万分之三
 COMMISSION_RATE_SELL = 0.0003    # 卖出佣金：万分之三
-STAMP_DUTY_RATE = 0.001          # 印花税：千分之一（仅卖出）
+STAMP_DUTY_RATE = 0.0005         # 印花税：万分之五（仅卖出，2023-08-28 起减半征收）
 MIN_COMMISSION = 5.0             # 最低佣金：5 元
 
 

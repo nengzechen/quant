@@ -208,6 +208,13 @@ class TestPaperBroker:
         expected_cash = cash_after_buy + sell_amount - expected_commission
         assert abs(portfolio.available_cash - expected_cash) < 0.01
 
+    def test_sell_stamp_duty_halved_rate(self, paper_broker):
+        """印花税按 2023-08-28 起的万分之五计：卖出 10 万元 = 佣金 30 + 印花税 50"""
+        paper_broker.place_order("600519", "BUY", 100, 1000.0)
+        record = paper_broker.place_order("600519", "SELL", 100, 1000.0)
+        assert record.status == TradeStatus.FILLED
+        assert abs(record.commission - 80.0) < 0.01
+
     def test_sell_without_position(self, paper_broker):
         """未持仓时卖出应被拒绝"""
         record = paper_broker.place_order("600519", "SELL", 100, 1800.0)
