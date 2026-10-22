@@ -143,6 +143,29 @@ class TestPaperBroker:
         assert 'available_cash' in info
         assert info['total_assets'] == 1_000_000
         assert info['available_cash'] == 1_000_000
+        assert info['total_pnl'] == 0
+        assert info['unrealized_pnl'] == 0
+
+    def test_account_pnl_includes_realized_after_close(self, paper_broker):
+        """清仓后账户总盈亏保留已实现盈亏（扣手续费），浮动盈亏归零"""
+        paper_broker.place_order("600519", "BUY", 100, 1800.0)
+        paper_broker._portfolio.positions["600519"].last_buy_date = "2000-01-01"
+        paper_broker.place_order("600519", "SELL", 100, 1900.0)
+
+        info = paper_broker.get_account_info()
+        # 买入佣金 54 + 卖出佣金 57 + 印花税 95 = 206
+        assert abs(info['total_pnl'] - (10_000 - 206)) < 0.01
+        assert abs(info['pnl_pct'] - (10_000 - 206) / 1_000_000 * 100) < 1e-6
+        assert info['unrealized_pnl'] == 0
+
+    def test_account_pnl_counts_buy_commission_while_holding(self, paper_broker):
+        """持仓未动时账户总盈亏 = 浮动盈亏 - 已付买入佣金"""
+        paper_broker.place_order("600519", "BUY", 100, 1800.0)
+        paper_broker.update_position_prices({"600519": 1850.0})
+
+        info = paper_broker.get_account_info()
+        assert abs(info['unrealized_pnl'] - 5_000) < 0.01
+        assert abs(info['total_pnl'] - (5_000 - 54)) < 0.01
 
     def test_buy_success(self, paper_broker):
         """正常买入后，资金减少、持仓增加"""

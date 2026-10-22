@@ -226,15 +226,25 @@ class PaperBroker(BaseBroker):
     # ===== BaseBroker 接口实现 =====
 
     def get_account_info(self) -> dict:
-        """获取账户基本信息"""
+        """
+        获取账户基本信息。
+
+        账户总盈亏 = 总资产 - 初始资金，含已实现盈亏和已付手续费。Portfolio.total_pnl
+        只汇总当前持仓的浮动盈亏，清仓后已实现的盈亏随持仓删除而丢失、手续费也不计入，
+        直接当账户总盈亏会让获利清仓后显示 0、亏损清仓后同样显示 0。浮动盈亏另以
+        unrealized_pnl 返回。
+        """
         p = self._portfolio
         p.recalculate()
+        total_pnl = p.total_assets - p.total_capital
+        pnl_pct = total_pnl / p.total_capital * 100 if p.total_capital > 0 else 0.0
         return {
             "total_assets": p.total_assets,
             "available_cash": p.available_cash,
             "market_value": p.total_market_value,
-            "total_pnl": p.total_pnl,
-            "pnl_pct": p.pnl_pct,
+            "total_pnl": total_pnl,
+            "pnl_pct": pnl_pct,
+            "unrealized_pnl": p.total_pnl,
             "total_capital": p.total_capital,
             "position_count": len(p.positions),
             "max_positions": p.max_positions,
