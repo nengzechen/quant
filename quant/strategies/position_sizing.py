@@ -142,7 +142,7 @@ def atr_based(
     portfolio: Portfolio,
     signal: OrderSignal,
     atr: Optional[float] = None,
-    risk_pct: float = 0.02,
+    risk_pct: Optional[float] = None,
 ) -> int:
     """
     ATR风险定量仓位计算。
@@ -154,7 +154,8 @@ def atr_based(
         portfolio: 当前投资组合
         signal: 交易信号（含买入价和止损价）
         atr: 平均真实波幅（可选，如不提供则用买入价和止损价之差作为风险单位）
-        risk_pct: 单笔最大亏损占总资金比例（默认 2%）
+        risk_pct: 单笔最大亏损占总资金比例（None 时取 portfolio.risk_per_trade_pct，
+            与风控单笔风险限额同口径；不传的话固定 2% 会忽略配置）
 
     Returns:
         建议购买手数（整数，最小为 0）
@@ -185,6 +186,9 @@ def atr_based(
         )
         # 降级到固定分数法
         return fixed_fraction(portfolio, signal, fraction=0.05)
+
+    if risk_pct is None:
+        risk_pct = portfolio.risk_per_trade_pct
 
     # 每笔交易允许的最大亏损金额
     max_risk_amount = portfolio.total_capital * risk_pct

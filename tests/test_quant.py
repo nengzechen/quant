@@ -698,6 +698,15 @@ class TestPositionSizing:
         assert isinstance(lots, int)
         assert lots == 2
 
+    def test_atr_based_defaults_to_portfolio_risk_pct(self, sample_portfolio, buy_signal):
+        """ATR风险定量：未传 risk_pct 时取组合的单笔风险比例，而非固定 2%"""
+        sample_portfolio.risk_per_trade_pct = 0.04
+        # 1,000,000 * 4% = 40,000 / 90 = 444 股 → 4 手
+        assert atr_based(sample_portfolio, buy_signal) == 4
+        sample_portfolio.risk_per_trade_pct = 0.01
+        # 10,000 / 90 = 111 股 → 1 手
+        assert atr_based(sample_portfolio, buy_signal) == 1
+
     def test_atr_based_fallback_when_no_stop(self, sample_portfolio):
         """ATR风险定量：无止损价时降级到固定分数法"""
         no_stop_signal = OrderSignal(
@@ -791,6 +800,32 @@ class TestPortfolioManager:
         assert record.status == TradeStatus.FILLED
         # 30% * 1,000,000 / 15 = 20,000 股
         assert record.quantity == 20_000
+
+    def test_atr_sizing_uses_configured_risk_pct(self, tmp_account_path):
+        """ATR 仓位应按配置的单笔风险比例计算，调高风险预算后仓位相应放大"""
+        from quant.agents.portfolio_manager import PortfolioManager
+        from quant.config import QuantConfig
+
+        config = QuantConfig(
+            initial_capital=1_000_000, sizing_method="atr_based",
+            risk_per_trade_pct=0.03,
+        )
+        broker = PaperBroker(
+            account_path=tmp_account_path, initial_capital=1_000_000,
+            risk_per_trade_pct=0.03,
+        )
+        pm = PortfolioManager(broker=broker, sizing_method="atr_based", config=config)
+        signal = OrderSignal(
+            stock_code="000001", stock_name="平安银行",
+            signal_type=SignalType.BUY, confidence=ConfidenceLevel.HIGH,
+            sentiment_score=75, ideal_buy_price=15.0, stop_loss_price=13.0,
+            take_profit_price=18.0, buy_reason="测试风险预算",
+        )
+        record = pm.process_signal(signal)
+        assert record is not None
+        assert record.status == TradeStatus.FILLED
+        # 1,000,000 * 3% = 30,000 / 2 = 15,000 股（固定 2% 时只有 10,000 股）
+        assert record.quantity == 15_000
 
     def test_inverted_stop_loss_signal_not_bought(self, tmp_account_path):
         """止损价倒挂的买入信号不应成交，避免建仓后立即被止损卖出"""
