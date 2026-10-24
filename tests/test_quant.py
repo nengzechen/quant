@@ -489,6 +489,22 @@ class TestRiskGuard:
         )
         assert not passed  # 因为现金也不够
 
+    def test_single_trade_risk_uses_drawdown_capital(self, buy_signal):
+        """回撤后单笔风险限额按总资产收缩，max_buy_quantity 同口径"""
+        guard = RiskGuard()
+        guard.max_single_stock_ratio = 1.0  # 排除集中度干扰
+        drawn = Portfolio(
+            total_capital=1_000_000, available_cash=500_000,
+            total_market_value=0, total_pnl=0, risk_per_trade_pct=0.02,
+        )
+        # 限额 500,000 * 2% = 10,000；200 股 * 90 = 18,000 超限（按初始资金 20,000 会放行）
+        passed, reason = guard._check_single_trade_risk(drawn, buy_signal, 200, 1800.0)
+        assert not passed
+        assert "10000.00" in reason
+        assert guard._check_single_trade_risk(drawn, buy_signal, 100, 1800.0)[0]
+        # 10,000 / 90 = 111 股 → 100 股
+        assert guard.max_buy_quantity(drawn, buy_signal, 1800.0) == 100
+
     @pytest.mark.parametrize("stop_loss", [1800.0, 1850.0])
     def test_inverted_stop_loss_rejected(self, sample_portfolio, buy_signal, stop_loss):
         """止损价不低于买入价时拒绝买入（成交后会立刻触发止损）"""
@@ -706,6 +722,21 @@ class TestPositionSizing:
         sample_portfolio.risk_per_trade_pct = 0.01
         # 10,000 / 90 = 111 股 → 1 手
         assert atr_based(sample_portfolio, buy_signal) == 1
+
+    def test_atr_based_shrinks_after_drawdown(self, sample_portfolio, buy_signal):
+        """ATR风险定量：账户回撤后风险金额按总资产计算，不再按初始资金"""
+        # 总资产回撤到 500,000：500,000 * 2% = 10,000 / 90 = 111 股 → 1 手
+        # （按初始资金算 20,000 / 90 = 222 股 → 2 手，实际冒险 4% 净值；
+        #  现金 475,000 / 1800 = 263 股，不构成约束）
+        sample_portfolio.available_cash = 500_000
+        sample_portfolio.total_market_value = 0
+        assert atr_based(sample_portfolio, buy_signal) == 1
+
+    def test_atr_based_not_amplified_by_profit(self, sample_portfolio, buy_signal):
+        """ATR风险定量：盈利后仍按初始资金计算，不放大单笔风险"""
+        sample_portfolio.available_cash = 1_800_000  # 总资产 2,000,000
+        sample_portfolio.risk_per_trade_pct = 0.04
+        assert atr_based(sample_portfolio, buy_signal) == 4
 
     def test_atr_based_fallback_when_no_stop(self, sample_portfolio):
         """ATR风险定量：无止损价时降级到固定分数法"""
@@ -992,6 +1023,17 @@ class TestModels:
         assert pos.market_value == 190_000.0
         assert abs(pos.pnl - 10_000.0) < 0.01
         assert abs(pos.pnl_pct - 5.556) < 0.01
+
+    def test_portfolio_risk_capital(self, sample_portfolio):
+        """risk_capital = min(初始资金, 总资产)，总资产无效时退回初始资金"""
+        assert sample_portfolio.risk_capital == 1_000_000
+        sample_portfolio.available_cash = 500_000
+        assert sample_portfolio.risk_capital == 700_000
+        sample_portfolio.available_cash = 2_000_000
+        assert sample_portfolio.risk_capital == 1_000_000
+        sample_portfolio.available_cash = 0
+        sample_portfolio.total_market_value = 0
+        assert sample_portfolio.risk_capital == 1_000_000
 
     def test_portfolio_total_assets(self, sample_portfolio):
         """total_assets = available_cash + total_market_value"""

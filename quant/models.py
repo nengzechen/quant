@@ -231,6 +231,20 @@ class Portfolio:
         return self.available_cash + self.total_market_value
 
     @property
+    def risk_capital(self) -> float:
+        """
+        单笔风险预算的计算基数 = min(初始资金, 总资产)。
+
+        按初始资金算的话，账户回撤后每笔仍按初始资金的比例冒险：回撤 30% 时 2% 的
+        配置实际变成净值的 2.86%，越亏仓位越激进。盈利时不放大，保持保守。
+        总资产无效（<=0）时退回初始资金。
+        """
+        total_assets = self.total_assets
+        if total_assets <= 0:
+            return self.total_capital
+        return min(self.total_capital, total_assets)
+
+    @property
     def pnl_pct(self) -> float:
         """总盈亏百分比"""
         if self.total_capital <= 0:

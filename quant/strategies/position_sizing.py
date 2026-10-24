@@ -161,7 +161,7 @@ def atr_based(
         建议购买手数（整数，最小为 0）
 
     公式：
-        风险金额 = total_capital * risk_pct
+        风险金额 = risk_capital * risk_pct（初始资金与总资产取小，回撤后同步收缩）
         止损距离 = buy_price - stop_loss_price（或 ATR）
         股数 = floor(风险金额 / 止损距离)
         手数 = floor(股数 / 100)
@@ -191,7 +191,7 @@ def atr_based(
         risk_pct = portfolio.risk_per_trade_pct
 
     # 每笔交易允许的最大亏损金额
-    max_risk_amount = portfolio.total_capital * risk_pct
+    max_risk_amount = portfolio.risk_capital * risk_pct
     max_cash_amount = portfolio.available_cash * 0.95
 
     # 根据风险金额反推可买股数

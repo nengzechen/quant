@@ -178,11 +178,11 @@ class RiskGuard:
                 (total_assets * self.max_single_stock_ratio - existing_value) / price
             )
 
-        # 单笔风险：(price - stop) * q <= total_capital * risk_per_trade_pct
+        # 单笔风险：(price - stop) * q <= risk_capital * risk_per_trade_pct
         risk_per_share = price - signal.stop_loss_price
         if signal.stop_loss_price > 0 and risk_per_share > 0:
             limits.append(
-                portfolio.total_capital * portfolio.risk_per_trade_pct / risk_per_share
+                portfolio.risk_capital * portfolio.risk_per_trade_pct / risk_per_share
             )
 
         max_shares = int(min(limits))
@@ -421,7 +421,8 @@ class RiskGuard:
         """
         检查单笔交易风险（基于止损价计算最大潜在亏损）。
 
-        如果止损价已知，验证最大亏损不超过 risk_per_trade_pct。
+        如果止损价已知，验证最大亏损不超过 risk_capital（初始资金与总资产取小）的
+        risk_per_trade_pct，回撤后单笔风险随净值收缩。
         """
         if signal.stop_loss_price <= 0:
             # 无止损价信息，跳过此检查
@@ -432,7 +433,7 @@ class RiskGuard:
             return True, ""
 
         max_risk_amount = risk_per_share * quantity
-        max_allowed_risk = portfolio.total_capital * portfolio.risk_per_trade_pct
+        max_allowed_risk = portfolio.risk_capital * portfolio.risk_per_trade_pct
 
         if max_risk_amount > max_allowed_risk:
             return False, (
