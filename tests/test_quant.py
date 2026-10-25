@@ -664,6 +664,30 @@ class TestPositionSizing:
         # 10,000,000 * 10% = 1,000,000 / (1800 * 100) = 5手
         assert lots == 5
 
+    def test_fixed_fraction_shrinks_after_drawdown(self, buy_signal):
+        """固定分数法：账户回撤后按总资产计算投入金额，不再按初始资金"""
+        portfolio = Portfolio(
+            total_capital=10_000_000,
+            available_cash=5_000_000,  # 总资产回撤到 5,000,000
+            total_market_value=0,
+            total_pnl=0,
+            positions={},
+        )
+        # 5,000,000 * 10% = 500,000 / 180,000 = 2 手
+        # （按初始资金算 1,000,000 → 5 手，实际投入净值的 20%）
+        assert fixed_fraction(portfolio, buy_signal, fraction=0.10) == 2
+
+    def test_fixed_fraction_not_amplified_by_profit(self, buy_signal):
+        """固定分数法：盈利后仍按初始资金计算，不放大仓位"""
+        portfolio = Portfolio(
+            total_capital=10_000_000,
+            available_cash=20_000_000,
+            total_market_value=0,
+            total_pnl=0,
+            positions={},
+        )
+        assert fixed_fraction(portfolio, buy_signal, fraction=0.10) == 5
+
     def test_fixed_fraction_zero_price(self, sample_portfolio):
         """价格为0时返回0手"""
         zero_price_signal = OrderSignal(
@@ -703,6 +727,22 @@ class TestPositionSizing:
             win_rate=0.6, win_loss_ratio=2.0
         )
         assert half_lots <= full_lots
+
+    def test_kelly_shrinks_after_drawdown(self, buy_signal):
+        """Kelly公式：回撤后按总资产计算，盈利后不放大"""
+        # p=0.6, b=2 → f*=0.4，半Kelly 0.2
+        portfolio = Portfolio(
+            total_capital=10_000_000,
+            available_cash=5_000_000,
+            total_market_value=0,
+            total_pnl=0,
+            positions={},
+        )
+        # 5,000,000 * 0.2 = 1,000,000 / 180,000 = 5 手（按初始资金算是 11 手）
+        assert kelly_criterion(portfolio, buy_signal, win_rate=0.6, win_loss_ratio=2.0) == 5
+        portfolio.available_cash = 20_000_000
+        # 10,000,000 * 0.2 = 2,000,000 / 180,000 = 11 手
+        assert kelly_criterion(portfolio, buy_signal, win_rate=0.6, win_loss_ratio=2.0) == 11
 
     def test_atr_based_with_stop_loss(self, sample_portfolio, buy_signal):
         """ATR风险定量：有止损价时正确计算"""

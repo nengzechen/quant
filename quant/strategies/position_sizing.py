@@ -44,14 +44,15 @@ def fixed_fraction(
         建议购买手数（整数，最小为 0）
 
     公式：
-        资金 = total_capital * fraction
+        资金 = risk_capital * fraction（初始资金与总资产取小，回撤后同步收缩）
         手数 = floor(资金 / (price * 100))
     """
     if signal.ideal_buy_price <= 0:
         logger.warning(f"股票 {signal.stock_code} 理想买入价无效: {signal.ideal_buy_price}")
         return 0
 
-    target_amount = portfolio.total_capital * fraction
+    # 按初始资金算的话回撤后每笔仍投入初始资金的 fraction，占净值比例被放大
+    target_amount = portfolio.risk_capital * fraction
     # 不超过可用现金的 95%
     max_amount = portfolio.available_cash * 0.95
 
@@ -97,6 +98,7 @@ def kelly_criterion(
         f* = (p * b - q) / b
         其中 p=胜率, q=1-p, b=盈亏比
         半Kelly: f = f* / 2
+        资金 = risk_capital * f（初始资金与总资产取小，回撤后同步收缩）
     """
     if signal.ideal_buy_price <= 0:
         logger.warning(f"股票 {signal.stock_code} 理想买入价无效: {signal.ideal_buy_price}")
@@ -120,7 +122,7 @@ def kelly_criterion(
     # Kelly仓位不超过 30%（防止过于激进）
     kelly_fraction = min(kelly_fraction, 0.30)
 
-    target_amount = portfolio.total_capital * kelly_fraction
+    target_amount = portfolio.risk_capital * kelly_fraction
     max_amount = portfolio.available_cash * 0.95
     invest_amount = min(target_amount, max_amount)
 
