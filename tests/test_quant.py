@@ -1497,6 +1497,40 @@ class TestTakeProfit:
         assert pos.stop_loss_price == 13.5
         assert pos.take_profit_price == 18.0
 
+    def test_add_on_does_not_lower_stop_loss(self, paper_broker):
+        """加仓信号止损更低时保留原止损，不把老仓位的止损一起下移"""
+        from quant.agents.order_executor import OrderExecutor
+
+        executor = OrderExecutor(paper_broker)
+        executor.execute_buy(self._tp_signal(), 1000)  # 止损 13.5
+        lower = OrderSignal.from_dict({**self._tp_signal().to_dict(), "stop_loss_price": 12.0})
+        assert executor.execute_buy(lower, 1000).status == TradeStatus.FILLED
+        pos = paper_broker.get_portfolio().positions["000001"]
+        assert pos.quantity == 2000
+        assert pos.stop_loss_price == 13.5
+
+    def test_add_on_raises_stop_loss(self, paper_broker):
+        """加仓信号止损更高时上移止损"""
+        from quant.agents.order_executor import OrderExecutor
+
+        executor = OrderExecutor(paper_broker)
+        executor.execute_buy(self._tp_signal(), 1000)
+        higher = OrderSignal.from_dict({**self._tp_signal().to_dict(), "stop_loss_price": 14.0})
+        executor.execute_buy(higher, 1000)
+        assert paper_broker.get_portfolio().positions["000001"].stop_loss_price == 14.0
+
+    def test_add_on_rejected_when_existing_stop_above_price(self, paper_broker):
+        """已有持仓止损价不低于加仓价时拒绝加仓，避免成交即止损"""
+        paper_broker.place_order("000001", "BUY", 1000, 15.0)
+        paper_broker.update_stop_loss("000001", 14.5)
+        signal = self._tp_signal(buy_price=14.4)  # 新信号止损 13.5 本身有效
+        passed, reason = RiskGuard().check_buy(paper_broker.get_portfolio(), signal, 100, 14.4)
+        assert not passed
+        assert "加仓无效" in reason
+
+        passed, _ = RiskGuard().check_buy(paper_broker.get_portfolio(), signal, 100, 14.6)
+        assert passed
+
     def test_risk_guard_detects_take_profit(self, paper_broker):
         paper_broker.place_order("000001", "BUY", 1000, 15.0)
         paper_broker.update_take_profit("000001", 18.0)

@@ -76,6 +76,7 @@ class OrderExecutor:
             )
 
         try:
+            existing_stop = self._existing_stop_loss(signal.stock_code)
             logger.info(
                 f"执行买入: {signal.stock_code}({signal.stock_name}) "
                 f"{quantity}股 @ {signal.ideal_buy_price:.2f}, "
@@ -94,8 +95,18 @@ class OrderExecutor:
                 if record.status == TradeStatus.FILLED:
                     if hasattr(self.broker, 'update_position_name'):
                         self.broker.update_position_name(signal.stock_code, signal.stock_name)
-                    if signal.stop_loss_price > 0 and hasattr(self.broker, 'update_stop_loss'):
+                    # 加仓时止损价只升不降：新信号止损更低会把老仓位的止损一起
+                    # 下移，老仓位多出的风险没经过单笔风险预算
+                    if (
+                        signal.stop_loss_price > existing_stop
+                        and hasattr(self.broker, 'update_stop_loss')
+                    ):
                         self.broker.update_stop_loss(signal.stock_code, signal.stop_loss_price)
+                    elif existing_stop > 0 and signal.stop_loss_price > 0:
+                        logger.info(
+                            f"加仓保留原止损价: {signal.stock_code} {existing_stop:.2f} "
+                            f"（新信号止损 {signal.stop_loss_price:.2f} 更低）"
+                        )
                     # 止盈价不高于买入价时成交即触发止盈，视为无效不写入
                     if (
                         signal.take_profit_price > signal.ideal_buy_price
@@ -121,6 +132,16 @@ class OrderExecutor:
                 reason=f"执行异常: {e}",
                 status=TradeStatus.REJECTED,
             )
+
+    def _existing_stop_loss(self, stock_code: str) -> float:
+        """已有持仓的止损价（无持仓 / 无止损 / 查询失败返回 0）"""
+        try:
+            for pos in self.broker.get_positions():
+                if pos.stock_code.upper() == stock_code.upper():
+                    return pos.stop_loss_price or 0.0
+        except Exception as e:
+            logger.warning(f"查询已有持仓止损价失败 {stock_code}: {e}")
+        return 0.0
 
     def execute_sell(
         self,
