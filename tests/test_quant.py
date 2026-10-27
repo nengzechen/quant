@@ -1656,3 +1656,80 @@ class TestTrailingStop:
         paper_broker.place_order("000001", "BUY", 1000, 15.0)
         paper_broker.place_order("000001", "BUY", 1000, 16.0)
         assert paper_broker.get_portfolio().positions["000001"].highest_price == 16.0
+
+
+# ===================================================================
+# 配置校验测试
+# ===================================================================
+
+class TestQuantConfig:
+    """QuantConfig 启动校验与富途交易环境防误配测试"""
+
+    def test_default_config_valid(self):
+        from quant.config import QuantConfig
+        cfg = QuantConfig()
+        assert cfg.futu_trade_env == "SIMULATE"
+        assert cfg.broker_type == "paper"
+
+    def test_trade_env_and_broker_type_normalized(self):
+        from quant.config import QuantConfig
+        cfg = QuantConfig(futu_trade_env=" simulate ", broker_type="FUTU")
+        assert cfg.futu_trade_env == "SIMULATE"
+        assert cfg.broker_type == "futu"
+
+    @pytest.mark.parametrize("env", ["SIMULATED", "sim", "", "live"])
+    def test_invalid_trade_env_rejected(self, env):
+        from quant.config import QuantConfig
+        with pytest.raises(ValueError, match="futu_trade_env"):
+            QuantConfig(futu_trade_env=env)
+
+    @pytest.mark.parametrize("field_name,value", [
+        ("risk_per_trade_pct", 2),       # 把 2% 误写成 2
+        ("risk_per_trade_pct", 0),
+        ("fixed_fraction", 1.5),
+        ("kelly_win_rate", 1.0),
+        ("kelly_win_loss_ratio", 0),
+        ("max_positions", 0),
+        ("initial_capital", -1),
+        ("trailing_stop_pct", 1.0),
+        ("sizing_method", "martingale"),
+        ("broker_type", "ib"),
+        ("max_signal_workers", 0),
+    ])
+    def test_invalid_field_rejected(self, field_name, value):
+        from quant.config import QuantConfig
+        with pytest.raises(ValueError, match=field_name):
+            QuantConfig(**{field_name: value})
+
+    def test_all_errors_reported_together(self):
+        from quant.config import QuantConfig
+        with pytest.raises(ValueError) as exc:
+            QuantConfig(risk_per_trade_pct=2, max_positions=0)
+        assert "risk_per_trade_pct" in str(exc.value)
+        assert "max_positions" in str(exc.value)
+
+    def test_from_env_rejects_lowercase_typo(self, monkeypatch):
+        from quant.config import QuantConfig
+        monkeypatch.setenv("QUANT_FUTU_TRADE_ENV", "simulate")
+        assert QuantConfig.from_env().futu_trade_env == "SIMULATE"
+        monkeypatch.setenv("QUANT_FUTU_TRADE_ENV", "SIMULATION")
+        with pytest.raises(ValueError):
+            QuantConfig.from_env()
+
+    def test_futu_broker_rejects_invalid_trade_env(self):
+        """拼错的交易环境在连接 OpenD 之前就被拒绝，不会落到真实盘"""
+        from quant.broker.futu_broker import FutuBroker
+        with patch("quant.broker.futu_broker.FutuBroker._connect") as connect:
+            with pytest.raises(ValueError, match="futu_trade_env"):
+                FutuBroker(trade_env="simulated")
+            connect.assert_not_called()
+
+    def test_futu_broker_lowercase_simulate_stays_simulate(self):
+        """小写 simulate 规范化后仍连模拟盘（修复前会落到 REAL）"""
+        import quant.broker.futu_broker as fb
+        fake_ft = MagicMock()
+        with patch.object(fb, "FUTU_AVAILABLE", True), \
+                patch.object(fb, "ft", fake_ft, create=True):
+            broker = fb.FutuBroker(trade_env="simulate")
+        assert broker.trade_env == "SIMULATE"
+        assert broker.trd_env is fake_ft.TrdEnv.SIMULATE

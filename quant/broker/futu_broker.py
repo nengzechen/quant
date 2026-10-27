@@ -20,6 +20,7 @@ from datetime import datetime
 from typing import List, Optional
 
 from quant.broker.base import BaseBroker
+from quant.config import normalize_trade_env
 from quant.models import (
     Portfolio,
     Position,
@@ -82,7 +83,12 @@ class FutuBroker(BaseBroker):
             market: 默认市场 "HK"/"US"/"CN"
             max_positions: 最大持仓数量
             risk_per_trade_pct: 单笔最大风险比例
+
+        Raises:
+            ValueError: trade_env 不是 SIMULATE / REAL（大小写不敏感）
         """
+        # 先校验交易环境再检查依赖：拼错的环境绝不能落到真实盘
+        trade_env = normalize_trade_env(trade_env)
         _check_futu_available()
 
         self.host = host
@@ -103,7 +109,8 @@ class FutuBroker(BaseBroker):
         try:
             self._quote_ctx = ft.OpenQuoteContext(host=self.host, port=self.port)
 
-            env = ft.TrdEnv.SIMULATE if self.trade_env == "SIMULATE" else ft.TrdEnv.REAL
+            # 只有明确的 REAL 才连真实盘，其余一律模拟盘
+            env = ft.TrdEnv.REAL if self.trade_env == "REAL" else ft.TrdEnv.SIMULATE
 
             # 根据市场选择交易连接
             if self.market in ("HK", "US"):

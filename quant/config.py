@@ -12,6 +12,25 @@ import os
 from dataclasses import dataclass, field
 from typing import List
 
+VALID_TRADE_ENVS = ("SIMULATE", "REAL")
+VALID_BROKER_TYPES = ("paper", "futu")
+VALID_SIZING_METHODS = ("fixed_fraction", "kelly", "atr_based")
+MAX_RISK_PER_TRADE_PCT = 0.10   # 单笔风险比例上限，防止把 2% 误写成 2
+
+
+def normalize_trade_env(value: str) -> str:
+    """
+    规范化富途交易环境（去空白、转大写），非 SIMULATE / REAL 时抛出 ValueError。
+
+    富途侧不是 SIMULATE 就连真实盘，拼错或小写的环境名绝不能静默落到实盘。
+    """
+    env = str(value or "").strip().upper()
+    if env not in VALID_TRADE_ENVS:
+        raise ValueError(
+            f"futu_trade_env 无效: {value!r}，只能是 {' / '.join(VALID_TRADE_ENVS)}"
+        )
+    return env
+
 
 @dataclass
 class QuantConfig:
@@ -53,6 +72,50 @@ class QuantConfig:
     futu_trade_env: str = "SIMULATE"
     max_signal_workers: int = 3
     trailing_stop_pct: float = 0.0
+
+    def __post_init__(self):
+        """
+        校验并规范化配置，任一项无效即抛出 ValueError（列出全部问题）。
+
+        风控参数出错时宁可启动失败也不带病运行：例如 risk_per_trade_pct=2
+        会让单笔风险预算变成 200% 资金，风控检查形同虚设。
+        """
+        errors = []
+        try:
+            self.futu_trade_env = normalize_trade_env(self.futu_trade_env)
+        except ValueError as e:
+            errors.append(str(e))
+        self.broker_type = str(self.broker_type or "").strip().lower()
+        if self.broker_type not in VALID_BROKER_TYPES:
+            errors.append(
+                f"broker_type 无效: {self.broker_type!r}，只能是 {' / '.join(VALID_BROKER_TYPES)}"
+            )
+        if self.sizing_method not in VALID_SIZING_METHODS:
+            errors.append(
+                f"sizing_method 无效: {self.sizing_method!r}，"
+                f"只能是 {' / '.join(VALID_SIZING_METHODS)}"
+            )
+        if not self.initial_capital > 0:
+            errors.append(f"initial_capital 必须大于 0: {self.initial_capital}")
+        if self.max_positions < 1:
+            errors.append(f"max_positions 至少为 1: {self.max_positions}")
+        if not 0 < self.risk_per_trade_pct <= MAX_RISK_PER_TRADE_PCT:
+            errors.append(
+                f"risk_per_trade_pct 须在 (0, {MAX_RISK_PER_TRADE_PCT}] 内（小数，"
+                f"0.02 表示 2%）: {self.risk_per_trade_pct}"
+            )
+        if not 0 < self.fixed_fraction <= 1:
+            errors.append(f"fixed_fraction 须在 (0, 1] 内: {self.fixed_fraction}")
+        if not 0 < self.kelly_win_rate < 1:
+            errors.append(f"kelly_win_rate 须在 (0, 1) 内: {self.kelly_win_rate}")
+        if not self.kelly_win_loss_ratio > 0:
+            errors.append(f"kelly_win_loss_ratio 必须大于 0: {self.kelly_win_loss_ratio}")
+        if not 0 <= self.trailing_stop_pct < 1:
+            errors.append(f"trailing_stop_pct 须在 [0, 1) 内: {self.trailing_stop_pct}")
+        if self.max_signal_workers < 1:
+            errors.append(f"max_signal_workers 至少为 1: {self.max_signal_workers}")
+        if errors:
+            raise ValueError("量化配置无效:\n  " + "\n  ".join(errors))
 
     @classmethod
     def from_env(cls) -> "QuantConfig":
