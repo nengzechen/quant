@@ -26,6 +26,11 @@ from quant.models import ConfidenceLevel, OrderSignal, SignalType
 
 logger = logging.getLogger(__name__)
 
+# 缺少止损 / 止盈价时的默认比例（相对买入价）。默认止损与 ATR 仓位在无止损时
+# 假设的 5% 止损距离一致
+DEFAULT_STOP_LOSS_RATIO = 0.95
+DEFAULT_TAKE_PROFIT_RATIO = 1.10
+
 
 def _parse_price_str(price_str) -> float:
     """
@@ -214,12 +219,19 @@ class SignalAggregator:
                 current_price = _parse_price_str(price_position.get('current_price', 0))
                 if current_price > 0:
                     ideal_buy_price = current_price
-                    # 默认止损：当前价 * 95%
-                    if stop_loss_price <= 0:
-                        stop_loss_price = current_price * 0.95
                     # 默认止盈：当前价 * 110%
                     if take_profit_price <= 0:
-                        take_profit_price = current_price * 1.10
+                        take_profit_price = current_price * DEFAULT_TAKE_PROFIT_RATIO
+
+            # 有买入价但止损缺失 / 解析失败时补默认止损（买入价 * 95%）：止损为 0 时
+            # 风控跳过单笔风险检查，成交后持仓也没有止损价，未浮盈前移动止损不生效，
+            # 亏多少都不会止损离场；而 ATR 仓位此时按 5% 止损距离算仓位，两边口径一致
+            if ideal_buy_price > 0 and stop_loss_price <= 0:
+                stop_loss_price = ideal_buy_price * DEFAULT_STOP_LOSS_RATIO
+                logger.info(
+                    f"{stock_code} 未解析到止损价，按买入价 "
+                    f"{DEFAULT_STOP_LOSS_RATIO:.0%} 补默认止损 {stop_loss_price:.2f}"
+                )
 
             confidence = _parse_confidence(confidence_str, sentiment_score)
 

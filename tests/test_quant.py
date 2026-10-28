@@ -1733,3 +1733,67 @@ class TestQuantConfig:
             broker = fb.FutuBroker(trade_env="simulate")
         assert broker.trade_env == "SIMULATE"
         assert broker.trd_env is fake_ft.TrdEnv.SIMULATE
+
+
+# ===================================================================
+# 信号提取测试
+# ===================================================================
+
+class TestSignalExtraction:
+    """SignalAggregator._extract_signal 从 dashboard 解析价格"""
+
+    def _dashboard(self, sniper_points=None, current_price=None):
+        dash = {}
+        if sniper_points is not None:
+            dash["battle_plan"] = {"sniper_points": sniper_points}
+        if current_price is not None:
+            dash["data_perspective"] = {"price_position": {"current_price": current_price}}
+        return {
+            "sentiment_score": 75,
+            "decision_type": "buy",
+            "stock_name": "测试股",
+            "dashboard": dash,
+        }
+
+    def _extract(self, dashboard):
+        from quant.agents.signal_aggregator import SignalAggregator
+        return SignalAggregator(config=MagicMock())._extract_signal("000001", dashboard)
+
+    def test_parsed_stop_loss_kept(self):
+        signal = self._extract(self._dashboard(
+            {"ideal_buy": "10.00", "stop_loss": "9.20", "take_profit": "12.00"}
+        ))
+        assert signal.ideal_buy_price == 10.0
+        assert signal.stop_loss_price == 9.2
+        assert signal.take_profit_price == 12.0
+
+    def test_missing_stop_loss_gets_default(self):
+        """有买入价但没给止损价时补 95% 默认止损，否则持仓无止损、风控跳过单笔风险检查"""
+        signal = self._extract(self._dashboard({"ideal_buy": "10.00", "stop_loss": "暂无"}))
+        assert signal.ideal_buy_price == 10.0
+        assert signal.stop_loss_price == pytest.approx(9.5)
+
+    def test_default_stop_loss_enforced_by_risk_guard(self):
+        """补上默认止损后单笔风险检查生效：超出风险预算的数量被拒绝"""
+        signal = self._extract(self._dashboard({"ideal_buy": "10.00"}))
+        portfolio = Portfolio(
+            total_capital=100000.0, available_cash=100000.0,
+            total_market_value=0.0, total_pnl=0.0, risk_per_trade_pct=0.02,
+        )
+        guard = RiskGuard(max_single_stock_ratio=1.0)
+        # 每股风险 0.5，2000 元预算最多 4000 股
+        assert guard.check_buy(portfolio, signal, 4000, 10.0)[0]
+        passed, reason = guard.check_buy(portfolio, signal, 5000, 10.0)
+        assert not passed
+        assert "单笔风险过高" in reason
+
+    def test_fallback_to_current_price(self):
+        signal = self._extract(self._dashboard({}, current_price="20.00"))
+        assert signal.ideal_buy_price == 20.0
+        assert signal.stop_loss_price == pytest.approx(19.0)
+        assert signal.take_profit_price == pytest.approx(22.0)
+
+    def test_no_price_keeps_zero_stop(self):
+        signal = self._extract(self._dashboard({}))
+        assert signal.ideal_buy_price == 0.0
+        assert signal.stop_loss_price == 0.0
