@@ -1797,3 +1797,36 @@ class TestSignalExtraction:
         signal = self._extract(self._dashboard({}))
         assert signal.ideal_buy_price == 0.0
         assert signal.stop_loss_price == 0.0
+
+    def test_indicator_numbers_not_parsed_as_price(self):
+        """文字描述里的 MA5 / 20日线 / -5% 等指标数字不能被当成价格"""
+        signal = self._extract(self._dashboard({
+            "ideal_buy": "回踩MA5附近1750元",
+            "stop_loss": "跌破20日均线1650元止损（-5%）",
+            "take_profit": "1,900.00",
+        }))
+        assert signal.ideal_buy_price == 1750.0
+        assert signal.stop_loss_price == 1650.0
+        assert signal.take_profit_price == 1900.0
+
+
+class TestParsePriceStr:
+    """_parse_price_str 价格文本解析"""
+
+    @pytest.mark.parametrize("raw, expected", [
+        (None, 0.0),
+        (12.5, 12.5),
+        ("1800.00", 1800.0),
+        ("回踩到1750支撑", 1750.0),
+        ("1750-1800", 1750.0),
+        ("理想买入点：12.30元（在MA5附近）", 12.3),
+        ("ma10 支撑 8.88", 8.88),
+        ("5日线上方 10.2 元", 10.2),
+        ("1,234.50元", 1234.5),
+        ("MA5，1750", 1750.0),
+        ("跌破 3%", 0.0),
+        ("暂无", 0.0),
+    ])
+    def test_parse(self, raw, expected):
+        from quant.agents.signal_aggregator import _parse_price_str
+        assert _parse_price_str(raw) == pytest.approx(expected)

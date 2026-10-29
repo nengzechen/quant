@@ -31,6 +31,11 @@ logger = logging.getLogger(__name__)
 DEFAULT_STOP_LOSS_RATIO = 0.95
 DEFAULT_TAKE_PROFIT_RATIO = 1.10
 
+_PRICE_NUM_RE = re.compile(r'\d+(?:\.\d+)?')
+_THOUSANDS_SEP_RE = re.compile(r'(?<=\d),(?=\d{3}(?!\d))')
+# 紧跟这些字符的数字是周期 / 百分比等指标，不是价格（如 20日线、5%、3个点）
+_NON_PRICE_SUFFIXES = ('日', '周', '天', '%', '％', '个', '倍')
+
 
 def _parse_price_str(price_str) -> float:
     """
@@ -40,6 +45,8 @@ def _parse_price_str(price_str) -> float:
     例如："1800.00" -> 1800.0
          "回踩到1750支撑" -> 1750.0
          "1750-1800" -> 1750.0（取第一个）
+         "回踩MA5附近1750元" -> 1750.0（跳过 MA5 / 20日线 / -5% 等指标数字）
+         "1,750.00" -> 1750.0
 
     Args:
         price_str: 价格字符串或数字
@@ -51,14 +58,21 @@ def _parse_price_str(price_str) -> float:
         return 0.0
     if isinstance(price_str, (int, float)):
         return float(price_str)
+    # 去掉千分位逗号（只去数字之间的，避免把 "MA5，1750" 拼成一个数）
+    text = _THOUSANDS_SEP_RE.sub('', str(price_str)).strip()
     try:
-        return float(str(price_str).strip())
+        return float(text)
     except ValueError:
-        # 尝试从文字描述中提取数字
-        numbers = re.findall(r'\d+(?:\.\d+)?', str(price_str))
-        if numbers:
-            return float(numbers[0])
-        return 0.0
+        pass
+    # 从文字描述中提取第一个价格数字。AI 常写 "回踩MA5附近1750元"、
+    # "跌破20日均线1650止损"，直接取首个数字会把均线周期当成价格
+    for m in _PRICE_NUM_RE.finditer(text):
+        if text[max(0, m.start() - 2):m.start()].upper() == 'MA':
+            continue
+        if text[m.end():m.end() + 1] in _NON_PRICE_SUFFIXES:
+            continue
+        return float(m.group())
+    return 0.0
 
 
 def _parse_confidence(confidence_str: str, sentiment_score: float) -> ConfidenceLevel:
