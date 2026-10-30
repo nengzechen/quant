@@ -1798,6 +1798,28 @@ class TestSignalExtraction:
         assert signal.ideal_buy_price == 0.0
         assert signal.stop_loss_price == 0.0
 
+    @pytest.mark.parametrize("decision, advice, expected", [
+        ("buy", None, SignalType.BUY),
+        (" Sell ", None, SignalType.SELL),
+        ("卖出", None, SignalType.SELL),
+        ("加仓", None, SignalType.BUY),
+        (None, "减仓", SignalType.SELL),
+        ("", "买入", SignalType.BUY),
+        ("buy/hold/sell", "卖出", SignalType.SELL),
+        ("hold", "买入", SignalType.HOLD),
+        (None, None, SignalType.HOLD),
+        ("unknown", "随便", SignalType.HOLD),
+    ])
+    def test_signal_type_normalized(self, decision, advice, expected):
+        """decision_type 带空白 / 中文 / 缺失时按 operation_advice 兜底，不再静默当 HOLD"""
+        dashboard = self._dashboard({"ideal_buy": "10.00"})
+        dashboard.pop("decision_type")
+        if decision is not None:
+            dashboard["decision_type"] = decision
+        if advice is not None:
+            dashboard["operation_advice"] = advice
+        assert self._extract(dashboard).signal_type == expected
+
     def test_indicator_numbers_not_parsed_as_price(self):
         """文字描述里的 MA5 / 20日线 / -5% 等指标数字不能被当成价格"""
         signal = self._extract(self._dashboard({

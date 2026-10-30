@@ -36,6 +36,15 @@ _THOUSANDS_SEP_RE = re.compile(r'(?<=\d),(?=\d{3}(?!\d))')
 # 紧跟这些字符的数字是周期 / 百分比等指标，不是价格（如 20日线、5%、3个点）
 _NON_PRICE_SUFFIXES = ('日', '周', '天', '%', '％', '个', '倍')
 
+# decision_type / operation_advice 到信号类型的映射，与 src/analyzer.py 的推断口径一致
+_DECISION_MAP = {
+    'buy': SignalType.BUY, '买入': SignalType.BUY, '加仓': SignalType.BUY,
+    '强烈买入': SignalType.BUY,
+    'sell': SignalType.SELL, '卖出': SignalType.SELL, '减仓': SignalType.SELL,
+    '强烈卖出': SignalType.SELL, '清仓': SignalType.SELL,
+    'hold': SignalType.HOLD, '持有': SignalType.HOLD, '观望': SignalType.HOLD,
+}
+
 
 def _parse_price_str(price_str) -> float:
     """
@@ -73,6 +82,21 @@ def _parse_price_str(price_str) -> float:
             continue
         return float(m.group())
     return 0.0
+
+
+def _parse_signal_type(dashboard: dict) -> SignalType:
+    """
+    解析信号类型：优先 decision_type，无法识别时按 operation_advice 推断，都不认识视为 HOLD。
+
+    LLM 输出不总是规范的小写 buy/sell：可能带空白、大小写不一、写成中文
+    （"卖出"），或干脆漏掉 decision_type 只给 operation_advice。只认精确的
+    "buy"/"sell" 会把这些都当成 HOLD，AI 明确建议卖出的持仓被静默忽略。
+    """
+    for key in ('decision_type', 'operation_advice'):
+        value = str(dashboard.get(key) or '').strip().lower()
+        if value in _DECISION_MAP:
+            return _DECISION_MAP[value]
+    return SignalType.HOLD
 
 
 def _parse_confidence(confidence_str: str, sentiment_score: float) -> ConfidenceLevel:
@@ -200,18 +224,11 @@ class SignalAggregator:
         """
         try:
             sentiment_score = float(dashboard.get('sentiment_score', 50))
-            decision_type = str(dashboard.get('decision_type', 'hold')).lower()
             confidence_str = dashboard.get('confidence_level', '')
             stock_name = dashboard.get('stock_name', stock_code)
             buy_reason = dashboard.get('buy_reason', dashboard.get('analysis_summary', ''))
 
-            # 解析信号类型
-            if decision_type == 'buy':
-                signal_type = SignalType.BUY
-            elif decision_type == 'sell':
-                signal_type = SignalType.SELL
-            else:
-                signal_type = SignalType.HOLD
+            signal_type = _parse_signal_type(dashboard)
 
             # 提取价格信息（从 battle_plan.sniper_points）
             ideal_buy_price = 0.0
