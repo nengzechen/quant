@@ -286,6 +286,62 @@ class TestPaperBroker:
         records = paper_broker.get_trade_records(limit=10)
         assert len(records) == 2
 
+    def test_lowercase_code_stored_uppercase(self, paper_broker):
+        """小写代码（如 hk00700）的持仓按大写存键，后续更新 / 卖出用任意大小写都能命中"""
+        paper_broker.place_order("hk00700", "BUY", 100, 400.0)
+        portfolio = paper_broker.get_portfolio()
+        assert list(portfolio.positions) == ["HK00700"]
+        assert portfolio.positions["HK00700"].stock_code == "HK00700"
+
+        paper_broker.update_stop_loss("hk00700", 380.0)
+        paper_broker.update_take_profit("hk00700", 450.0)
+        paper_broker.update_position_prices({"hk00700": 390.0})
+        pos = paper_broker.get_portfolio().positions["HK00700"]
+        assert pos.stop_loss_price == 380.0
+        assert pos.take_profit_price == 450.0
+        assert pos.current_price == 390.0
+
+        record = paper_broker.place_order("hk00700", "SELL", 100, 390.0)
+        assert record.status == TradeStatus.FILLED
+        assert paper_broker.get_portfolio().positions == {}
+
+    def test_lowercase_code_stop_loss_executes(self, paper_broker):
+        """小写代码建仓后跌破止损能真正卖出（之前风控按大写查不到持仓，止损卖不掉）"""
+        from quant.agents.portfolio_manager import PortfolioManager
+
+        paper_broker.place_order("hk00700", "BUY", 100, 400.0)
+        paper_broker._portfolio.positions["HK00700"].last_buy_date = "2000-01-01"
+        paper_broker.update_stop_loss("hk00700", 380.0)
+        paper_broker.update_position_prices({"HK00700": 370.0})
+        pm = PortfolioManager(broker=paper_broker)
+
+        records = pm.check_and_stop_loss()
+        assert len(records) == 1
+        assert records[0].status == TradeStatus.FILLED
+        assert "HK00700" not in paper_broker.get_portfolio().positions
+
+    def test_legacy_lowercase_keys_migrated_on_load(self, tmp_account_path):
+        """旧账户文件中的小写持仓键加载时转大写，大小写重复的持仓合并"""
+        broker = PaperBroker(account_path=tmp_account_path, initial_capital=1_000_000)
+        broker.place_order("HK00700", "BUY", 100, 400.0)
+        with open(tmp_account_path, encoding="utf-8") as f:
+            data = json.load(f)
+        upper = data["portfolio"]["positions"]["HK00700"]
+        lower = dict(upper, stock_code="hk00700", quantity=200, avg_cost=370.0,
+                     stop_loss_price=360.0)
+        upper["stop_loss_price"] = 350.0
+        data["portfolio"]["positions"] = {"hk00700": lower, "HK00700": upper}
+        with open(tmp_account_path, "w", encoding="utf-8") as f:
+            json.dump(data, f)
+
+        reloaded = PaperBroker(account_path=tmp_account_path, initial_capital=1_000_000)
+        positions = reloaded.get_portfolio().positions
+        assert list(positions) == ["HK00700"]
+        pos = positions["HK00700"]
+        assert pos.quantity == 300
+        assert abs(pos.avg_cost - 380.0) < 1e-6
+        assert pos.stop_loss_price == 360.0
+
     def test_reset(self, paper_broker):
         """重置后账户恢复初始状态"""
         paper_broker.place_order("600519", "BUY", 100, 1800.0)

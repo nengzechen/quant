@@ -92,6 +92,7 @@ class PaperBroker(BaseBroker):
                     data = json.load(f)
                 portfolio = Portfolio.from_dict(data['portfolio'])
                 self._migrate_buy_dates(portfolio)
+                self._migrate_position_keys(portfolio)
                 logger.info(
                     f"模拟账户已加载: 总资产={portfolio.total_assets:.2f}, "
                     f"可用现金={portfolio.available_cash:.2f}"
@@ -154,6 +155,41 @@ class PaperBroker(BaseBroker):
             if pos.last_buy_date is None and pos.open_time:
                 pos.last_buy_date = pos.open_time[:10]
                 pos.today_buy_qty = pos.quantity
+
+    @staticmethod
+    def _migrate_position_keys(portfolio: Portfolio) -> None:
+        """
+        旧账户文件按原始代码存持仓键（如 'hk00700'），统一转成大写。
+
+        风控 / 止损 / 卖出信号都按大写代码查持仓，小写键的持仓会被当成未持有，
+        止损检查能发现跌破却卖不出去。同一代码大小写各有一份时合并为一笔持仓。
+        """
+        merged = {}
+        for code, pos in portfolio.positions.items():
+            key = _normalize_code(code)
+            pos.stock_code = key
+            other = merged.get(key)
+            if other is None:
+                merged[key] = pos
+                continue
+            logger.warning(f"合并大小写重复的持仓: {key}")
+            total_qty = other.quantity + pos.quantity
+            if total_qty > 0:
+                other.avg_cost = (
+                    other.avg_cost * other.quantity + pos.avg_cost * pos.quantity
+                ) / total_qty
+            other.quantity = total_qty
+            other.stop_loss_price = max(other.stop_loss_price or 0.0, pos.stop_loss_price or 0.0) or None
+            other.highest_price = max(other.highest_price or 0.0, pos.highest_price or 0.0) or None
+            if pos.last_buy_date and pos.last_buy_date == other.last_buy_date:
+                other.today_buy_qty += pos.today_buy_qty
+            elif pos.last_buy_date and (other.last_buy_date or '') < pos.last_buy_date:
+                other.last_buy_date = pos.last_buy_date
+                other.today_buy_qty = pos.today_buy_qty
+            other.update_price(other.current_price or pos.current_price)
+        if list(merged) != list(portfolio.positions):
+            portfolio.positions = merged
+            portfolio.recalculate()
 
     def _init_account(self) -> Portfolio:
         """初始化新账户"""
@@ -264,7 +300,9 @@ class PaperBroker(BaseBroker):
         模拟下单（立即成交）。
 
         模拟盘实现：限价单按委托价立即成交（不考虑盘口深度）。
+        持仓键统一为大写代码，与风控 / 止损按大写查持仓的口径一致。
         """
+        stock_code = _normalize_code(stock_code)
         try:
             trade_action = TradeAction(action.upper())
         except ValueError:
@@ -501,6 +539,7 @@ class PaperBroker(BaseBroker):
 
     def update_position_name(self, stock_code: str, stock_name: str) -> None:
         """更新持仓中的股票名称"""
+        stock_code = _normalize_code(stock_code)
         if stock_code in self._portfolio.positions:
             self._portfolio.positions[stock_code].stock_name = stock_name
             self._save()
@@ -525,6 +564,7 @@ class PaperBroker(BaseBroker):
             if not math.isfinite(price) or price <= 0:
                 logger.warning(f"忽略无效行情价格: {code}={price!r}")
                 continue
+            code = _normalize_code(code)
             if code in self._portfolio.positions:
                 self._portfolio.positions[code].update_price(price)
                 updated = True
@@ -534,12 +574,19 @@ class PaperBroker(BaseBroker):
 
     def update_stop_loss(self, stock_code: str, stop_loss_price: float) -> None:
         """更新持仓止损价"""
+        stock_code = _normalize_code(stock_code)
         if stock_code in self._portfolio.positions:
             self._portfolio.positions[stock_code].stop_loss_price = stop_loss_price
             self._save()
 
     def update_take_profit(self, stock_code: str, take_profit_price: float) -> None:
         """更新持仓止盈价"""
+        stock_code = _normalize_code(stock_code)
         if stock_code in self._portfolio.positions:
             self._portfolio.positions[stock_code].take_profit_price = take_profit_price
             self._save()
+
+
+def _normalize_code(stock_code) -> str:
+    """持仓键统一格式：去空白转大写（'hk00700' -> 'HK00700'）"""
+    return str(stock_code or '').strip().upper()
