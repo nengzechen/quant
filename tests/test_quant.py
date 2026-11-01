@@ -1791,6 +1791,132 @@ class TestQuantConfig:
         assert broker.trd_env is fake_ft.TrdEnv.SIMULATE
 
 
+class TestFutuRiskState:
+    """富途持仓的止损 / 止盈 / 最高价保存在本地状态文件并合并回持仓"""
+
+    @staticmethod
+    def _make_broker(tmp_path, rows):
+        import pandas as pd
+        import quant.broker.futu_broker as fb
+        fake_ft = MagicMock()
+        fake_ft.RET_OK = 0
+        with patch.object(fb, "FUTU_AVAILABLE", True), \
+                patch.object(fb, "ft", fake_ft, create=True):
+            broker = fb.FutuBroker(risk_state_path=str(tmp_path / "risk.json"))
+        broker._get_accounts = lambda: ["1"]
+        broker._rows = rows
+        broker._trade_ctx.position_list_query.side_effect = (
+            lambda **kw: (0, pd.DataFrame(broker._rows))
+        )
+        return broker, fb, fake_ft
+
+    @staticmethod
+    def _row(code, price, cost=10.0, qty=100):
+        return {"code": f"SH.{code}", "qty": qty, "cost_price": cost,
+                "nominal_price": price, "pl_val": 0.0, "pl_ratio": 0.0,
+                "stock_name": code}
+
+    def test_stop_loss_merged_and_persisted(self, tmp_path):
+        broker, fb, fake_ft = self._make_broker(tmp_path, [self._row("600519", 10.0)])
+        with patch.object(fb, "ft", fake_ft, create=True):
+            broker.update_stop_loss("600519", 9.5)
+            broker.update_take_profit("600519", 12.0)
+            pos = broker.get_positions()[0]
+        assert pos.stop_loss_price == 9.5
+        assert pos.take_profit_price == 12.0
+        # 重启后仍能读到
+        broker2, fb, fake_ft = self._make_broker(tmp_path, [self._row("600519", 9.4)])
+        with patch.object(fb, "ft", fake_ft, create=True):
+            positions = broker2.get_positions()
+        assert positions[0].stop_loss_price == 9.5
+        pf = Portfolio(total_capital=1e5, available_cash=1e5, total_market_value=0,
+                       total_pnl=0, positions={p.stock_code: p for p in positions})
+        assert RiskGuard().check_stop_loss(pf) == ["600519"]
+
+    def test_highest_price_only_rises_for_trailing_stop(self, tmp_path):
+        broker, fb, fake_ft = self._make_broker(tmp_path, [self._row("600519", 11.0)])
+        with patch.object(fb, "ft", fake_ft, create=True):
+            broker.get_positions()
+            broker._rows = [self._row("600519", 10.2)]
+            pos = broker.get_positions()[0]
+        assert pos.highest_price == 11.0
+        assert RiskGuard(trailing_stop_pct=0.05).effective_stop_price(pos) == pytest.approx(10.45)
+
+    def test_closed_position_state_pruned(self, tmp_path):
+        broker, fb, fake_ft = self._make_broker(tmp_path, [self._row("600519", 11.0)])
+        with patch.object(fb, "ft", fake_ft, create=True):
+            broker.update_stop_loss("600519", 9.5)
+            broker.get_positions()
+            # 当日写入的状态即使暂未持仓（挂单未成交）也保留
+            broker._rows = []
+            broker.get_positions()
+            assert "600519" in broker._risk_state
+            # 次日仍不在持仓中 -> 视为已平仓，清理掉旧止损和旧最高价
+            broker._risk_state["600519"]["updated"] = "2000-01-01"
+            broker.get_positions()
+        assert "600519" not in broker._risk_state
+        assert json.load(open(tmp_path / "risk.json")) == {}
+
+    def test_query_failure_does_not_prune(self, tmp_path):
+        broker, fb, fake_ft = self._make_broker(tmp_path, [])
+        broker._risk_state = {"600519": {"stop_loss_price": 9.5, "updated": "2000-01-01"}}
+        broker._trade_ctx.position_list_query.side_effect = lambda **kw: (-1, "err")
+        with patch.object(fb, "ft", fake_ft, create=True):
+            assert broker.get_positions() == []
+        assert "600519" in broker._risk_state
+
+
+class TestOrderExecutorPendingStop:
+    """富途限价单返回 PENDING 时也要写入止损；写入失败要报错而不是静默吞掉"""
+
+    def _signal(self):
+        return OrderSignal(
+            stock_code="600519", stock_name="茅台", signal_type=SignalType.BUY,
+            confidence=ConfidenceLevel.HIGH, ideal_buy_price=10.0, stop_loss_price=9.5, take_profit_price=12.0,
+            sentiment_score=70, buy_reason="test",
+        )
+
+    def test_pending_order_writes_stop_loss(self):
+        from quant.agents.order_executor import OrderExecutor
+        from quant.models import TradeAction, TradeRecord, TradeStatus
+        broker = MagicMock()
+        broker.get_positions.return_value = []
+        broker.place_order.return_value = TradeRecord.create(
+            stock_code="600519", action=TradeAction.BUY, quantity=100, price=10.0,
+            commission=0.0, reason="", status=TradeStatus.PENDING,
+        )
+        OrderExecutor(broker).execute_buy(self._signal(), 100)
+        broker.update_stop_loss.assert_called_once_with("600519", 9.5)
+        broker.update_take_profit.assert_called_once_with("600519", 12.0)
+
+    def test_rejected_order_does_not_write_stop_loss(self):
+        from quant.agents.order_executor import OrderExecutor
+        from quant.models import TradeAction, TradeRecord, TradeStatus
+        broker = MagicMock()
+        broker.get_positions.return_value = []
+        broker.place_order.return_value = TradeRecord.create(
+            stock_code="600519", action=TradeAction.BUY, quantity=100, price=10.0,
+            commission=0.0, reason="", status=TradeStatus.REJECTED,
+        )
+        OrderExecutor(broker).execute_buy(self._signal(), 100)
+        broker.update_stop_loss.assert_not_called()
+
+    def test_stop_loss_write_failure_logged(self, caplog):
+        from quant.agents.order_executor import OrderExecutor
+        from quant.models import TradeAction, TradeRecord, TradeStatus
+        broker = MagicMock()
+        broker.get_positions.return_value = []
+        broker.update_stop_loss.side_effect = OSError("disk full")
+        broker.place_order.return_value = TradeRecord.create(
+            stock_code="600519", action=TradeAction.BUY, quantity=100, price=10.0,
+            commission=0.0, reason="", status=TradeStatus.FILLED,
+        )
+        with caplog.at_level("ERROR"):
+            record = OrderExecutor(broker).execute_buy(self._signal(), 100)
+        assert record.status == TradeStatus.FILLED
+        assert "写入止损/止盈失败" in caplog.text
+
+
 # ===================================================================
 # 信号提取测试
 # ===================================================================

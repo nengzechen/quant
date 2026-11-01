@@ -13,10 +13,15 @@
 - 港股、A股（沪深港通）、美股
 - 市价单和限价单
 - 模拟盘和真实盘（通过 trade_env 控制）
+- 止损价 / 止盈价 / 持仓最高价保存在本地 JSON（富途持仓不带这些字段），
+  查询持仓时合并回 Position，止损、止盈、移动止损才能对富途持仓生效
 """
 
+import json
 import logging
+import os
 from datetime import datetime
+from pathlib import Path
 from typing import List, Optional
 
 from quant.broker.base import BaseBroker
@@ -72,6 +77,7 @@ class FutuBroker(BaseBroker):
         market: str = "HK",
         max_positions: int = 10,
         risk_per_trade_pct: float = 0.02,
+        risk_state_path: Optional[str] = None,
     ):
         """
         初始化富途 Broker。
@@ -83,6 +89,8 @@ class FutuBroker(BaseBroker):
             market: 默认市场 "HK"/"US"/"CN"
             max_positions: 最大持仓数量
             risk_per_trade_pct: 单笔最大风险比例
+            risk_state_path: 本地止损 / 止盈状态文件
+                （默认 ~/.stock_quant/futu_risk_state_<env>.json，模拟盘与真实盘分开）
 
         Raises:
             ValueError: trade_env 不是 SIMULATE / REAL（大小写不敏感）
@@ -101,6 +109,10 @@ class FutuBroker(BaseBroker):
         self._quote_ctx: Optional[object] = None
         self._trade_ctx: Optional[object] = None
         self._account_id: Optional[str] = None
+        self.risk_state_path = Path(os.path.expanduser(
+            risk_state_path or f"~/.stock_quant/futu_risk_state_{trade_env.lower()}.json"
+        ))
+        self._risk_state = self._load_risk_state()
 
         self._connect()
 
@@ -316,10 +328,85 @@ class FutuBroker(BaseBroker):
                     pnl_pct=float(row.get('pl_ratio', 0)) * 100,
                     open_time=datetime.now().isoformat(),
                 ))
+            self._apply_risk_state(positions)
             return positions
         except Exception as e:
             logger.error(f"获取富途持仓失败: {e}")
             return []
+
+    # ===== 本地止损 / 止盈状态 =====
+
+    def update_stop_loss(self, stock_code: str, stop_loss_price: float) -> None:
+        """记录持仓止损价（富途持仓不带止损价，保存在本地状态文件）"""
+        self._set_risk_field(stock_code, 'stop_loss_price', stop_loss_price)
+
+    def update_take_profit(self, stock_code: str, take_profit_price: float) -> None:
+        """记录持仓止盈价（保存在本地状态文件）"""
+        self._set_risk_field(stock_code, 'take_profit_price', take_profit_price)
+
+    def _set_risk_field(self, stock_code: str, field: str, value: float) -> None:
+        code = _normalize_code(stock_code)
+        if not code:
+            return
+        entry = self._risk_state.setdefault(code, {})
+        entry[field] = float(value)
+        # 记下写入日期：当日挂出的买单可能还未成交，持仓里暂时没有，不能被清理
+        entry['updated'] = datetime.now().strftime('%Y-%m-%d')
+        self._save_risk_state()
+
+    def _apply_risk_state(self, positions: List[Position]) -> None:
+        """
+        把本地止损 / 止盈 / 最高价合并进富途持仓，并维护状态文件。
+
+        - 持仓最高价按每次查询到的现价只升不降，供移动止损使用
+        - 已不在持仓中、且不是当日写入的状态视为已平仓，删除，避免旧止损和旧最高价
+          套到日后重新买入的同一只股票上
+        """
+        today = datetime.now().strftime('%Y-%m-%d')
+        changed = False
+        held = set()
+        for pos in positions:
+            code = _normalize_code(pos.stock_code)
+            held.add(code)
+            entry = self._risk_state.get(code)
+            if entry is None:
+                entry = self._risk_state[code] = {}
+                changed = True
+            if pos.current_price > 0 and pos.current_price > (entry.get('highest_price') or 0):
+                entry['highest_price'] = pos.current_price
+                changed = True
+            pos.stop_loss_price = entry.get('stop_loss_price')
+            pos.take_profit_price = entry.get('take_profit_price')
+            pos.highest_price = entry.get('highest_price')
+
+        for code in list(self._risk_state):
+            if code not in held and self._risk_state[code].get('updated') != today:
+                del self._risk_state[code]
+                changed = True
+
+        if changed:
+            self._save_risk_state()
+
+    def _load_risk_state(self) -> dict:
+        if not self.risk_state_path.exists():
+            return {}
+        try:
+            with open(self.risk_state_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            return data if isinstance(data, dict) else {}
+        except Exception as e:
+            logger.error(f"读取富途止损状态失败，持仓将没有止损保护: {e}")
+            return {}
+
+    def _save_risk_state(self) -> None:
+        try:
+            self.risk_state_path.parent.mkdir(parents=True, exist_ok=True)
+            tmp = self.risk_state_path.with_suffix('.tmp')
+            with open(tmp, 'w', encoding='utf-8') as f:
+                json.dump(self._risk_state, f, ensure_ascii=False, indent=2)
+            os.replace(tmp, self.risk_state_path)
+        except Exception as e:
+            logger.error(f"保存富途止损状态失败: {e}")
 
     def get_order_status(self, order_id: str) -> str:
         """查询富途订单状态"""
@@ -417,3 +504,8 @@ class FutuBroker(BaseBroker):
                 self._trade_ctx.close()
         except Exception:
             pass
+
+
+def _normalize_code(stock_code) -> str:
+    """状态文件键：去空白转大写，与持仓代码一致"""
+    return str(stock_code or '').strip().upper()

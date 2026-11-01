@@ -89,10 +89,10 @@ class OrderExecutor:
                 price=signal.ideal_buy_price,
                 order_type="LIMIT",
             )
-            # 成交后更新券商持仓中的股票名称、止损价和止盈价
-            # （未成交时不能写，否则会覆盖已有持仓的止损/止盈）
+            # 成交（或已报单待成交，如富途限价单返回 PENDING）后更新券商持仓中的
+            # 股票名称、止损价和止盈价；被拒单时不能写，否则会覆盖已有持仓的止损/止盈
             try:
-                if record.status == TradeStatus.FILLED:
+                if record.status in (TradeStatus.FILLED, TradeStatus.PENDING):
                     if hasattr(self.broker, 'update_position_name'):
                         self.broker.update_position_name(signal.stock_code, signal.stock_name)
                     # 加仓时止损价只升不降：新信号止损更低会把老仓位的止损一起
@@ -113,8 +113,9 @@ class OrderExecutor:
                         and hasattr(self.broker, 'update_take_profit')
                     ):
                         self.broker.update_take_profit(signal.stock_code, signal.take_profit_price)
-            except Exception:
-                pass
+            except Exception as e:
+                # 订单已成交，不能当作失败返回；但持仓可能没有止损保护，必须显式报出
+                logger.error(f"买入后写入止损/止盈失败，请人工核对: {signal.stock_code} - {e}")
 
             logger.info(
                 f"买入执行结果: {signal.stock_code} 状态={record.status.value}"
