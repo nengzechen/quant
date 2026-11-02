@@ -1679,6 +1679,27 @@ class TestTrailingStop:
         assert RiskGuard(trailing_stop_pct=1.5).trailing_stop_pct == 0.0
         assert RiskGuard(trailing_stop_pct=-0.1).trailing_stop_pct == 0.0
 
+    @pytest.mark.parametrize("bad_price", [0.0, -1.0, float("nan"), None])
+    def test_invalid_current_price_skips_stop_and_take_profit(self, bad_price):
+        """富途行情缺失时现价为 0 / NaN，不能当成跌破止损或达到止盈"""
+        guard = RiskGuard(trailing_stop_pct=0.10)
+        pos = self._position(current=16.0, highest=20.0)
+        pos.current_price = bad_price
+        pos.take_profit_price = 18.0
+        portfolio = self._portfolio(pos)
+        assert guard.check_stop_loss(portfolio) == []
+        assert guard.check_take_profit(portfolio) == []
+
+    def test_invalid_price_does_not_block_other_positions(self):
+        guard = RiskGuard()
+        bad = self._position(current=16.0, highest=None)
+        bad.current_price = 0.0
+        good = self._position(current=13.0, highest=None)
+        good.stock_code = "600000"
+        portfolio = self._portfolio(bad)
+        portfolio.positions["600000"] = good
+        assert guard.check_stop_loss(portfolio) == ["600000"]
+
     def test_reads_pct_from_config(self, monkeypatch):
         from quant.config import QuantConfig
 

@@ -22,6 +22,7 @@
 """
 
 import logging
+import math
 from typing import List, Optional, Tuple
 
 from quant.models import OrderSignal, Portfolio, Position, SignalType
@@ -259,7 +260,8 @@ class RiskGuard:
         """
         检查所有持仓是否触发止损（含移动止损）。
 
-        当前价格跌破有效止损价时，返回对应股票代码。
+        当前价格跌破有效止损价时，返回对应股票代码。现价无效（0 / NaN，富途行情缺失
+        或停牌时 nominal_price 可能为 0）的持仓跳过判断，避免按 0 元误判止损。
 
         Args:
             portfolio: 当前投资组合
@@ -270,6 +272,9 @@ class RiskGuard:
         stop_loss_codes = []
 
         for code, pos in portfolio.positions.items():
+            if not _valid_price(pos.current_price):
+                logger.warning(f"{code} 现价无效 {pos.current_price!r}，跳过止损判断")
+                continue
             stop = self.effective_stop_price(pos)
             if stop > 0 and pos.current_price <= stop:
                 logger.warning(
@@ -284,7 +289,7 @@ class RiskGuard:
         """
         检查所有持仓是否触发止盈。
 
-        当前价格达到或超过止盈价时，返回对应股票代码。
+        当前价格达到或超过止盈价时，返回对应股票代码。现价无效的持仓跳过判断。
 
         Args:
             portfolio: 当前投资组合
@@ -295,6 +300,8 @@ class RiskGuard:
         take_profit_codes = []
 
         for code, pos in portfolio.positions.items():
+            if not _valid_price(pos.current_price):
+                continue
             if pos.take_profit_price and pos.take_profit_price > 0:
                 if pos.current_price >= pos.take_profit_price:
                     logger.info(
@@ -468,3 +475,11 @@ class RiskGuard:
         if code in self.blacklist:
             self.blacklist.remove(code)
             logger.info(f"已将 {code} 从黑名单移除")
+
+
+def _valid_price(price) -> bool:
+    """价格是否为有限正数"""
+    try:
+        return math.isfinite(price) and price > 0
+    except TypeError:
+        return False
