@@ -1976,6 +1976,17 @@ class TestSignalExtraction:
         assert signal.ideal_buy_price == 10.0
         assert signal.stop_loss_price == pytest.approx(9.5)
 
+    @pytest.mark.parametrize("bad_stop", ["nan", float("nan"), "inf", "-9.2"])
+    def test_non_finite_stop_loss_gets_default(self, bad_stop):
+        """止损价为 NaN / inf / 负数时按缺失处理补默认止损，不能让持仓无止损"""
+        signal = self._extract(self._dashboard({"ideal_buy": "10.00", "stop_loss": bad_stop}))
+        assert signal.stop_loss_price == pytest.approx(9.5)
+
+    def test_nan_buy_price_falls_back_to_current_price(self):
+        signal = self._extract(self._dashboard({"ideal_buy": "NaN"}, current_price="20.00"))
+        assert signal.ideal_buy_price == 20.0
+        assert signal.stop_loss_price == pytest.approx(19.0)
+
     def test_default_stop_loss_enforced_by_risk_guard(self):
         """补上默认止损后单笔风险检查生效：超出风险预算的数量被拒绝"""
         signal = self._extract(self._dashboard({"ideal_buy": "10.00"}))
@@ -2051,6 +2062,14 @@ class TestParsePriceStr:
         ("MA5，1750", 1750.0),
         ("跌破 3%", 0.0),
         ("暂无", 0.0),
+        ("nan", 0.0),
+        ("NaN", 0.0),
+        ("inf", 0.0),
+        ("-1750", 0.0),
+        (float("nan"), 0.0),
+        (float("inf"), 0.0),
+        (-3.0, 0.0),
+        (True, 0.0),
     ])
     def test_parse(self, raw, expected):
         from quant.agents.signal_aggregator import _parse_price_str

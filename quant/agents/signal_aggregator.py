@@ -17,6 +17,7 @@
 """
 
 import logging
+import math
 import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
@@ -56,21 +57,22 @@ def _parse_price_str(price_str) -> float:
          "1750-1800" -> 1750.0（取第一个）
          "回踩MA5附近1750元" -> 1750.0（跳过 MA5 / 20日线 / -5% 等指标数字）
          "1,750.00" -> 1750.0
+         "nan" / "inf" / NaN -> 0.0
 
     Args:
         price_str: 价格字符串或数字
 
     Returns:
-        浮点数价格，解析失败返回 0.0
+        浮点数价格，解析失败或非有限正数返回 0.0
     """
-    if price_str is None:
+    if price_str is None or isinstance(price_str, bool):
         return 0.0
     if isinstance(price_str, (int, float)):
-        return float(price_str)
+        return _finite_price(float(price_str))
     # 去掉千分位逗号（只去数字之间的，避免把 "MA5，1750" 拼成一个数）
     text = _THOUSANDS_SEP_RE.sub('', str(price_str)).strip()
     try:
-        return float(text)
+        return _finite_price(float(text))
     except ValueError:
         pass
     # 从文字描述中提取第一个价格数字。AI 常写 "回踩MA5附近1750元"、
@@ -82,6 +84,17 @@ def _parse_price_str(price_str) -> float:
             continue
         return float(m.group())
     return 0.0
+
+
+def _finite_price(price: float) -> float:
+    """
+    非有限正数（NaN / inf / 负数）一律视为解析失败返回 0.0。
+
+    float() 接受 "nan"、"inf"，JSON 里也可能直接是 NaN。NaN 与任何数比较都为假：
+    止损价为 NaN 时既不会补默认止损，风控的止损有效性 / 单笔风险检查也全被跳过，
+    成交后持仓没有止损；归零后走"缺失价格"的既有兜底逻辑。
+    """
+    return price if math.isfinite(price) and price > 0 else 0.0
 
 
 def _parse_signal_type(dashboard: dict) -> SignalType:
