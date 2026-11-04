@@ -1887,6 +1887,102 @@ class TestFutuRiskState:
         assert "600519" in broker._risk_state
 
 
+class TestFutuCodeConversion:
+    """富途代码互转：港股 / 带点美股不能下到错误的市场或错误的股票上"""
+
+    @staticmethod
+    def _make_broker(tmp_path, rows, state=None):
+        import pandas as pd
+        import quant.broker.futu_broker as fb
+        path = tmp_path / "risk.json"
+        if state is not None:
+            path.write_text(json.dumps(state), encoding="utf-8")
+        fake_ft = MagicMock()
+        fake_ft.RET_OK = 0
+        with patch.object(fb, "FUTU_AVAILABLE", True), \
+                patch.object(fb, "ft", fake_ft, create=True):
+            broker = fb.FutuBroker(risk_state_path=str(path))
+        broker._get_accounts = lambda: ["1"]
+        broker._trade_ctx.position_list_query.side_effect = (
+            lambda **kw: (0, pd.DataFrame(rows))
+        )
+        broker._trade_ctx.accinfo_query.side_effect = lambda **kw: (0, pd.DataFrame([{
+            "total_assets": 100000.0, "cash": 50000.0, "market_val": 50000.0,
+            "unrealized_pl": 0.0,
+        }]))
+        broker._trade_ctx.place_order.side_effect = (
+            lambda **kw: (0, pd.DataFrame([{"order_id": "1"}]))
+        )
+        return broker, fb, fake_ft
+
+    @staticmethod
+    def _row(code, price=10.0):
+        return {"code": code, "qty": 100, "cost_price": 10.0, "nominal_price": price,
+                "pl_val": 0.0, "pl_ratio": 0.0, "stock_name": code}
+
+    @pytest.mark.parametrize("code,expected", [
+        ("00700", "HK.00700"),
+        ("HK00700", "HK.00700"),
+        ("hk00700", "HK.00700"),
+        ("HK.00700", "HK.00700"),
+        ("600519", "SH.600519"),
+        ("510300", "SH.510300"),
+        ("000858", "SZ.000858"),
+        ("AAPL", "US.AAPL"),
+        ("aapl", "US.AAPL"),
+        ("BRK.B", "US.BRK.B"),
+        ("HKD", "US.HKD"),
+    ])
+    def test_convert_code(self, tmp_path, code, expected):
+        broker, _, _ = self._make_broker(tmp_path, [])
+        assert broker._convert_code(code) == expected
+
+    @pytest.mark.parametrize("futu_code,expected", [
+        ("HK.00700", "HK00700"),
+        ("SH.600519", "600519"),
+        ("SZ.000858", "000858"),
+        ("US.AAPL", "AAPL"),
+        ("US.BRK.B", "BRK.B"),
+    ])
+    def test_position_code_round_trip(self, tmp_path, futu_code, expected):
+        broker, fb, fake_ft = self._make_broker(tmp_path, [self._row(futu_code)])
+        with patch.object(fb, "ft", fake_ft, create=True):
+            pos = broker.get_positions()[0]
+        assert pos.stock_code == expected
+        assert broker._convert_code(pos.stock_code) == futu_code
+
+    @pytest.mark.parametrize("signal_code", ["HK00700", "hk00700", "00700"])
+    def test_hk_stop_loss_merged_whatever_the_signal_code(self, tmp_path, signal_code):
+        broker, fb, fake_ft = self._make_broker(tmp_path, [self._row("HK.00700")])
+        with patch.object(fb, "ft", fake_ft, create=True):
+            broker.update_stop_loss(signal_code, 9.5)
+            assert broker.get_positions()[0].stop_loss_price == 9.5
+
+    def test_legacy_bare_hk_state_key_migrated(self, tmp_path):
+        broker, fb, fake_ft = self._make_broker(
+            tmp_path,
+            [self._row("HK.00700")],
+            state={"00700": {"stop_loss_price": 9.5, "updated": "2000-01-01"}},
+        )
+        with patch.object(fb, "ft", fake_ft, create=True):
+            pos = broker.get_positions()[0]
+        assert pos.stop_loss_price == 9.5
+        assert "00700" not in broker._risk_state
+
+    @pytest.mark.parametrize("futu_code", ["HK.00700", "US.BRK.B"])
+    def test_stop_loss_sells_on_the_right_market(self, tmp_path, futu_code):
+        from quant.agents.portfolio_manager import PortfolioManager
+        broker, fb, fake_ft = self._make_broker(tmp_path, [self._row(futu_code, price=9.0)])
+        with patch.object(fb, "ft", fake_ft, create=True):
+            code = broker.get_positions()[0].stock_code
+            broker.update_stop_loss(code, 9.5)
+            records = PortfolioManager(broker).check_and_stop_loss()
+        assert len(records) == 1
+        order = broker._trade_ctx.place_order.call_args.kwargs
+        assert order["code"] == futu_code
+        assert order["qty"] == 100
+
+
 class TestOrderExecutorPendingStop:
     """富途限价单返回 PENDING 时也要写入止损；写入失败要报错而不是静默吞掉"""
 

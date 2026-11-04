@@ -20,6 +20,7 @@
 import json
 import logging
 import os
+import re
 from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
@@ -35,6 +36,9 @@ from quant.models import (
 )
 
 logger = logging.getLogger(__name__)
+
+_HK_CODE_RE = re.compile(r'^HK\d{5}$')                # 规范港股代码
+_HK_INPUT_RE = re.compile(r'^HK\.?(\d{1,5})$|^(\d{5})$')  # 可接受的港股写法
 
 # 尝试导入富途 API
 try:
@@ -148,17 +152,16 @@ class FutuBroker(BaseBroker):
         - "600519" -> "SH.600519"
         - "000858" -> "SZ.000858"
         - "AAPL" -> "US.AAPL"
-        - "00700" -> "HK.00700"
+        - "00700" / "HK00700" -> "HK.00700"
         """
-        if stock_code.isdigit():
-            if stock_code.startswith('6') or stock_code.startswith('5'):
-                return f"SH.{stock_code}"
-            else:
-                return f"SZ.{stock_code}"
-        elif len(stock_code) == 5 and stock_code.isdigit():
-            return f"HK.{stock_code}"
-        else:
-            return f"US.{stock_code}"
+        code = _normalize_code(stock_code)
+        if _HK_CODE_RE.match(code):
+            return f"HK.{code[2:]}"
+        if code.isdigit():
+            if code.startswith('6') or code.startswith('5'):
+                return f"SH.{code}"
+            return f"SZ.{code}"
+        return f"US.{code}"
 
     def _get_accounts(self) -> List[str]:
         """获取账户列表"""
@@ -312,7 +315,7 @@ class FutuBroker(BaseBroker):
 
             positions = []
             for _, row in data.iterrows():
-                code = str(row.get('code', '')).split('.')[-1]  # 去掉市场前缀
+                code = _from_futu_code(row.get('code', ''))
                 qty = int(row.get('qty', 0))
                 cost = float(row.get('cost_price', 0))
                 current = float(row.get('nominal_price', 0))
@@ -393,7 +396,13 @@ class FutuBroker(BaseBroker):
         try:
             with open(self.risk_state_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
-            return data if isinstance(data, dict) else {}
+            if not isinstance(data, dict):
+                return {}
+            # 旧状态文件的港股键是 '00700'，合并到规范键，否则止损对不上持仓、次日被清理
+            state = {}
+            for code, entry in data.items():
+                state.setdefault(_normalize_code(code), {}).update(entry)
+            return state
         except Exception as e:
             logger.error(f"读取富途止损状态失败，持仓将没有止损保护: {e}")
             return {}
@@ -453,7 +462,7 @@ class FutuBroker(BaseBroker):
 
             records = []
             for _, row in list(data.iterrows())[:limit]:
-                code = str(row.get('code', '')).split('.')[-1]
+                code = _from_futu_code(row.get('code', ''))
                 trd_side = str(row.get('trd_side', 'BUY'))
                 action = TradeAction.BUY if 'BUY' in trd_side.upper() else TradeAction.SELL
                 records.append(TradeRecord.create(
@@ -507,5 +516,27 @@ class FutuBroker(BaseBroker):
 
 
 def _normalize_code(stock_code) -> str:
-    """状态文件键：去空白转大写，与持仓代码一致"""
-    return str(stock_code or '').strip().upper()
+    """
+    富途持仓和状态文件的内部代码：去空白转大写，港股统一为项目规范的 HK00700。
+
+    "00700" / "hk00700" / "HK.00700" -> "HK00700"，其余代码原样（A 股 6 位、美股 ticker）。
+    """
+    code = str(stock_code or '').strip().upper()
+    match = _HK_INPUT_RE.match(code)
+    if match:
+        return f"HK{(match.group(1) or match.group(2)).zfill(5)}"
+    return code
+
+
+def _from_futu_code(futu_code) -> str:
+    """
+    富途代码转内部代码："HK.00700" -> "HK00700"，"SH.600519" -> "600519"，
+    "US.BRK.B" -> "BRK.B"。
+
+    只去掉第一段市场前缀：ticker 自身可能带点，取最后一段会把 BRK.B 变成 B，
+    卖出时下到另一只股票上；港股保留 HK 前缀，才能和信号代码、止损状态对上。
+    """
+    market, _, code = str(futu_code or '').strip().partition('.')
+    if market.upper() == 'HK':
+        return _normalize_code(f"HK{code}")
+    return _normalize_code(code or market)
