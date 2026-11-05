@@ -263,15 +263,21 @@ class PortfolioManager:
             )
         return f"止损触发: 跌破 {stop:.2f}"
 
-    def check_and_take_profit(self) -> List[TradeRecord]:
+    def check_and_take_profit(self, skip_codes=()) -> List[TradeRecord]:
         """
         检查所有持仓是否达到止盈价，自动止盈（卖出全部可卖股份）。
+
+        Args:
+            skip_codes: 不再处理的股票代码（大写），如本轮止损已挂单、持仓尚未减少的股票
 
         Returns:
             止盈产生的交易记录列表
         """
         portfolio = self.broker.get_portfolio()
-        take_profit_codes = self.risk_guard.check_take_profit(portfolio)
+        take_profit_codes = [
+            code for code in self.risk_guard.check_take_profit(portfolio)
+            if code not in skip_codes
+        ]
 
         if not take_profit_codes:
             logger.debug("止盈检查：无需止盈")

@@ -18,6 +18,7 @@
 import json
 import os
 import tempfile
+from dataclasses import replace
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -35,6 +36,8 @@ from quant.models import (
     Portfolio,
     Position,
     SignalType,
+    TradeAction,
+    TradeRecord,
     TradeStatus,
 )
 from quant.agents.risk_guard import RiskGuard
@@ -1327,6 +1330,81 @@ class TestQuantOrchestrator:
         )
         broker._portfolio.positions["600519"].last_buy_date = None
         broker._portfolio.positions["600519"].record_buy(100)
+
+        with patch.object(
+            orchestrator._signal_aggregator, 'aggregate',
+            return_value=[self._rebuy_signal()],
+        ):
+            report = orchestrator.run(["600519"], dry_run=False)
+
+        assert report['blocked_rebuys'] == []
+
+    @staticmethod
+    def _pending_sell_broker(broker):
+        """让卖单像富途限价单一样返回 PENDING：持仓不变，记录所有卖单"""
+        sells = []
+
+        def place_order(stock_code, action, quantity, price, order_type="LIMIT", **kwargs):
+            trade_action = TradeAction(action)
+            if trade_action == TradeAction.SELL:
+                sells.append(stock_code)
+                return TradeRecord.create(
+                    stock_code=stock_code, action=trade_action, quantity=quantity,
+                    price=price, commission=0.0, status=TradeStatus.PENDING,
+                )
+            return PaperBroker.place_order(
+                broker, stock_code, action, quantity, price, order_type, **kwargs
+            )
+
+        broker.place_order = place_order
+        return sells
+
+    def test_pending_stop_loss_blocks_rebuy(self, tmp_account_path):
+        """止损卖单待成交（富途限价单）时持仓还在，同一轮也不能买回"""
+        orchestrator, broker = self._held_orchestrator(
+            tmp_account_path, lambda codes: {"600519": 1700.0}
+        )
+        sells = self._pending_sell_broker(broker)
+
+        with patch.object(
+            orchestrator._signal_aggregator, 'aggregate',
+            return_value=[self._rebuy_signal()],
+        ):
+            report = orchestrator.run(["600519"], dry_run=False)
+
+        assert sells == ["600519"]
+        assert [t['action'] for t in report['executed_trades']] == ["SELL"]
+        assert report['blocked_rebuys'] == ["600519"]
+
+    def test_pending_stop_loss_not_sold_twice(self, tmp_account_path):
+        """止损卖单待成交时，同一轮的止盈和卖出信号不再重复下卖单"""
+        orchestrator, broker = self._held_orchestrator(
+            tmp_account_path, lambda codes: {"600519": 1700.0}
+        )
+        broker._portfolio.positions["600519"].take_profit_price = 1650.0
+        sells = self._pending_sell_broker(broker)
+        sell_signal = replace(self._rebuy_signal(), signal_type=SignalType.SELL)
+
+        with patch.object(
+            orchestrator._signal_aggregator, 'aggregate', return_value=[sell_signal],
+        ):
+            orchestrator.run(["600519"], dry_run=False)
+
+        assert sells == ["600519"]
+
+    def test_rejected_stop_loss_does_not_block_buy(self, tmp_account_path):
+        """止损卖单被拒时没有离场，不拦截后续卖出信号和买入"""
+        orchestrator, broker = self._held_orchestrator(
+            tmp_account_path, lambda codes: {"600519": 1700.0}
+        )
+
+        def reject(stock_code, action, quantity, price, order_type="LIMIT", **kwargs):
+            return TradeRecord.create(
+                stock_code=stock_code, action=TradeAction(action), quantity=quantity,
+                price=price, commission=0.0, status=TradeStatus.REJECTED,
+            )
+
+        broker.place_order = reject
 
         with patch.object(
             orchestrator._signal_aggregator, 'aggregate',

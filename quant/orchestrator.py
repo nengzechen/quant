@@ -194,7 +194,7 @@ class QuantOrchestrator:
             report["portfolio_summary"] = self._portfolio_manager.get_portfolio_summary()
             return report
 
-        # 本轮止损 / 止盈已离场的股票，Step 4 不再买回
+        # 本轮止损 / 止盈已成交或已挂单离场的股票：后续步骤不再重复卖出，Step 4 不再买回
         exited_codes = set()
 
         # ===== Step 2: 止损检查（先于新买入） =====
@@ -203,7 +203,7 @@ class QuantOrchestrator:
                 self.refresh_position_prices()
                 logger.info("Step 2: 执行止损检查...")
                 stop_loss_records = self._portfolio_manager.check_and_stop_loss()
-                exited_codes.update(_filled_codes(stop_loss_records))
+                exited_codes.update(_exited_codes(stop_loss_records))
                 if stop_loss_records:
                     logger.warning(f"触发止损 {len(stop_loss_records)} 笔")
                     report["executed_trades"].extend(
@@ -217,8 +217,10 @@ class QuantOrchestrator:
         try:
             if not dry_run:
                 logger.info("Step 2.5: 执行止盈检查...")
-                take_profit_records = self._portfolio_manager.check_and_take_profit()
-                exited_codes.update(_filled_codes(take_profit_records))
+                take_profit_records = self._portfolio_manager.check_and_take_profit(
+                    skip_codes=exited_codes
+                )
+                exited_codes.update(_exited_codes(take_profit_records))
                 if take_profit_records:
                     logger.info(f"触发止盈 {len(take_profit_records)} 笔")
                     report["executed_trades"].extend(
@@ -233,6 +235,9 @@ class QuantOrchestrator:
             try:
                 logger.info(f"Step 3: 处理 {len(sell_signals)} 个卖出信号...")
                 for signal in sell_signals:
+                    if signal.stock_code.upper() in exited_codes:
+                        logger.info(f"跳过卖出信号 {signal.stock_code}: 本轮已止损/止盈离场")
+                        continue
                     try:
                         record = self._portfolio_manager.process_signal(signal)
                         if record is not None:
@@ -434,9 +439,15 @@ class QuantOrchestrator:
         return self._config
 
 
-def _filled_codes(records: List[TradeRecord]) -> List[str]:
-    """成交记录对应的股票代码（大写），未成交的记录不算离场。"""
-    return [r.stock_code.upper() for r in records if r.status == TradeStatus.FILLED]
+def _exited_codes(records: List[TradeRecord]) -> List[str]:
+    """
+    已离场的股票代码（大写）：已成交或已挂单待成交的卖单，被拒 / 撤销的不算。
+
+    富途限价单下单后一律返回 PENDING，只认 FILLED 的话富途下止损后持仓还在，
+    同一轮会被买回并重复下卖单。
+    """
+    exited = (TradeStatus.FILLED, TradeStatus.PENDING)
+    return [r.stock_code.upper() for r in records if r.status in exited]
 
 
 def _valid_price(price) -> Optional[float]:
