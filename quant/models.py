@@ -187,6 +187,9 @@ class Portfolio:
     - positions: 持仓字典 {stock_code: Position}
     - max_positions: 最大持仓数量（风控参数）
     - risk_per_trade_pct: 单笔最大风险比例（风控参数，默认 2%）
+    - pending_buys: 已挂单未成交的买入金额 {stock_code: 未成交金额}，这部分已从
+      available_cash 扣除。不放进 positions：还没成交的股份不能被止损 / 止盈卖出。
+      模拟盘立即成交，始终为空
     """
     total_capital: float
     available_cash: float
@@ -195,6 +198,7 @@ class Portfolio:
     positions: Dict[str, Position] = field(default_factory=dict)
     max_positions: int = 10
     risk_per_trade_pct: float = 0.02
+    pending_buys: Dict[str, float] = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         """序列化为字典"""
@@ -227,8 +231,8 @@ class Portfolio:
 
     @property
     def total_assets(self) -> float:
-        """总资产 = 可用现金 + 持仓市值"""
-        return self.available_cash + self.total_market_value
+        """总资产 = 可用现金 + 持仓市值 + 挂单占用资金"""
+        return self.available_cash + self.total_market_value + sum(self.pending_buys.values())
 
     @property
     def risk_capital(self) -> float:

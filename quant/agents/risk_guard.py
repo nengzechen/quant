@@ -19,6 +19,7 @@
 7. 卖出 T+1 检查（当日买入股份不可卖出）
 8. 止损价有效性检查（止损价或已有持仓止损价不低于买入价的买入视为无效）
 9. 移动止损（持仓浮盈后从最高价回撤 trailing_stop_pct 即止损）
+10. 未成交买单检查（同一只股票已有挂单时不重复下单，挂单占持仓名额）
 """
 
 import logging
@@ -100,6 +101,11 @@ class RiskGuard:
 
         # 检查1: 黑名单
         passed, reason = self._check_blacklist(signal.stock_code)
+        if not passed:
+            return False, reason
+
+        # 检查1.2: 未成交买单（同一只股票不重复挂单）
+        passed, reason = self._check_pending_buy(portfolio, signal.stock_code)
         if not passed:
             return False, reason
 
@@ -320,6 +326,21 @@ class RiskGuard:
             return False, f"股票 {stock_code} 在黑名单中，禁止交易"
         return True, ""
 
+    def _check_pending_buy(
+        self,
+        portfolio: Portfolio,
+        stock_code: str,
+    ) -> Tuple[bool, str]:
+        """
+        检查是否已有未成交买单。
+
+        富途限价单挂出后持仓不变，当日再跑一轮时同样的信号会再下一笔，成交后仓位翻倍，
+        超出单笔风险预算。
+        """
+        if stock_code.upper() in portfolio.pending_buys:
+            return False, f"{stock_code} 已有未成交买单，不重复下单"
+        return True, ""
+
     def _check_stop_loss_price(
         self,
         signal: OrderSignal,
@@ -415,12 +436,13 @@ class RiskGuard:
         portfolio: Portfolio,
         stock_code: str,
     ) -> Tuple[bool, str]:
-        """检查持仓数量是否超过上限"""
+        """检查持仓数量是否超过上限（未成交买单成交后就是持仓，一并计入）"""
         code_upper = stock_code.upper()
-        current_count = len(portfolio.positions)
+        held = set(portfolio.positions) | set(portfolio.pending_buys)
+        current_count = len(held)
 
         # 如果已持有该股票，不算新增持仓
-        if code_upper in portfolio.positions:
+        if code_upper in held:
             return True, ""
 
         if current_count >= portfolio.max_positions:

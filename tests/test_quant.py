@@ -2061,6 +2061,130 @@ class TestFutuCodeConversion:
         assert order["qty"] == 100
 
 
+class TestFutuPendingBuys:
+    """富途买单挂出后持仓和现金都不变，风控要看到未成交买单"""
+
+    @staticmethod
+    def _order(code="SH.600519", side="BUY", status="SUBMITTED", qty=100, dealt=0, price=100.0):
+        return {"code": code, "trd_side": side, "order_status": status,
+                "qty": qty, "dealt_qty": dealt, "price": price}
+
+    @staticmethod
+    def _make_broker(tmp_path, rows=(), orders=(), max_positions=10):
+        """cash=50000、无 market_val 的账户；orders 是可变列表，下单后自动追加"""
+        import pandas as pd
+        broker, fb, fake_ft = TestFutuCodeConversion._make_broker(tmp_path, list(rows))
+        broker.max_positions = max_positions
+        orders = list(orders)
+        broker._trade_ctx.order_list_query.side_effect = (
+            lambda **kw: (0, pd.DataFrame(orders))
+        )
+
+        def place_order(**kw):
+            orders.append(TestFutuPendingBuys._order(
+                code=kw["code"], qty=kw["qty"], price=kw["price"]))
+            return 0, pd.DataFrame([{"order_id": str(len(orders))}])
+
+        broker._trade_ctx.place_order.side_effect = place_order
+        return broker, fb, fake_ft
+
+    @staticmethod
+    def _signal(code, price=100.0, stop=95.0):
+        return OrderSignal(
+            stock_code=code, stock_name=code, signal_type=SignalType.BUY,
+            confidence=ConfidenceLevel.HIGH, sentiment_score=80,
+            ideal_buy_price=price, stop_loss_price=stop, take_profit_price=0.0,
+            buy_reason="测试",
+        )
+
+    def test_open_buy_reserves_cash(self, tmp_path):
+        broker, fb, fake_ft = self._make_broker(tmp_path, orders=[self._order()])
+        with patch.object(fb, "ft", fake_ft, create=True):
+            portfolio = broker.get_portfolio()
+        assert portfolio.pending_buys == {"600519": 10000.0}
+        assert portfolio.available_cash == 40000.0
+        # 现金转成挂单占用，总资产不变
+        assert portfolio.total_assets == 50000.0 + 50000.0
+
+    def test_partial_fill_reserves_remaining_only(self, tmp_path):
+        broker, fb, fake_ft = self._make_broker(
+            tmp_path, orders=[self._order(status="FILLED_PART", qty=300, dealt=100)])
+        with patch.object(fb, "ft", fake_ft, create=True):
+            assert broker.get_portfolio().pending_buys == {"600519": 20000.0}
+
+    @pytest.mark.parametrize("order", [
+        {"status": "FILLED_ALL"},
+        {"status": "CANCELLED_ALL"},
+        {"status": "FAILED"},
+        {"side": "SELL"},
+        {"status": "FILLED_PART", "qty": 100, "dealt": 100},
+    ])
+    def test_closed_or_sell_orders_reserve_nothing(self, tmp_path, order):
+        broker, fb, fake_ft = self._make_broker(tmp_path, orders=[self._order(**order)])
+        with patch.object(fb, "ft", fake_ft, create=True):
+            portfolio = broker.get_portfolio()
+        assert portfolio.pending_buys == {}
+        assert portfolio.available_cash == 50000.0
+
+    def test_hk_order_code_matches_signal_code(self, tmp_path):
+        broker, fb, fake_ft = self._make_broker(
+            tmp_path, orders=[self._order(code="HK.00700")])
+        with patch.object(fb, "ft", fake_ft, create=True):
+            assert list(broker.get_portfolio().pending_buys) == ["HK00700"]
+
+    def test_second_run_does_not_double_buy(self, tmp_path):
+        from quant.agents.portfolio_manager import PortfolioManager
+        broker, fb, fake_ft = self._make_broker(tmp_path)
+        manager = PortfolioManager(broker)
+        with patch.object(fb, "ft", fake_ft, create=True):
+            first = manager.process_signal(self._signal("600519"))
+            second = manager.process_signal(self._signal("600519"))
+        assert first.status == TradeStatus.PENDING
+        assert second is None
+        assert broker._trade_ctx.place_order.call_count == 1
+
+    def test_buys_in_one_run_cannot_exceed_cash(self, tmp_path):
+        from quant.agents.portfolio_manager import PortfolioManager
+        broker, fb, fake_ft = self._make_broker(tmp_path)
+        manager = PortfolioManager(broker, sizing_method="fixed_fraction")
+        with patch.object(fb, "ft", fake_ft, create=True):
+            for code in ("600001", "600002", "600003", "600004", "600005", "600006"):
+                manager.process_signal(self._signal(code, price=100.0, stop=99.0))
+        placed = [c.kwargs for c in broker._trade_ctx.place_order.call_args_list]
+        assert sum(o["qty"] * o["price"] for o in placed) <= 50000.0
+
+    def test_pending_buy_takes_a_position_slot(self, tmp_path):
+        from quant.agents.portfolio_manager import PortfolioManager
+        broker, fb, fake_ft = self._make_broker(
+            tmp_path, orders=[self._order(price=10.0)], max_positions=1)
+        with patch.object(fb, "ft", fake_ft, create=True):
+            record = PortfolioManager(broker).process_signal(self._signal("000858"))
+        assert record is None
+        broker._trade_ctx.place_order.assert_not_called()
+
+    def test_pending_buy_is_never_stopped_out(self, tmp_path):
+        """未成交股份不进持仓，止损不能卖还没买到的股票"""
+        from quant.agents.portfolio_manager import PortfolioManager
+        broker, fb, fake_ft = self._make_broker(tmp_path, orders=[self._order()])
+        with patch.object(fb, "ft", fake_ft, create=True):
+            broker.update_stop_loss("600519", 200.0)
+            assert PortfolioManager(broker).check_and_stop_loss() == []
+        broker._trade_ctx.place_order.assert_not_called()
+
+    def test_order_query_failure_blocks_buys_not_stops(self, tmp_path):
+        from quant.agents.portfolio_manager import PortfolioManager
+        rows = [TestFutuCodeConversion._row("SH.600519", price=9.0)]
+        broker, fb, fake_ft = self._make_broker(tmp_path, rows=rows)
+        broker._trade_ctx.order_list_query.side_effect = lambda **kw: (-1, "断线")
+        manager = PortfolioManager(broker)
+        with patch.object(fb, "ft", fake_ft, create=True):
+            broker.update_stop_loss("600519", 9.5)
+            assert manager.process_signal(self._signal("000858")) is None
+            broker._trade_ctx.place_order.assert_not_called()
+            records = manager.check_and_stop_loss()
+        assert [r.stock_code for r in records] == ["600519"]
+
+
 class TestOrderExecutorPendingStop:
     """富途限价单返回 PENDING 时也要写入止损；写入失败要报错而不是静默吞掉"""
 

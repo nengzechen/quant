@@ -23,7 +23,7 @@ import os
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from quant.broker.base import BaseBroker
 from quant.config import normalize_trade_env
@@ -39,6 +39,12 @@ logger = logging.getLogger(__name__)
 
 _HK_CODE_RE = re.compile(r'^HK\d{5}$')                # 规范港股代码
 _HK_INPUT_RE = re.compile(r'^HK\.?(\d{1,5})$|^(\d{5})$')  # 可接受的港股写法
+
+# 仍可能成交的订单状态：这些买单的未成交部分要占用资金和持仓名额
+_OPEN_ORDER_STATUSES = frozenset({
+    'UNSUBMITTED', 'WAITING_SUBMIT', 'SUBMITTING', 'SUBMITTED',
+    'FILLED_PART', 'CANCELLING_PART', 'CANCELLING_ALL',
+})
 
 # 尝试导入富途 API
 try:
@@ -479,21 +485,67 @@ class FutuBroker(BaseBroker):
             logger.error(f"获取富途成交记录失败: {e}")
             return []
 
+    def _pending_buy_amounts(self) -> Dict[str, float]:
+        """
+        查询未成交买单的占用金额。
+
+        Returns:
+            {内部代码: 未成交金额}，部分成交的只算剩余股数
+
+        Raises:
+            RuntimeError: 订单查询失败
+        """
+        accounts = self._get_accounts()
+        acc_id = int(accounts[0]) if accounts else 0
+
+        ret, data = self._trade_ctx.order_list_query(trd_env=self.trd_env, acc_id=acc_id)
+        if ret != ft.RET_OK:
+            raise RuntimeError(f"订单查询失败: {data}")
+
+        pending: Dict[str, float] = {}
+        for _, row in data.iterrows():
+            if str(row.get('order_status', '')) not in _OPEN_ORDER_STATUSES:
+                continue
+            if 'BUY' not in str(row.get('trd_side', '')).upper():
+                continue
+            remaining = float(row.get('qty', 0)) - float(row.get('dealt_qty', 0))
+            if remaining <= 0:
+                continue
+            code = _from_futu_code(row.get('code', ''))
+            pending[code] = pending.get(code, 0.0) + remaining * float(row.get('price', 0))
+        return pending
+
     def get_portfolio(self) -> Portfolio:
-        """获取富途账户投资组合"""
+        """
+        获取富途账户投资组合。
+
+        富途的 cash 不随挂单减少，限价买单在成交前持仓也不变，不扣掉的话同一轮多笔买入
+        都按同一笔现金过风控，合计可超过账户现金。订单查询失败时可用现金按 0 计：
+        只拦新买入，止损 / 止盈不依赖现金，照常执行。
+        """
         try:
             account_info = self.get_account_info()
             positions = self.get_positions()
             positions_dict = {p.stock_code: p for p in positions}
 
+            available_cash = account_info['available_cash']
+            pending_buys: Dict[str, float] = {}
+            try:
+                pending_buys = self._pending_buy_amounts()
+                available_cash -= sum(pending_buys.values())
+            except Exception as e:
+                logger.error(f"查询未成交买单失败，本次不允许新买入: {e}")
+                available_cash = 0.0
+
             return Portfolio(
                 total_capital=account_info['total_assets'],
-                available_cash=account_info['available_cash'],
+                available_cash=available_cash,
                 total_market_value=account_info['market_value'],
                 total_pnl=account_info['total_pnl'],
                 positions=positions_dict,
                 max_positions=self.max_positions,
                 risk_per_trade_pct=self.risk_per_trade_pct,
+                pending_buys=pending_buys,
             )
         except Exception as e:
             logger.error(f"获取富途投资组合失败: {e}")
