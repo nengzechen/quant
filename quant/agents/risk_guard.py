@@ -237,7 +237,8 @@ class RiskGuard:
         sellable = pos.sellable_quantity()
         if quantity > sellable:
             return False, (
-                f"T+1 限制: {stock_code} 今日买入 {pos.quantity - sellable} 股不可卖出, "
+                f"可卖不足: {stock_code} 有 {pos.quantity - sellable} 股不可卖出"
+                f"（当日买入 T+1 冻结或已有卖单未成交）, "
                 f"可卖 {sellable} 股, 尝试卖出 {quantity} 股"
             )
 

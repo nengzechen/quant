@@ -192,7 +192,7 @@ class PortfolioManager:
         pos = portfolio.positions[code_upper]
         quantity = pos.sellable_quantity()
         if quantity <= 0:
-            logger.info(f"卖出信号顺延: {signal.stock_code} 今日买入，受 T+1 限制")
+            logger.info(f"卖出信号顺延: {signal.stock_code} 无可卖股份（当日买入 T+1 冻结或已有卖单未成交）")
             return None
         # 卖出按持仓现价（编排流程已在 Step 2 刷新行情）。信号的 ideal_buy_price
         # 是 LLM 给的买入狙击点，通常低于现价，拿来当卖出价会让模拟盘按市场
@@ -319,7 +319,9 @@ class PortfolioManager:
             sell_price = pos.current_price
             sell_qty = pos.sellable_quantity()
             if sell_qty <= 0:
-                logger.warning(f"{label}顺延: {code} 今日买入，受 T+1 限制，下个交易日再{label}")
+                logger.warning(
+                    f"{label}顺延: {code} 无可卖股份（当日买入 T+1 冻结或已有卖单未成交）"
+                )
                 continue
 
             logger.warning(
@@ -376,7 +378,7 @@ class PortfolioManager:
                 sell_price = pos.current_price
                 sell_qty = pos.sellable_quantity()
                 if sell_qty <= 0:
-                    logger.info(f"再平衡顺延: {code} 今日买入，受 T+1 限制")
+                    logger.info(f"再平衡顺延: {code} 无可卖股份（当日买入 T+1 冻结或已有卖单未成交）")
                     continue
 
                 passed, reason = self.risk_guard.check_sell(

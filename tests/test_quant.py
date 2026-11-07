@@ -1964,6 +1964,40 @@ class TestFutuRiskState:
             assert broker.get_positions() == []
         assert "600519" in broker._risk_state
 
+    def test_can_sell_qty_limits_sellable(self, tmp_path):
+        """止损卖单挂出未成交（can_sell_qty=0）时，下一轮不能对同一批股份再下卖单"""
+        from quant.agents.portfolio_manager import PortfolioManager
+        row = dict(self._row("600519", 9.0), can_sell_qty=0)
+        broker, fb, fake_ft = self._make_broker(tmp_path, [row])
+        with patch.object(fb, "ft", fake_ft, create=True):
+            broker.update_stop_loss("600519", 9.5)
+            pos = broker.get_positions()[0]
+        assert pos.broker_sellable_qty == 0
+        assert pos.sellable_quantity() == 0
+        pf = Portfolio(total_capital=1e5, available_cash=1e5, total_market_value=900,
+                       total_pnl=0, positions={pos.stock_code: pos})
+        passed, reason = RiskGuard().check_sell(pf, "600519", 100, 9.0)
+        assert not passed and "已有卖单" in reason
+
+        fake_broker = MagicMock()
+        fake_broker.get_portfolio.return_value = pf
+        pm = PortfolioManager(broker=fake_broker)
+        assert pm.check_and_stop_loss() == []
+        fake_broker.place_order.assert_not_called()
+
+    def test_partial_can_sell_qty_and_missing_field(self, tmp_path):
+        rows = [dict(self._row("600519", 10.0), can_sell_qty=40),
+                dict(self._row("000001", 10.0), can_sell_qty=float("nan")),
+                self._row("600036", 10.0)]
+        broker, fb, fake_ft = self._make_broker(tmp_path, rows)
+        with patch.object(fb, "ft", fake_ft, create=True):
+            by_code = {p.stock_code: p for p in broker.get_positions()}
+        assert by_code["600519"].sellable_quantity() == 40
+        # 字段缺失 / 无效时退回按持仓数量
+        assert by_code["000001"].broker_sellable_qty is None
+        assert by_code["000001"].sellable_quantity() == 100
+        assert by_code["600036"].sellable_quantity() == 100
+
 
 class TestFutuCodeConversion:
     """富途代码互转：港股 / 带点美股不能下到错误的市场或错误的股票上"""

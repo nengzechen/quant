@@ -107,6 +107,8 @@ class Position:
     - open_time: 建仓时间
     - stop_loss_price: 止损价（可选，用于自动止损）
     - take_profit_price: 止盈价（可选）
+    - broker_sellable_qty: 券商回报的可卖股数（可选）。富途的 can_sell_qty 已扣掉挂单中的
+      卖出和冻结股份，止损卖单挂出未成交时为 0；None 表示券商不提供（模拟盘），只按 T+1 计算
     """
     stock_code: str
     stock_name: str
@@ -123,6 +125,7 @@ class Position:
     model: Optional[str] = None             # 触发买入的模型名称
     last_buy_date: Optional[str] = None     # 最近一次买入日期 YYYY-MM-DD（T+1 用）
     today_buy_qty: int = 0                  # last_buy_date 当日买入的股数（T+1 冻结部分）
+    broker_sellable_qty: Optional[int] = None  # 券商回报的可卖股数（扣除挂单卖出 / 冻结）
 
     def to_dict(self) -> dict:
         """序列化为字典"""
@@ -147,8 +150,16 @@ class Position:
         return min(max(self.today_buy_qty, 0), self.quantity)
 
     def sellable_quantity(self, today: Optional[str] = None) -> int:
-        """可卖股数 = 持仓 - T+1 冻结股数"""
-        return self.quantity - self.locked_quantity(today)
+        """
+        可卖股数 = 持仓 - T+1 冻结股数，券商回报了可卖股数时再与之取小。
+
+        富途持仓 qty 不随挂单卖出减少，止损卖单未成交时下一轮若按 qty 再下全量卖单，
+        会被券商以可卖不足拒单；以券商可卖股数为上限可避免重复卖出。
+        """
+        sellable = self.quantity - self.locked_quantity(today)
+        if self.broker_sellable_qty is not None:
+            sellable = min(sellable, max(int(self.broker_sellable_qty), 0))
+        return sellable
 
     def record_buy(self, quantity: int, today: Optional[str] = None) -> None:
         """登记一笔买入，用于 T+1 冻结计算（同日多次买入累加）"""

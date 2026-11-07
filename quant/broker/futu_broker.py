@@ -19,6 +19,7 @@
 
 import json
 import logging
+import math
 import os
 import re
 from datetime import datetime
@@ -326,6 +327,7 @@ class FutuBroker(BaseBroker):
                 cost = float(row.get('cost_price', 0))
                 current = float(row.get('nominal_price', 0))
                 pnl = float(row.get('pl_val', 0))
+                can_sell = _parse_qty(row.get('can_sell_qty'))
                 positions.append(Position(
                     stock_code=code,
                     stock_name=str(row.get('stock_name', code)),
@@ -336,6 +338,7 @@ class FutuBroker(BaseBroker):
                     pnl=pnl,
                     pnl_pct=float(row.get('pl_ratio', 0)) * 100,
                     open_time=datetime.now().isoformat(),
+                    broker_sellable_qty=can_sell,
                 ))
             self._apply_risk_state(positions)
             return positions
@@ -565,6 +568,17 @@ class FutuBroker(BaseBroker):
                 self._trade_ctx.close()
         except Exception:
             pass
+
+
+def _parse_qty(value) -> Optional[int]:
+    """解析富途回报的股数（如 can_sell_qty），缺失 / NaN / 负数返回 None"""
+    try:
+        qty = float(value)
+    except (TypeError, ValueError):
+        return None
+    if not math.isfinite(qty) or qty < 0:
+        return None
+    return int(qty)
 
 
 def _normalize_code(stock_code) -> str:
