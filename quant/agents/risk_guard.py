@@ -20,6 +20,8 @@
 8. 止损价有效性检查（止损价或已有持仓止损价不低于买入价的买入视为无效）
 9. 移动止损（持仓浮盈后从最高价回撤 trailing_stop_pct 即止损）
 10. 未成交买单检查（同一只股票已有挂单时不重复下单，挂单占持仓名额）
+11. 数值有效性：价格 / 现金 / 总资产为 NaN、inf 时一律拒绝（NaN 比较恒为 False，
+    不拦截会让资金、集中度检查被静默放行）；持仓市值无效时按成本估算
 """
 
 import logging
@@ -96,8 +98,8 @@ class RiskGuard:
         if quantity <= 0:
             return False, "买入数量必须大于 0"
 
-        if price <= 0:
-            return False, "买入价格必须大于 0"
+        if not _valid_price(price):
+            return False, f"买入价格无效: {price!r}"
 
         # 检查1: 黑名单
         passed, reason = self._check_blacklist(signal.stock_code)
@@ -166,7 +168,10 @@ class RiskGuard:
         Returns:
             可买股数（lot_size 的整数倍，最小为 0）
         """
-        if price <= 0 or lot_size <= 0:
+        if not _valid_price(price) or lot_size <= 0:
+            return 0
+        # 现金 / 总资产为 NaN 时 min() 会忽略 NaN 限额，直接按 0 处理（不买）
+        if not _is_finite(portfolio.available_cash) or not _is_finite(portfolio.total_assets):
             return 0
 
         # 资金：price*q + max(price*q*0.0003, 5) <= available * buffer
@@ -180,19 +185,22 @@ class RiskGuard:
         total_assets = portfolio.total_assets
         if total_assets > 0:
             pos = portfolio.positions.get(signal.stock_code.upper())
-            existing_value = pos.market_value if pos else 0.0
+            existing_value = _position_value(pos) if pos else 0.0
             limits.append(
                 (total_assets * self.max_single_stock_ratio - existing_value) / price
             )
 
         # 单笔风险：(price - stop) * q <= risk_capital * risk_per_trade_pct
         risk_per_share = price - signal.stop_loss_price
-        if signal.stop_loss_price > 0 and risk_per_share > 0:
+        if signal.stop_loss_price > 0 and risk_per_share > 0 and _is_finite(portfolio.risk_capital):
             limits.append(
                 portfolio.risk_capital * portfolio.risk_per_trade_pct / risk_per_share
             )
 
-        max_shares = int(min(limits))
+        bound = min(limits)
+        if not _is_finite(bound):
+            return 0
+        max_shares = int(bound)
         return max(0, max_shares // lot_size * lot_size)
 
     def check_sell(
@@ -219,8 +227,8 @@ class RiskGuard:
         if quantity <= 0:
             return False, "卖出数量必须大于 0"
 
-        if price <= 0:
-            return False, "卖出价格必须大于 0"
+        if not _valid_price(price):
+            return False, f"卖出价格无效: {price!r}"
 
         # 检查持仓
         code_upper = stock_code.upper()
@@ -389,6 +397,8 @@ class RiskGuard:
         price: float,
     ) -> Tuple[bool, str]:
         """检查可用现金是否充足（包含手续费缓冲）"""
+        if not _is_finite(portfolio.available_cash):
+            return False, f"可用现金无效: {portfolio.available_cash!r}，拒绝买入"
         required = price * quantity
         # 预估手续费：万分之三 + 最低5元
         estimated_commission = max(required * 0.0003, 5.0)
@@ -412,14 +422,16 @@ class RiskGuard:
     ) -> Tuple[bool, str]:
         """检查单只股票持仓集中度（不超过总资金30%）"""
         total_assets = portfolio.total_assets
+        if not _is_finite(total_assets):
+            return False, f"总资产无效: {total_assets!r}，无法评估集中度，拒绝买入"
         if total_assets <= 0:
             return True, ""
 
-        # 现有持仓市值
+        # 现有持仓市值（行情缺失导致市值无效时按成本估算，避免 NaN 让检查失效）
         existing_value = 0.0
         code_upper = stock_code.upper()
         if code_upper in portfolio.positions:
-            existing_value = portfolio.positions[code_upper].market_value
+            existing_value = _position_value(portfolio.positions[code_upper])
 
         # 新增买入金额
         new_value = existing_value + price * quantity
@@ -498,6 +510,31 @@ class RiskGuard:
         if code in self.blacklist:
             self.blacklist.remove(code)
             logger.info(f"已将 {code} 从黑名单移除")
+
+
+def _is_finite(value) -> bool:
+    """是否为有限数值（NaN / inf / 非数字返回 False）"""
+    try:
+        return math.isfinite(value)
+    except TypeError:
+        return False
+
+
+def _position_value(pos: Position) -> float:
+    """
+    持仓市值；市值为 NaN / inf / 负数（富途行情缺失时 nominal_price 可能为 NaN）时
+    按 数量 * 成本价 估算，两者都无效返回 0。
+    """
+    value = pos.market_value
+    if _is_finite(value) and value >= 0:
+        return value
+    fallback = pos.quantity * pos.avg_cost
+    if _is_finite(fallback) and fallback > 0:
+        logger.warning(
+            f"{pos.stock_code} 持仓市值无效 {value!r}，按成本估算 {fallback:.2f}"
+        )
+        return fallback
+    return 0.0
 
 
 def _valid_price(price) -> bool:

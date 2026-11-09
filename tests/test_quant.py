@@ -692,6 +692,58 @@ class TestRiskGuard:
         assert "600519" not in guard.blacklist
 
 
+class TestRiskGuardNonFinite:
+    """NaN / inf 数值不能让风控检查被静默放行（NaN 比较恒为 False）"""
+
+    @staticmethod
+    def _nan_position(code="600519", qty=100, cost=1800.0):
+        nan = float("nan")
+        return Position(
+            stock_code=code, stock_name="", quantity=qty, avg_cost=cost,
+            current_price=nan, market_value=nan, pnl=nan, pnl_pct=nan,
+            open_time="",
+        )
+
+    def test_buy_rejects_nan_and_inf_price(self, sample_portfolio, buy_signal):
+        guard = RiskGuard()
+        for bad in (float("nan"), float("inf")):
+            passed, reason = guard.check_buy(sample_portfolio, buy_signal, 100, bad)
+            assert not passed
+            assert "价格无效" in reason
+        assert guard.max_buy_quantity(sample_portfolio, buy_signal, float("nan")) == 0
+
+    def test_sell_rejects_nan_price(self, sample_portfolio):
+        guard = RiskGuard()
+        sample_portfolio.positions["600519"] = self._nan_position()
+        passed, reason = guard.check_sell(sample_portfolio, "600519", 100, float("nan"))
+        assert not passed
+        assert "价格无效" in reason
+
+    def test_nan_cash_rejects_buy(self, sample_portfolio, buy_signal):
+        guard = RiskGuard()
+        sample_portfolio.available_cash = float("nan")
+        passed, reason = guard.check_buy(sample_portfolio, buy_signal, 100, 1800.0)
+        assert not passed
+        assert guard.max_buy_quantity(sample_portfolio, buy_signal, 1800.0) == 0
+
+    def test_nan_market_value_uses_cost_for_concentration(self, sample_portfolio, buy_signal):
+        """富途行情缺失时持仓市值为 NaN，加仓仍要按成本计入 30% 集中度"""
+        guard = RiskGuard()
+        # 已持有 1500 股 * 1800 = 270 万成本，远超总资产 100 万的 30%
+        sample_portfolio.positions["600519"] = self._nan_position(qty=1500)
+        passed, reason = guard.check_buy(sample_portfolio, buy_signal, 100, 1800.0)
+        assert not passed
+        assert "集中度" in reason
+        assert guard.max_buy_quantity(sample_portfolio, buy_signal, 1800.0) == 0
+
+    def test_nan_total_assets_rejects_buy(self, sample_portfolio, buy_signal):
+        guard = RiskGuard()
+        sample_portfolio.total_market_value = float("nan")
+        passed, reason = guard.check_buy(sample_portfolio, buy_signal, 100, 1800.0)
+        assert not passed
+        assert guard.max_buy_quantity(sample_portfolio, buy_signal, 1800.0) == 0
+
+
 # ===================================================================
 # Position Sizing 测试
 # ===================================================================
