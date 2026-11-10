@@ -383,7 +383,12 @@ class RiskGuard:
 
     def _check_sentiment(self, signal: OrderSignal) -> Tuple[bool, str]:
         """检查情感评分（乖离率检查）"""
-        if signal.signal_type == SignalType.BUY and signal.sentiment_score < self.min_buy_sentiment:
+        if signal.signal_type != SignalType.BUY:
+            return True, ""
+        # NaN 与任何数比较都为假，直接用 < 判断会让 NaN 评分绕过最低评分检查
+        if not _is_finite(signal.sentiment_score):
+            return False, f"情感评分无效 ({signal.sentiment_score})，拒绝买入 {signal.stock_code}"
+        if signal.sentiment_score < self.min_buy_sentiment:
             return False, (
                 f"情感评分过低 ({signal.sentiment_score:.0f} < {self.min_buy_sentiment})，"
                 f"拒绝买入 {signal.stock_code}"

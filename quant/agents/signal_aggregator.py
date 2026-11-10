@@ -112,6 +112,35 @@ def _parse_signal_type(dashboard: dict) -> SignalType:
     return SignalType.HOLD
 
 
+def _parse_sentiment_score(raw) -> Optional[float]:
+    """
+    解析情感评分为 [0, 100] 内的有限数，缺失 / 无法解析 / NaN 时返回 None。
+
+    LLM 输出的 sentiment_score 不总是数字：可能是 null、"75分"、"75/100"，
+    甚至 NaN。原先直接 float()，null 和带单位的字符串会抛异常，整条信号被丢弃，
+    AI 明确建议卖出的持仓也跟着被忽略；NaN 则与任何数比较都为假，会绕过风控的
+    最低买入评分检查，排序结果也不确定。调用方对 None 按 0 处理：买入会被最低
+    评分拒绝（保守），卖出 / 持有信号照常保留。
+    """
+    if raw is None or isinstance(raw, bool):
+        return None
+    if isinstance(raw, (int, float)):
+        score = float(raw)
+    else:
+        m = re.search(r'-?\d+(?:\.\d+)?', str(raw))
+        if not m:
+            return None
+        score = float(m.group())
+    if not math.isfinite(score):
+        return None
+    return min(max(score, 0.0), 100.0)
+
+
+def _as_dict(value) -> dict:
+    """LLM 可能把嵌套字段写成 null / 字符串，非字典一律当空字典，避免 .get 抛异常丢信号"""
+    return value if isinstance(value, dict) else {}
+
+
 def _parse_confidence(confidence_str: str, sentiment_score: float) -> ConfidenceLevel:
     """
     解析信心等级。
@@ -129,6 +158,9 @@ def _parse_confidence(confidence_str: str, sentiment_score: float) -> Confidence
             return ConfidenceLevel.HIGH
         if c in ('低', 'LOW', 'low', '低置信度'):
             return ConfidenceLevel.LOW
+        # 明确给了"中"就是中，不能再按评分推断成高
+        if c in ('中', 'MEDIUM', 'medium', '中等', '中置信度'):
+            return ConfidenceLevel.MEDIUM
     # 根据情感评分推断
     if sentiment_score >= 70:
         return ConfidenceLevel.HIGH
@@ -236,7 +268,11 @@ class SignalAggregator:
             OrderSignal 对象，解析失败返回 None
         """
         try:
-            sentiment_score = float(dashboard.get('sentiment_score', 50))
+            raw_score = dashboard.get('sentiment_score')
+            sentiment_score = _parse_sentiment_score(raw_score)
+            if sentiment_score is None:
+                logger.warning(f"{stock_code} 情感评分缺失或无法解析 ({raw_score!r})，按 0 处理")
+                sentiment_score = 0.0
             confidence_str = dashboard.get('confidence_level', '')
             stock_name = dashboard.get('stock_name', stock_code)
             buy_reason = dashboard.get('buy_reason', dashboard.get('analysis_summary', ''))
@@ -248,8 +284,9 @@ class SignalAggregator:
             stop_loss_price = 0.0
             take_profit_price = 0.0
 
-            battle_plan = dashboard.get('dashboard', {}).get('battle_plan', {})
-            sniper_points = battle_plan.get('sniper_points', {})
+            inner = _as_dict(dashboard.get('dashboard'))
+            battle_plan = _as_dict(inner.get('battle_plan'))
+            sniper_points = _as_dict(battle_plan.get('sniper_points'))
 
             if sniper_points:
                 ideal_buy_price = _parse_price_str(sniper_points.get('ideal_buy', 0))
@@ -258,8 +295,8 @@ class SignalAggregator:
 
             # 如果 sniper_points 没有价格，尝试从 data_perspective 获取当前价
             if ideal_buy_price <= 0:
-                data_perspective = dashboard.get('dashboard', {}).get('data_perspective', {})
-                price_position = data_perspective.get('price_position', {})
+                data_perspective = _as_dict(inner.get('data_perspective'))
+                price_position = _as_dict(data_perspective.get('price_position'))
                 current_price = _parse_price_str(price_position.get('current_price', 0))
                 if current_price > 0:
                     ideal_buy_price = current_price

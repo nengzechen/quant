@@ -2430,6 +2430,80 @@ class TestSignalExtraction:
         assert signal.take_profit_price == 1900.0
 
 
+class TestSentimentParsing:
+    """情感评分 / 信心等级 / 嵌套字段异常时不丢信号、不绕过风控"""
+
+    def _dashboard(self, **overrides):
+        dash = {
+            "sentiment_score": 75,
+            "decision_type": "sell",
+            "stock_name": "测试股",
+            "dashboard": {"battle_plan": {"sniper_points": {"ideal_buy": "10.00"}}},
+        }
+        dash.update(overrides)
+        return dash
+
+    def _extract(self, dashboard):
+        from quant.agents.signal_aggregator import SignalAggregator
+        return SignalAggregator(config=MagicMock())._extract_signal("000001", dashboard)
+
+    @pytest.mark.parametrize("raw, expected", [
+        (75, 75.0), ("75", 75.0), ("75分", 75.0), ("82/100", 82.0), ("评分：68.5", 68.5),
+        (150, 100.0), (-5, 0.0),
+        (None, 0.0), ("暂无", 0.0), (float("nan"), 0.0), ("nan", 0.0), (float("inf"), 0.0),
+    ])
+    def test_score_parsed(self, raw, expected):
+        """null / 带单位字符串不再抛异常丢掉整条信号，NaN 按 0 处理"""
+        signal = self._extract(self._dashboard(sentiment_score=raw))
+        assert signal is not None
+        assert signal.signal_type == SignalType.SELL
+        assert signal.sentiment_score == pytest.approx(expected)
+
+    def test_missing_score_keeps_sell_signal(self):
+        dash = self._dashboard()
+        dash.pop("sentiment_score")
+        signal = self._extract(dash)
+        assert signal.signal_type == SignalType.SELL
+        assert signal.sentiment_score == 0.0
+
+    def test_invalid_score_buy_rejected_by_risk_guard(self):
+        signal = self._extract(self._dashboard(decision_type="buy", sentiment_score=None))
+        passed, reason = RiskGuard()._check_sentiment(signal)
+        assert not passed
+        assert "情感评分过低" in reason
+
+    def test_risk_guard_rejects_nan_score(self):
+        """直接构造的 NaN 评分信号也不能绕过最低买入评分检查"""
+        signal = OrderSignal(
+            stock_code="000001", stock_name="测试", signal_type=SignalType.BUY,
+            confidence=ConfidenceLevel.HIGH, sentiment_score=float("nan"),
+            ideal_buy_price=10.0, stop_loss_price=9.5, take_profit_price=11.0,
+            buy_reason="test",
+        )
+        passed, reason = RiskGuard()._check_sentiment(signal)
+        assert not passed
+        assert "情感评分无效" in reason
+
+    @pytest.mark.parametrize("inner", [None, "暂无", {"battle_plan": None},
+                                       {"battle_plan": {"sniper_points": "无"}}])
+    def test_non_dict_nested_fields_keep_signal(self, inner):
+        signal = self._extract(self._dashboard(dashboard=inner))
+        assert signal is not None
+        assert signal.signal_type == SignalType.SELL
+        assert signal.ideal_buy_price == 0.0
+
+    @pytest.mark.parametrize("conf, score, expected", [
+        ("中", 85, ConfidenceLevel.MEDIUM),
+        ("medium", 30, ConfidenceLevel.MEDIUM),
+        ("高", 30, ConfidenceLevel.HIGH),
+        ("", 85, ConfidenceLevel.HIGH),
+    ])
+    def test_confidence_explicit_medium(self, conf, score, expected):
+        """明确给出“中”时不再按高评分推断成高信心"""
+        signal = self._extract(self._dashboard(confidence_level=conf, sentiment_score=score))
+        assert signal.confidence == expected
+
+
 class TestParsePriceStr:
     """_parse_price_str 价格文本解析"""
 
