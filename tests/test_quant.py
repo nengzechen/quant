@@ -2532,3 +2532,71 @@ class TestParsePriceStr:
     def test_parse(self, raw, expected):
         from quant.agents.signal_aggregator import _parse_price_str
         assert _parse_price_str(raw) == pytest.approx(expected)
+
+
+# ===================================================================
+# 执行层无效价格 / 数量拦截
+# ===================================================================
+
+class TestExecutionNonFinite:
+    """NaN/inf 价格、非正数量不能穿透执行层污染账户"""
+
+    @pytest.mark.parametrize("price", [float("nan"), float("inf"), -1.0, 0.0, None, "abc"])
+    def test_paper_buy_rejects_invalid_price(self, paper_broker, price):
+        cash_before = paper_broker.get_portfolio().available_cash
+        record = paper_broker.place_order("600519", "BUY", 100, price)
+        assert record.status == TradeStatus.REJECTED
+        assert record.reason == "无效价格"
+        portfolio = paper_broker.get_portfolio()
+        assert portfolio.available_cash == cash_before
+        assert "600519" not in portfolio.positions
+
+    @pytest.mark.parametrize("qty", [0, -100, 1.5, float("nan"), True])
+    def test_paper_buy_rejects_invalid_quantity(self, paper_broker, qty):
+        cash_before = paper_broker.get_portfolio().available_cash
+        record = paper_broker.place_order("600519", "BUY", qty, 10.0)
+        assert record.status == TradeStatus.REJECTED
+        assert record.reason == "无效数量"
+        assert paper_broker.get_portfolio().available_cash == cash_before
+
+    def test_paper_sell_rejects_nan_price(self, tmp_account_path):
+        broker = PaperBroker(account_path=tmp_account_path, initial_capital=1_000_000, t_plus_one=False)
+        broker.place_order("600519", "BUY", 100, 10.0)
+        record = broker.place_order("600519", "SELL", 100, float("nan"))
+        assert record.status == TradeStatus.REJECTED
+        assert broker.get_portfolio().positions["600519"].quantity == 100
+
+    def test_paper_accepts_integral_float_quantity(self, paper_broker):
+        record = paper_broker.place_order("600519", "BUY", 100.0, 10.0)
+        assert record.status == TradeStatus.FILLED
+
+    def test_executor_rejects_nan_buy_and_sell_price(self):
+        from quant.agents.order_executor import OrderExecutor
+        broker = MagicMock()
+        executor = OrderExecutor(broker)
+        signal = OrderSignal(
+            stock_code="600519", stock_name="茅台", signal_type=SignalType.BUY,
+            confidence=ConfidenceLevel.HIGH, ideal_buy_price=float("nan"),
+            stop_loss_price=9.5, take_profit_price=12.0, sentiment_score=70, buy_reason="t",
+        )
+        assert executor.execute_buy(signal, 100).status == TradeStatus.REJECTED
+        assert executor.execute_sell("600519", 100, float("inf")).status == TradeStatus.REJECTED
+        broker.place_order.assert_not_called()
+
+    def test_executor_nan_existing_stop_treated_as_missing(self):
+        from quant.agents.order_executor import OrderExecutor
+        from quant.models import TradeAction, TradeRecord
+        broker = MagicMock()
+        pos = MagicMock(stock_code="600519", stop_loss_price=float("nan"))
+        broker.get_positions.return_value = [pos]
+        broker.place_order.return_value = TradeRecord.create(
+            stock_code="600519", action=TradeAction.BUY, quantity=100, price=10.0,
+            commission=0.0, reason="", status=TradeStatus.FILLED,
+        )
+        signal = OrderSignal(
+            stock_code="600519", stock_name="茅台", signal_type=SignalType.BUY,
+            confidence=ConfidenceLevel.HIGH, ideal_buy_price=10.0,
+            stop_loss_price=9.5, take_profit_price=12.0, sentiment_score=70, buy_reason="t",
+        )
+        OrderExecutor(broker).execute_buy(signal, 100)
+        broker.update_stop_loss.assert_called_once_with("600519", 9.5)

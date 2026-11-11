@@ -13,6 +13,7 @@ PortfolioManager -> OrderExecutor -> Broker -> 交易所/模拟盘
 """
 
 import logging
+import math
 from typing import List, Optional, Tuple
 
 from quant.broker.base import BaseBroker
@@ -63,7 +64,7 @@ class OrderExecutor:
                 status=TradeStatus.REJECTED,
             )
 
-        if signal.ideal_buy_price <= 0:
+        if not _is_valid_price(signal.ideal_buy_price):
             logger.warning(f"买入价格无效: {signal.ideal_buy_price}，跳过执行")
             return TradeRecord.create(
                 stock_code=signal.stock_code,
@@ -139,7 +140,9 @@ class OrderExecutor:
         try:
             for pos in self.broker.get_positions():
                 if pos.stock_code.upper() == stock_code.upper():
-                    return pos.stop_loss_price or 0.0
+                    # NaN 止损价会让"只升不降"的比较恒为 False，新止损永远写不进去
+                    stop = pos.stop_loss_price
+                    return stop if _is_valid_price(stop) else 0.0
         except Exception as e:
             logger.warning(f"查询已有持仓止损价失败 {stock_code}: {e}")
         return 0.0
@@ -175,7 +178,7 @@ class OrderExecutor:
                 status=TradeStatus.REJECTED,
             )
 
-        if price <= 0:
+        if not _is_valid_price(price):
             logger.warning(f"卖出价格无效: {price}，跳过执行")
             return TradeRecord.create(
                 stock_code=stock_code,
@@ -259,3 +262,12 @@ class OrderExecutor:
 
         logger.info(f"批量执行完成: 共 {len(records)} 笔交易")
         return records
+
+
+def _is_valid_price(price) -> bool:
+    """价格必须是有限正数：NaN 和 <=0 比较恒为 False，单靠 price <= 0 拦不住。"""
+    try:
+        price = float(price)
+    except (TypeError, ValueError):
+        return False
+    return math.isfinite(price) and price > 0

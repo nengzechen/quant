@@ -317,6 +317,23 @@ class PaperBroker(BaseBroker):
                 status=TradeStatus.REJECTED,
             )
 
+        # 执行层最后一道防线：NaN 价格会让 total_cost > 现金 的比较恒为 False 直接成交，
+        # 把 NaN 写进现金并落盘；负数量买入则会凭空增加现金
+        invalid_reason = _invalid_order_reason(quantity, price)
+        if invalid_reason:
+            logger.warning(f"拒绝无效委托: {stock_code} {trade_action.value} {quantity}股 @ {price} - {invalid_reason}")
+            record = TradeRecord.create(
+                stock_code=stock_code,
+                action=trade_action,
+                quantity=quantity if isinstance(quantity, (int, float)) else 0,
+                price=price if isinstance(price, (int, float)) else 0.0,
+                commission=0.0,
+                reason=invalid_reason,
+                status=TradeStatus.REJECTED,
+            )
+            self._save_trade_record(record)
+            return record
+
         amount = price * quantity
 
         if trade_action == TradeAction.BUY:
@@ -585,6 +602,25 @@ class PaperBroker(BaseBroker):
         if stock_code in self._portfolio.positions:
             self._portfolio.positions[stock_code].take_profit_price = take_profit_price
             self._save()
+
+
+def _invalid_order_reason(quantity, price) -> str:
+    """委托数量 / 价格校验，合法返回空串，否则返回拒单原因。"""
+    if isinstance(quantity, bool):
+        return "无效数量"
+    try:
+        qty = float(quantity)
+    except (TypeError, ValueError):
+        return "无效数量"
+    if not math.isfinite(qty) or qty <= 0 or qty != int(qty):
+        return "无效数量"
+    try:
+        price = float(price)
+    except (TypeError, ValueError):
+        return "无效价格"
+    if not math.isfinite(price) or price <= 0:
+        return "无效价格"
+    return ""
 
 
 def _normalize_code(stock_code) -> str:
