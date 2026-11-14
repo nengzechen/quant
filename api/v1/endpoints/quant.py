@@ -92,7 +92,7 @@ def _do_fetch_prices(codes: list) -> dict:
 
 def _bg_refresh(codes: list) -> None:
     """后台线程：拉价格并更新缓存，完成后释放锁。"""
-    global _price_cache, _price_cache_ts, _price_fetch_running
+    global _price_cache_ts, _price_fetch_running
     try:
         prices = _do_fetch_prices(codes)
         if prices:

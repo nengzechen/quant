@@ -8,6 +8,7 @@
 支持从环境变量加载，与现有 src.config.Config 解耦。
 """
 
+import math
 import os
 from dataclasses import dataclass, field
 from typing import List
@@ -95,8 +96,8 @@ class QuantConfig:
                 f"sizing_method 无效: {self.sizing_method!r}，"
                 f"只能是 {' / '.join(VALID_SIZING_METHODS)}"
             )
-        if not self.initial_capital > 0:
-            errors.append(f"initial_capital 必须大于 0: {self.initial_capital}")
+        if not math.isfinite(self.initial_capital) or not self.initial_capital > 0:
+            errors.append(f"initial_capital 必须为大于 0 的有限数值: {self.initial_capital}")
         if self.max_positions < 1:
             errors.append(f"max_positions 至少为 1: {self.max_positions}")
         if not 0 < self.risk_per_trade_pct <= MAX_RISK_PER_TRADE_PCT:
@@ -108,8 +109,8 @@ class QuantConfig:
             errors.append(f"fixed_fraction 须在 (0, 1] 内: {self.fixed_fraction}")
         if not 0 < self.kelly_win_rate < 1:
             errors.append(f"kelly_win_rate 须在 (0, 1) 内: {self.kelly_win_rate}")
-        if not self.kelly_win_loss_ratio > 0:
-            errors.append(f"kelly_win_loss_ratio 必须大于 0: {self.kelly_win_loss_ratio}")
+        if not math.isfinite(self.kelly_win_loss_ratio) or not self.kelly_win_loss_ratio > 0:
+            errors.append(f"kelly_win_loss_ratio 必须为大于 0 的有限数值: {self.kelly_win_loss_ratio}")
         if not 0 <= self.trailing_stop_pct < 1:
             errors.append(f"trailing_stop_pct 须在 [0, 1) 内: {self.trailing_stop_pct}")
         if self.max_signal_workers < 1:

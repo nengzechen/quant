@@ -827,6 +827,17 @@ class TestPositionSizing:
         lots = kelly_criterion(sample_portfolio, buy_signal, win_rate=0.3, win_loss_ratio=1.0)
         assert lots == 0
 
+    @pytest.mark.parametrize("win_rate", [-0.1, 0, 1, 1.1, float("nan"), float("inf")])
+    def test_kelly_invalid_win_rate(self, sample_portfolio, buy_signal, win_rate):
+        assert kelly_criterion(sample_portfolio, buy_signal, win_rate=win_rate) == 0
+
+    @pytest.mark.parametrize("ratio", [0, -1, float("nan"), float("inf"), -float("inf")])
+    def test_kelly_invalid_ratio(self, sample_portfolio, buy_signal, ratio):
+        assert kelly_criterion(sample_portfolio, buy_signal, win_loss_ratio=ratio) == 0
+
+    def test_kelly_tiny_ratio_has_negative_edge(self, sample_portfolio, buy_signal):
+        assert kelly_criterion(sample_portfolio, buy_signal, win_loss_ratio=1e-320) == 0
+
     def test_kelly_half_kelly(self, sample_portfolio, buy_signal):
         """Kelly公式：半Kelly比全Kelly仓位更小"""
         full_lots = kelly_criterion(
@@ -1877,6 +1888,13 @@ class TestQuantConfig:
         cfg = QuantConfig()
         assert cfg.futu_trade_env == "SIMULATE"
         assert cfg.broker_type == "paper"
+
+    @pytest.mark.parametrize("field_name", ["initial_capital", "kelly_win_loss_ratio"])
+    @pytest.mark.parametrize("value", [float("nan"), float("inf"), -float("inf")])
+    def test_nonfinite_config_rejected(self, field_name, value):
+        from quant.config import QuantConfig
+        with pytest.raises(ValueError, match=field_name):
+            QuantConfig(**{field_name: value})
 
     def test_trade_env_and_broker_type_normalized(self):
         from quant.config import QuantConfig

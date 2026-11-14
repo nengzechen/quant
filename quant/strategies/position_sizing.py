@@ -104,12 +104,19 @@ def kelly_criterion(
         logger.warning(f"股票 {signal.stock_code} 理想买入价无效: {signal.ideal_buy_price}")
         return 0
 
+    if not math.isfinite(win_rate) or not 0 < win_rate < 1:
+        logger.warning(f"Kelly胜率无效: {win_rate!r}，建议不入场")
+        return 0
+    if not math.isfinite(win_loss_ratio) or win_loss_ratio <= 0:
+        logger.warning(f"Kelly盈亏比无效: {win_loss_ratio!r}，建议不入场")
+        return 0
+
     p = win_rate
     q = 1.0 - p
     b = win_loss_ratio
 
     # Kelly公式
-    kelly_fraction = (p * b - q) / b
+    kelly_fraction = p - q / b
 
     if kelly_fraction <= 0:
         logger.debug(f"Kelly公式结果为负（胜率不足），建议不入场: {signal.stock_code}")
