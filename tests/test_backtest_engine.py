@@ -41,6 +41,54 @@ class BacktestEngineTestCase(unittest.TestCase):
         self.assertEqual(res["outcome"], "win")
         self.assertTrue(res["direction_correct"])  # up
 
+    def test_invalid_market_prices_do_not_create_returns_or_target_hits(self):
+        start = date(2024, 1, 1)
+        bars = self._bars(start, [103, float("nan")], highs=[104, float("inf")], lows=[100, 0])
+        result = BacktestEngine.evaluate_single(
+            operation_advice="买入",
+            analysis_date=start,
+            start_price=100,
+            forward_bars=bars,
+            stop_loss=95,
+            take_profit=110,
+            config=EvaluationConfig(eval_window_days=2),
+        )
+        self.assertEqual(result["max_high"], 104)
+        self.assertEqual(result["min_low"], 100)
+        self.assertEqual(result["first_hit"], "neither")
+        self.assertIsNone(result["end_close"])
+        self.assertIsNone(result["stock_return_pct"])
+        self.assertIsNone(result["simulated_return_pct"])
+
+    def test_nonfinite_entry_is_an_error(self):
+        for price in (float("nan"), float("inf")):
+            with self.subTest(price=price):
+                result = BacktestEngine.evaluate_single(
+                    operation_advice="买入",
+                    analysis_date=date(2024, 1, 1),
+                    start_price=price,
+                    forward_bars=[],
+                    stop_loss=None,
+                    take_profit=None,
+                    config=EvaluationConfig(eval_window_days=1),
+                )
+                self.assertEqual(result["eval_status"], "error")
+
+    def test_invalid_targets_are_ignored(self):
+        start = date(2024, 1, 1)
+        result = BacktestEngine.evaluate_single(
+            operation_advice="买入",
+            analysis_date=start,
+            start_price=100,
+            forward_bars=self._bars(start, [105]),
+            stop_loss=float("inf"),
+            take_profit=0,
+            config=EvaluationConfig(eval_window_days=1),
+        )
+        self.assertIsNone(result["stop_loss"])
+        self.assertIsNone(result["take_profit"])
+        self.assertEqual(result["simulated_return_pct"], 5)
+
     def test_sell_win_when_down_cash(self):
         cfg = EvaluationConfig(eval_window_days=3, neutral_band_pct=2.0)
         bars = self._bars(date(2024, 1, 1), [98, 97, 96], highs=[99, 98, 97], lows=[97, 96, 95])

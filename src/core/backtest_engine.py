@@ -9,10 +9,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date
+from math import isfinite
 from typing import Any, Dict, Iterable, List, Optional, Protocol, Sequence
 
 
 OVERALL_SENTINEL_CODE = "__overall__"
+
+
+def _valid_price(value: Optional[float]) -> bool:
+    return value is not None and isfinite(value) and value > 0
 
 
 class DailyBarLike(Protocol):
@@ -135,7 +140,7 @@ class BacktestEngine:
           first_hit="ambiguous" and assume stop-loss first for simulated exit.
         """
 
-        if start_price is None or start_price <= 0:
+        if not _valid_price(start_price):
             return {
                 "analysis_date": analysis_date,
                 "operation_advice": operation_advice,
@@ -160,8 +165,12 @@ class BacktestEngine:
 
         window_bars = list(forward_bars[:eval_days])
         end_close = window_bars[-1].close
-        highs = [b.high for b in window_bars if b.high is not None]
-        lows = [b.low for b in window_bars if b.low is not None]
+        if not _valid_price(end_close):
+            end_close = None
+        highs = [b.high for b in window_bars if _valid_price(b.high)]
+        lows = [b.low for b in window_bars if _valid_price(b.low)]
+        stop_loss = stop_loss if _valid_price(stop_loss) else None
+        take_profit = take_profit if _valid_price(take_profit) else None
         max_high = max(highs) if highs else None
         min_low = min(lows) if lows else None
 
@@ -471,8 +480,8 @@ class BacktestEngine:
         for idx, bar in enumerate(window_bars, start=1):
             low = bar.low
             high = bar.high
-            stop_hit = stop_loss is not None and low is not None and low <= stop_loss
-            tp_hit = take_profit is not None and high is not None and high >= take_profit
+            stop_hit = stop_loss is not None and _valid_price(low) and low <= stop_loss
+            tp_hit = take_profit is not None and _valid_price(high) and high >= take_profit
 
             if stop_hit:
                 hit_sl = True
