@@ -91,7 +91,7 @@ def _do_fetch_prices(codes: list) -> dict:
 
 
 def _bg_refresh(codes: list) -> None:
-    """后台线程：拉价格并更新缓存，完成后释放锁。"""
+    """后台线程：拉价格并更新缓存，完成后清除刷新标记。"""
     global _price_cache_ts, _price_fetch_running
     try:
         prices = _do_fetch_prices(codes)
@@ -103,7 +103,8 @@ def _bg_refresh(codes: list) -> None:
     except Exception as e:
         logger.debug(f"[portfolio] 后台价格刷新失败: {e}")
     finally:
-        _price_fetch_running = False
+        with _price_fetch_lock:
+            _price_fetch_running = False
 
 
 def _get_prices_nonblocking(codes: list) -> dict:
@@ -118,11 +119,17 @@ def _get_prices_nonblocking(codes: list) -> dict:
         cached = {c: _price_cache[c] for c in codes if c in _price_cache}
         cache_age = now - _price_cache_ts
         should_refresh = (cache_age > _PRICE_CACHE_TTL) and not _price_fetch_running
+        if should_refresh:
+            _price_fetch_running = True
 
     if should_refresh:
-        _price_fetch_running = True
-        t = threading.Thread(target=_bg_refresh, args=(codes,), daemon=True)
-        t.start()
+        try:
+            t = threading.Thread(target=_bg_refresh, args=(codes,), daemon=True)
+            t.start()
+        except RuntimeError:
+            with _price_fetch_lock:
+                _price_fetch_running = False
+            logger.exception("[portfolio] 无法启动行情刷新线程")
 
     return cached
 
