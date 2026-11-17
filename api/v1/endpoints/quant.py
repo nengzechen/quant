@@ -8,6 +8,7 @@ POST /api/v1/quant/order      - 手动下单（买入/卖出）
 import logging
 import time
 import threading
+from math import isfinite
 from typing import Literal
 
 from fastapi import APIRouter, HTTPException
@@ -39,12 +40,14 @@ def _code_to_market(code: str) -> str:
 
 def _do_fetch_prices(codes: list) -> dict:
     """
-    用腾讯实时行情接口取最新价，失败时 fallback 到 get_daily_df 日线收盘价。
+    优先取腾讯实时行情，缺失的股票使用日线收盘价。
     腾讯接口格式：qt.gtimg.cn/q=sz300422,sh600519
     返回字段第3位（index 3）为最新价。
     """
     import requests
 
+    result = {}
+    requested_codes = set(codes)
     # ── 优先：腾讯实时行情（盘中/盘后均有效）──────────────────
     try:
         symbols = ",".join(_code_to_market(c) for c in codes)
@@ -53,27 +56,30 @@ def _do_fetch_prices(codes: list) -> dict:
             timeout=5,
             headers={"Referer": "https://finance.qq.com"},
         )
-        result = {}
+        r.raise_for_status()
         for line in r.text.strip().split("\n"):
             if "=" not in line:
                 continue
             raw = line.split("=", 1)[1].strip().strip('"').strip(";")
             parts = raw.split("~")
-            if len(parts) > 4:
+            if len(parts) > 4 and parts[2] in requested_codes:
                 code = parts[2]
-                price = float(parts[3]) if parts[3] else 0.0
-                if price > 0:
+                try:
+                    price = float(parts[3])
+                except ValueError:
+                    continue
+                if isfinite(price) and price > 0:
                     result[code] = price
-        if result:
-            return result
     except Exception as e:
         logger.debug(f"[portfolio] 腾讯行情失败，fallback 到日线数据: {e}")
 
     # ── fallback：日线收盘价（无内部缓存问题）─────────────────
+    missing_codes = [code for code in codes if code not in result]
+    if not missing_codes:
+        return result
     try:
         import akshare as ak
-        result = {}
-        for code in codes:
+        for code in missing_codes:
             try:
                 df = ak.stock_zh_a_hist(
                     symbol=code, period="daily",
@@ -81,13 +87,13 @@ def _do_fetch_prices(codes: list) -> dict:
                 )
                 if df is not None and not df.empty:
                     price = float(df.iloc[-1]["收盘"])
-                    if price > 0:
+                    if isfinite(price) and price > 0:
                         result[code] = price
             except Exception:
                 pass
-        return result
     except Exception:
-        return {}
+        logger.debug("[portfolio] 日线行情不可用", exc_info=True)
+    return result
 
 
 def _bg_refresh(codes: list) -> None:
