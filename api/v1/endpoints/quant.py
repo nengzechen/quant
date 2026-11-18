@@ -115,7 +115,7 @@ def _bg_refresh(codes: list) -> None:
 
 def _get_prices_nonblocking(codes: list) -> dict:
     """
-    立即返回缓存价格；若缓存已过期且没有正在进行的刷新，触发后台线程更新。
+    立即返回缓存价格；若缓存已过期或缺少请求的股票，触发后台线程更新。
     调用方永远不会阻塞等待外部数据源。
     """
     global _price_fetch_running
@@ -124,7 +124,10 @@ def _get_prices_nonblocking(codes: list) -> dict:
     with _price_fetch_lock:
         cached = {c: _price_cache[c] for c in codes if c in _price_cache}
         cache_age = now - _price_cache_ts
-        should_refresh = (cache_age > _PRICE_CACHE_TTL) and not _price_fetch_running
+        missing_prices = any(c not in cached for c in codes)
+        should_refresh = bool(codes) and not _price_fetch_running and (
+            cache_age > _PRICE_CACHE_TTL or missing_prices
+        )
         if should_refresh:
             _price_fetch_running = True
 

@@ -3,8 +3,33 @@ from types import SimpleNamespace
 from unittest.mock import Mock
 
 import requests
+import pytest
 
 from api.v1.endpoints import quant
+
+
+@pytest.mark.parametrize("codes,running,expected_starts", [
+    (["600519", "000001"], False, 1),
+    (["600519", "000001"], True, 0),
+    (["600519"], False, 0),
+    ([], False, 0),
+])
+def test_fresh_cache_refreshes_missing_holdings(monkeypatch, codes, running, expected_starts):
+    monkeypatch.setattr(quant, "_price_cache", {"600519": 100.0})
+    monkeypatch.setattr(quant, "_price_cache_ts", 1000.0)
+    monkeypatch.setattr(quant.time, "time", lambda: 1001.0)
+    monkeypatch.setattr(quant, "_price_fetch_running", running)
+    thread_factory = Mock()
+    monkeypatch.setattr(quant.threading, "Thread", thread_factory)
+
+    cached = quant._get_prices_nonblocking(codes)
+
+    assert cached == ({"600519": 100.0} if "600519" in codes else {})
+    assert thread_factory.call_count == expected_starts
+    if expected_starts:
+        thread_factory.assert_called_once_with(target=quant._bg_refresh, args=(codes,), daemon=True)
+        thread_factory.return_value.start.assert_called_once_with()
+        assert quant._price_fetch_running
 
 
 def test_partial_realtime_quotes_fall_back_only_for_missing_codes(monkeypatch):
