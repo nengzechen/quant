@@ -261,11 +261,11 @@ class RiskGuard:
         （持仓曾浮盈）后生效：未盈利阶段仍由信号止损价控制初始风险，盈利后止损
         跟随最高价上移、只升不降，锁住大部分浮盈。
         """
-        stop = pos.stop_loss_price if pos.stop_loss_price and pos.stop_loss_price > 0 else 0.0
+        stop = pos.stop_loss_price if _valid_price(pos.stop_loss_price) else 0.0
         if (
             self.trailing_stop_pct > 0
-            and pos.highest_price
-            and pos.avg_cost > 0
+            and _valid_price(pos.highest_price)
+            and _valid_price(pos.avg_cost)
             and pos.highest_price > pos.avg_cost
         ):
             stop = max(stop, pos.highest_price * (1 - self.trailing_stop_pct))
@@ -317,7 +317,7 @@ class RiskGuard:
         for code, pos in portfolio.positions.items():
             if not _valid_price(pos.current_price):
                 continue
-            if pos.take_profit_price and pos.take_profit_price > 0:
+            if _valid_price(pos.take_profit_price):
                 if pos.current_price >= pos.take_profit_price:
                     logger.info(
                         f"止盈触发: {code} 当前价 {pos.current_price:.2f} "

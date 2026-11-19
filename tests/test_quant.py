@@ -1816,6 +1816,31 @@ class TestTrailingStop:
         pos = self._position(current=16.5, highest=16.0, stop=15.5)
         assert guard.effective_stop_price(pos) == 15.5
 
+    @pytest.mark.parametrize("bad_price", [float("inf"), float("nan"), "bad", None, -1.0])
+    def test_invalid_fixed_stop_preserves_trailing_stop(self, bad_price):
+        guard = RiskGuard(trailing_stop_pct=0.10)
+        pos = self._position(current=18.5, highest=20.0, stop=bad_price)
+        assert guard.effective_stop_price(pos) == pytest.approx(18.0)
+        assert guard.check_stop_loss(self._portfolio(pos)) == []
+        pos.current_price = 17.5
+        assert guard.check_stop_loss(self._portfolio(pos)) == ["000001"]
+
+    @pytest.mark.parametrize("bad_price", [float("inf"), float("nan"), "bad", None, -1.0])
+    def test_invalid_high_preserves_fixed_stop(self, bad_price):
+        guard = RiskGuard(trailing_stop_pct=0.10)
+        pos = self._position(current=16.0, highest=bad_price)
+        assert guard.effective_stop_price(pos) == 13.5
+        assert guard.check_stop_loss(self._portfolio(pos)) == []
+
+    def test_invalid_take_profit_does_not_block_other_positions(self):
+        guard = RiskGuard()
+        bad = self._position(current=16.0, highest=20.0)
+        bad.take_profit_price = "bad"
+        good = replace(bad, stock_code="600519", take_profit_price=15.5)
+        portfolio = self._portfolio(bad)
+        portfolio.positions[good.stock_code] = good
+        assert guard.check_take_profit(portfolio) == ["600519"]
+
     def test_invalid_pct_disables(self):
         assert RiskGuard(trailing_stop_pct=1.5).trailing_stop_pct == 0.0
         assert RiskGuard(trailing_stop_pct=-0.1).trailing_stop_pct == 0.0
