@@ -1,0 +1,531 @@
+{
+  "date": "2026-11-20",
+  "created_at": "2026-11-20 15:19:54",
+  "count": 20,
+  "entries": [
+    {
+      "code": "300311",
+      "name": "任子行",
+      "model": "BottomSwing",
+      "phase1_score": 6,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "KDJ金叉(J>0)",
+        "回踩关键均线",
+        "底分型确认",
+        "MACD金叉>MA20",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "均线多头排列",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "KDJ金叉(J>0)": "K=30.6 D=27.3 J=37.3，近期金叉，J>0",
+        "回踩关键均线": "回踩MA20支撑 (4.85)，偏离0.2%",
+        "底分型确认": "近期出现底分型",
+        "MACD金叉>MA20": "MACD金叉，收盘>MA20(4.85)",
+        "量比>1": "量比=4.81（阈值>1.0）"
+      },
+      "created_at": "2026-11-20 15:18:17",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "688271",
+      "name": "联影医疗",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "回踩关键均线",
+        "底分型确认",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=117.67 MA10=117.55 MA20=116.56 MA60=109.11",
+        "KDJ金叉(J>0)": "K=52.3 D=51.0 J=54.8，近期金叉，J>0",
+        "回踩关键均线": "回踩MA20支撑 (116.56)，偏离1.7%",
+        "底分型确认": "近期出现底分型",
+        "量比>1": "量比=1.37（阈值>1.0）"
+      },
+      "created_at": "2026-11-20 13:46:34",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002508",
+      "name": "老板电器",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "KDJ金叉(J>0)",
+        "头肩底形态",
+        "底分型确认",
+        "DMI手拉手"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "均线多头排列",
+        "MACD金叉>MA20",
+        "量比>1"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "KDJ金叉(J>0)": "K=74.9 D=65.3 J=94.0，近期金叉，J>0",
+        "头肩底形态": "头肩底已突破颈线",
+        "底分型确认": "近期出现底分型",
+        "DMI手拉手": "PDI=32.9 MDI=15.2 ADX=20.9，手拉手↑"
+      },
+      "created_at": "2026-11-20 13:32:23",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "601668",
+      "name": "中国建筑",
+      "model": "BottomSwing",
+      "phase1_score": 5,
+      "max_score": 13,
+      "passed_dims": [
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "回踩关键均线",
+        "底分型确认",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "日线MACD底背离",
+        "CYS<-15且上行",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "均线多头排列": "MA5=4.69 MA10=4.66 MA20=4.64 MA60=4.47",
+        "KDJ金叉(J>0)": "K=81.6 D=66.1 J=112.4，近期金叉，J>0",
+        "回踩关键均线": "回踩MA20支撑 (4.64)，偏离1.9%",
+        "底分型确认": "近期出现底分型",
+        "量比>1": "量比=1.02（阈值>1.0）"
+      },
+      "created_at": "2026-11-20 13:02:13",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002403",
+      "name": "爱仕达",
+      "model": "BottomSwing",
+      "phase1_score": 4,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "头肩底形态",
+        "底分型确认",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "头肩底形态": "头肩底已突破颈线",
+        "底分型确认": "近期出现底分型",
+        "量比>1": "量比=1.79（阈值>1.0）"
+      },
+      "created_at": "2026-11-20 15:07:09",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "600995",
+      "name": "南网储能",
+      "model": "BottomSwing",
+      "phase1_score": 4,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "KDJ金叉(J>0)",
+        "回踩关键均线",
+        "底分型确认"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "均线多头排列",
+        "MACD金叉>MA20",
+        "DMI手拉手",
+        "量比>1"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "KDJ金叉(J>0)": "K=42.4 D=38.5 J=50.2，近期金叉，J>0",
+        "回踩关键均线": "回踩MA20支撑 (11.20)，偏离0.4%",
+        "底分型确认": "近期出现底分型"
+      },
+      "created_at": "2026-11-20 13:28:27",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002451",
+      "name": "摩恩电气",
+      "model": "BottomSwing",
+      "phase1_score": 4,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "KDJ金叉(J>0)",
+        "底分型确认",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "均线多头排列",
+        "形态支撑",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "KDJ金叉(J>0)": "K=31.5 D=39.5 J=15.6，近期金叉，J>0",
+        "底分型确认": "近期出现底分型",
+        "量比>1": "量比=2.46（阈值>1.0）"
+      },
+      "created_at": "2026-11-20 14:22:55",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "300134",
+      "name": "大富科技",
+      "model": "BottomSwing",
+      "phase1_score": 4,
+      "max_score": 13,
+      "passed_dims": [
+        "日线MACD底背离",
+        "头肩底形态",
+        "底分型确认",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "CYS<-15且上行",
+        "均线多头排列",
+        "KDJ金叉(J>0)",
+        "MACD金叉>MA20",
+        "DMI手拉手"
+      ],
+      "dim_details": {
+        "日线MACD底背离": "底背驰：价格新低，MACD绿柱收缩",
+        "头肩底形态": "头肩底已突破颈线",
+        "底分型确认": "近期出现底分型",
+        "量比>1": "量比=1.85（阈值>1.0）"
+      },
+      "created_at": "2026-11-20 13:32:38",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "688757",
+      "name": "胜科纳米",
+      "model": "LimitUpHunter",
+      "phase1_score": 3,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "高开2%-5%",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(25.73)/MA9(25.25)，近3根均为阳线",
+        "高开2%-5%": "高开2.37%（在目标区间[2.0%,5.0%]）",
+        "量比>1": "量比=1.84（阈值>1.0）"
+      },
+      "created_at": "2026-11-20 13:08:58",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "688347",
+      "name": "华虹宏力",
+      "model": "LimitUpHunter",
+      "phase1_score": 3,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "高开2%-5%",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(176.10)/MA9(173.14)，近3根均为阳线",
+        "高开2%-5%": "高开3.31%（在目标区间[2.0%,5.0%]）",
+        "量比>1": "量比=1.31（阈值>1.0）"
+      },
+      "created_at": "2026-11-20 14:57:34",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "301391",
+      "name": "卡莱特",
+      "model": "LimitUpHunter",
+      "phase1_score": 3,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1",
+        "量能阶梯放大"
+      ],
+      "failed_dims": [
+        "高开2%-5%"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(41.57)/MA9(38.58)，近3根均为阳线",
+        "量比>1": "量比=4.05（阈值>1.0）",
+        "量能阶梯放大": "近5日量能递增4/4天"
+      },
+      "created_at": "2026-11-20 15:14:05",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "688227",
+      "name": "品高股份",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(71.90)/MA9(72.14)，近3根均为阳线",
+        "量比>1": "量比=1.18（阈值>1.0）"
+      },
+      "created_at": "2026-11-20 15:12:38",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002165",
+      "name": "红 宝 丽",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(5.79)/MA9(5.82)，近3根均为阳线",
+        "量比>1": "量比=1.92（阈值>1.0）"
+      },
+      "created_at": "2026-11-20 13:14:52",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "001358",
+      "name": "兴欣新材",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(26.69)/MA9(24.76)，近3根均为阳线",
+        "量比>1": "量比=2.01（阈值>1.0）"
+      },
+      "created_at": "2026-11-20 14:39:12",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "300604",
+      "name": "长川科技",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(184.88)/MA9(185.20)，近3根均为阳线",
+        "量比>1": "量比=1.06（阈值>1.0）"
+      },
+      "created_at": "2026-11-20 14:36:27",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "688172",
+      "name": "燕东微",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(34.22)/MA9(34.21)，近3根均为阳线",
+        "量比>1": "量比=2.41（阈值>1.0）"
+      },
+      "created_at": "2026-11-20 15:07:05",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "600619",
+      "name": "海立股份",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(13.14)/MA9(12.62)，近3根均为阳线",
+        "量比>1": "量比=2.90（阈值>1.0）"
+      },
+      "created_at": "2026-11-20 15:15:13",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "600156",
+      "name": "华升股份",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(7.72)/MA9(7.44)，近3根均为阳线",
+        "量比>1": "量比=1.85（阈值>1.0）"
+      },
+      "created_at": "2026-11-20 13:16:17",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002322",
+      "name": "理工能科",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(12.57)/MA9(12.74)，近3根均为阳线",
+        "量比>1": "量比=1.56（阈值>1.0）"
+      },
+      "created_at": "2026-11-20 14:34:05",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "605338",
+      "name": "巴比食品",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(22.23)/MA9(21.49)，近3根均为阳线",
+        "量比>1": "量比=1.27（阈值>1.0）"
+      },
+      "created_at": "2026-11-20 14:57:01",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    }
+  ]
+}
