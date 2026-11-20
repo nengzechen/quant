@@ -13,6 +13,7 @@ from typing import Literal
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
+from quant.models import TradeStatus
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -248,8 +249,12 @@ def place_order(req: OrderRequest):
             price=req.price,
         )
 
-        # 买入时写入止损价
-        if req.action == "BUY" and req.stop_loss_price > 0:
+        # 拒单不能修改已有持仓的止损价。
+        if (
+            req.action == "BUY"
+            and record.status == TradeStatus.FILLED
+            and req.stop_loss_price > 0
+        ):
             try:
                 broker.update_stop_loss(req.stock_code, req.stop_loss_price)
             except Exception:
