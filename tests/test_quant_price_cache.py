@@ -8,6 +8,26 @@ import pytest
 from api.v1.endpoints import quant
 
 
+@pytest.mark.parametrize("code,symbol", [
+    ("600519", "sh600519"),
+    ("510300", "sh510300"),
+    ("000001", "sz000001"),
+    ("920748", "bj920748"),
+    ("830799", "bj830799"),
+    ("430047", "bj430047"),
+    ("900901", "sh900901"),
+])
+def test_quote_uses_exchange_mapping(monkeypatch, code, symbol):
+    response = Mock(text=f'v_{symbol}="1~name~{code}~10.5~0";')
+    request = Mock(return_value=response)
+    monkeypatch.setattr(requests, "get", request)
+    assert quant.get_quote(code)["price"] == 10.5
+    assert request.call_args.args[0] == f"https://qt.gtimg.cn/q={symbol}"
+
+    assert quant._do_fetch_prices([code]) == {code: 10.5}
+    assert request.call_args.args[0] == f"https://qt.gtimg.cn/q={symbol}"
+
+
 @pytest.mark.parametrize("codes,running,expected_starts", [
     (["600519", "000001"], False, 1),
     (["600519", "000001"], True, 0),

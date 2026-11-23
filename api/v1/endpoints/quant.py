@@ -33,10 +33,9 @@ def _get_broker():
 
 
 def _code_to_market(code: str) -> str:
-    """将股票代码转换为腾讯行情前缀（sh/sz）。"""
-    if code.startswith(("6", "5")):
-        return f"sh{code}"
-    return f"sz{code}"
+    """使用行情数据层的沪深北交易所映射。"""
+    from data_provider.akshare_fetcher import _to_sina_tx_symbol
+    return _to_sina_tx_symbol(code)
 
 
 def _do_fetch_prices(codes: list) -> dict:
@@ -199,9 +198,8 @@ def get_quote(code: str):
     """获取单只股票的实时价格和名称（供下单表单自动填价用）"""
     try:
         import requests as _req
-        market = "sh" if code.startswith(("6", "5")) else "sz"
         r = _req.get(
-            f"https://qt.gtimg.cn/q={market}{code}",
+            f"https://qt.gtimg.cn/q={_code_to_market(code)}",
             timeout=5,
             headers={"Referer": "https://finance.qq.com"},
         )
