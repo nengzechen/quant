@@ -203,15 +203,19 @@ def get_quote(code: str):
             timeout=5,
             headers={"Referer": "https://finance.qq.com"},
         )
+        r.raise_for_status()
         for line in r.text.strip().split("\n"):
             if "=" not in line:
                 continue
             raw = line.split("=", 1)[1].strip().strip('"').strip(";")
             parts = raw.split("~")
-            if len(parts) > 4:
+            if len(parts) > 4 and parts[2] == code:
                 name = parts[1] if parts[1] else code
-                price = float(parts[3]) if parts[3] else 0.0
-                if price > 0:
+                try:
+                    price = float(parts[3])
+                except ValueError:
+                    continue
+                if isfinite(price) and price > 0:
                     return {"code": code, "name": name, "price": price}
         raise HTTPException(status_code=404, detail="无法获取该股票行情")
     except HTTPException:

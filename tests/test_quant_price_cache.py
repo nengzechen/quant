@@ -4,8 +4,38 @@ from unittest.mock import Mock
 
 import requests
 import pytest
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
 
 from api.v1.endpoints import quant
+
+
+@pytest.mark.parametrize("returned_code,price", [
+    ("600519", "inf"),
+    ("600519", "nan"),
+    ("600519", "bad"),
+    ("600519", ""),
+    ("600519", "0"),
+    ("600519", "-1"),
+    ("000001", "10.5"),
+])
+def test_quote_rejects_invalid_or_unrelated_prices(monkeypatch, returned_code, price):
+    response = Mock(text=f'v_sh600519="1~name~{returned_code}~{price}~0";')
+    monkeypatch.setattr(requests, "get", Mock(return_value=response))
+    app = FastAPI()
+    app.include_router(quant.router)
+    with TestClient(app) as client:
+        result = client.get("/quote", params={"code": "600519"})
+    assert result.status_code == 404
+
+
+def test_quote_ignores_malformed_row_before_valid_quote(monkeypatch):
+    response = Mock(text=(
+        'v_sh600519="1~name~600519~bad~0";\n'
+        'v_sh600519="1~name~600519~10.5~0";'
+    ))
+    monkeypatch.setattr(requests, "get", Mock(return_value=response))
+    assert quant.get_quote("600519") == {"code": "600519", "name": "name", "price": 10.5}
 
 
 @pytest.mark.parametrize("code,symbol", [
