@@ -232,8 +232,8 @@ class OrderRequest(BaseModel):
     stock_code: str = Field(..., description="股票代码，如 600519")
     action: Literal["BUY", "SELL"] = Field(..., description="买入或卖出")
     quantity: int = Field(..., gt=0, description="交易股数（须为 100 的整数倍）")
-    price: float = Field(..., gt=0, description="委托价格")
-    stop_loss_price: float = Field(0.0, description="止损价（仅买入时有效）")
+    price: float = Field(..., gt=0, allow_inf_nan=False, description="委托价格")
+    stop_loss_price: float = Field(0.0, ge=0, allow_inf_nan=False, description="止损价（仅买入时有效）")
 
 
 @router.post("/order")
@@ -241,6 +241,8 @@ def place_order(req: OrderRequest):
     """手动下单"""
     if req.quantity % 100 != 0:
         raise HTTPException(status_code=400, detail="股数须为 100 的整数倍")
+    if req.action == "BUY" and req.stop_loss_price >= req.price:
+        raise HTTPException(status_code=400, detail="买入止损价须低于委托价格")
 
     try:
         broker = _get_broker()
