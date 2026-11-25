@@ -246,6 +246,13 @@ def place_order(req: OrderRequest):
 
     try:
         broker = _get_broker()
+        existing_stop = 0.0
+        if req.action == "BUY":
+            for pos in broker.get_positions():
+                if pos.stock_code.upper() == req.stock_code.strip().upper():
+                    if pos.stop_loss_price is not None and isfinite(pos.stop_loss_price):
+                        existing_stop = max(0.0, pos.stop_loss_price)
+                    break
         record = broker.place_order(
             stock_code=req.stock_code,
             action=req.action,
@@ -253,11 +260,11 @@ def place_order(req: OrderRequest):
             price=req.price,
         )
 
-        # 拒单不能修改已有持仓的止损价。
+        # 成交后仅上调止损，防止加仓信号扩大原持仓风险。
         if (
             req.action == "BUY"
             and record.status == TradeStatus.FILLED
-            and req.stop_loss_price > 0
+            and req.stop_loss_price > existing_stop
         ):
             try:
                 broker.update_stop_loss(req.stock_code, req.stop_loss_price)

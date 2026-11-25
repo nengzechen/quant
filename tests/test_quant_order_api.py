@@ -44,12 +44,14 @@ def test_sell_ignores_buy_stop_relationship(monkeypatch, tmp_path):
     assert response.json()["status"] == "FILLED"
 
 
-@pytest.mark.parametrize("quantity,expected_status,expected_stop", [
-    (100_000, "REJECTED", 9.0),
-    (100, "FILLED", 9.5),
+@pytest.mark.parametrize("quantity,new_stop,expected_status,expected_stop", [
+    (100_000, 9.5, "REJECTED", 9.0),
+    (100, 9.5, "FILLED", 9.5),
+    (100, 8.0, "FILLED", 9.0),
+    (100, 0.0, "FILLED", 9.0),
 ])
 def test_manual_buy_updates_stop_only_after_fill(
-    monkeypatch, tmp_path, quantity, expected_status, expected_stop,
+    monkeypatch, tmp_path, quantity, new_stop, expected_status, expected_stop,
 ):
     broker = PaperBroker(account_path=str(tmp_path / "account.json"), initial_capital=10_000)
     broker.place_order("000001", "BUY", 100, 10.0)
@@ -64,7 +66,7 @@ def test_manual_buy_updates_stop_only_after_fill(
             "action": "BUY",
             "quantity": quantity,
             "price": 10.0,
-            "stop_loss_price": 9.5,
+            "stop_loss_price": new_stop,
         })
 
     assert response.status_code == 200
