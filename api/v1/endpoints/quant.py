@@ -253,6 +253,8 @@ def place_order(req: OrderRequest):
                     if pos.stop_loss_price is not None and isfinite(pos.stop_loss_price):
                         existing_stop = max(0.0, pos.stop_loss_price)
                     break
+            if existing_stop >= req.price:
+                raise HTTPException(status_code=400, detail="已有持仓止损价不低于委托价格，拒绝加仓")
         record = broker.place_order(
             stock_code=req.stock_code,
             action=req.action,
@@ -272,6 +274,8 @@ def place_order(req: OrderRequest):
                 pass
 
         return {"status": record.status.value, "trade": record.to_dict()}
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"下单失败: {e}")
         raise HTTPException(status_code=500, detail=str(e))

@@ -6,6 +6,28 @@ from api.v1.endpoints import quant
 from quant.broker.paper_broker import PaperBroker
 
 
+@pytest.mark.parametrize("price", [8.5, 9.0])
+def test_manual_add_below_existing_stop_preserves_account(monkeypatch, tmp_path, price):
+    account_path = tmp_path / "account.json"
+    broker = PaperBroker(account_path=str(account_path), initial_capital=10_000)
+    broker.place_order("000001", "BUY", 100, 10.0)
+    broker.update_stop_loss("000001", 9.0)
+    before = account_path.read_bytes()
+    monkeypatch.setattr(quant, "_get_broker", lambda: broker)
+    app = FastAPI()
+    app.include_router(quant.router)
+
+    with TestClient(app) as client:
+        response = client.post("/order", json={
+            "stock_code": "000001", "action": "BUY", "quantity": 100,
+            "price": price, "stop_loss_price": 8.0,
+        })
+
+    assert response.status_code == 400
+    assert account_path.read_bytes() == before
+    assert broker.get_positions()[0].quantity == 100
+
+
 @pytest.mark.parametrize("field,value,status", [
     ("price", "Infinity", 422),
     ("price", "NaN", 422),
