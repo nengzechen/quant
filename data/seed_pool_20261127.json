@@ -1,0 +1,398 @@
+{
+  "date": "2026-11-27",
+  "created_at": "2026-11-27 14:27:56",
+  "count": 17,
+  "entries": [
+    {
+      "code": "600865",
+      "name": "百大集团",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(9.26)/MA9(9.52)，近3根均为阳线",
+        "量比>1": "量比=1.74（阈值>1.0）"
+      },
+      "created_at": "2026-11-27 13:47:17",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "300300",
+      "name": "海峡创新",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(8.03)/MA9(8.24)，近3根均为阳线",
+        "量比>1": "量比=1.04（阈值>1.0）"
+      },
+      "created_at": "2026-11-27 13:59:54",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "300504",
+      "name": "天邑股份",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(16.65)/MA9(16.86)，近3根均为阳线",
+        "量比>1": "量比=1.26（阈值>1.0）"
+      },
+      "created_at": "2026-11-27 14:02:30",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "300824",
+      "name": "北鼎股份",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(9.01)/MA9(9.17)，近3根均为阳线",
+        "量比>1": "量比=1.24（阈值>1.0）"
+      },
+      "created_at": "2026-11-27 14:06:00",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "301256",
+      "name": "华融化学",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(10.05)/MA9(9.44)，近3根均为阳线",
+        "量比>1": "量比=1.03（阈值>1.0）"
+      },
+      "created_at": "2026-11-27 14:09:55",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "600722",
+      "name": "金牛化工",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(12.24)/MA9(11.50)，近3根均为阳线",
+        "量比>1": "量比=1.07（阈值>1.0）"
+      },
+      "created_at": "2026-11-27 14:15:00",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002959",
+      "name": "小熊电器",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(34.86)/MA9(36.59)，近3根均为阳线",
+        "量比>1": "量比=1.14（阈值>1.0）"
+      },
+      "created_at": "2026-11-27 13:46:35",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "001226",
+      "name": "拓山重工",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(38.27)/MA9(39.54)，近3根均为阳线",
+        "量比>1": "量比=1.84（阈值>1.0）"
+      },
+      "created_at": "2026-11-27 13:50:08",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "601086",
+      "name": "国芳集团",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(10.22)/MA9(10.23)，近3根均为阳线",
+        "量比>1": "量比=2.79（阈值>1.0）"
+      },
+      "created_at": "2026-11-27 14:15:28",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "603360",
+      "name": "百傲化学",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(9.74)/MA9(9.58)，近3根均为阳线",
+        "量比>1": "量比=3.10（阈值>1.0）"
+      },
+      "created_at": "2026-11-27 14:17:36",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "603926",
+      "name": "铁流股份",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(16.22)/MA9(15.81)，近3根均为阳线",
+        "量比>1": "量比=2.66（阈值>1.0）"
+      },
+      "created_at": "2026-11-27 14:19:10",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "605577",
+      "name": "龙版传媒",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(18.57)/MA9(17.10)，近3根均为阳线",
+        "量比>1": "量比=1.19（阈值>1.0）"
+      },
+      "created_at": "2026-11-27 14:20:16",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002026",
+      "name": "山东威达",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(10.70)/MA9(10.76)，近3根均为阳线",
+        "量比>1": "量比=2.02（阈值>1.0）"
+      },
+      "created_at": "2026-11-27 13:51:06",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002226",
+      "name": "江南化工",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(5.26)/MA9(5.28)，近3根均为阳线",
+        "量比>1": "量比=2.66（阈值>1.0）"
+      },
+      "created_at": "2026-11-27 13:52:31",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "002242",
+      "name": "九阳股份",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(35.27)/MA9(32.90)，近3根均为阳线",
+        "量比>1": "量比=1.16（阈值>1.0）"
+      },
+      "created_at": "2026-11-27 13:52:39",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "003033",
+      "name": "征和工业",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(59.76)/MA9(60.59)，近3根均为阳线",
+        "量比>1": "量比=1.17（阈值>1.0）"
+      },
+      "created_at": "2026-11-27 13:57:33",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    },
+    {
+      "code": "600839",
+      "name": "四川长虹",
+      "model": "LimitUpHunter",
+      "phase1_score": 2,
+      "max_score": 4,
+      "passed_dims": [
+        "九五之尊",
+        "量比>1"
+      ],
+      "failed_dims": [
+        "高开2%-5%",
+        "量能阶梯放大"
+      ],
+      "dim_details": {
+        "九五之尊": "价格高于MA5(5.61)/MA9(5.52)，近3根均为阳线",
+        "量比>1": "量比=1.25（阈值>1.0）"
+      },
+      "created_at": "2026-11-27 14:15:13",
+      "phase2_triggered": false,
+      "phase2_trigger_time": "",
+      "phase2_reason": ""
+    }
+  ]
+}
