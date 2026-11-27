@@ -334,6 +334,9 @@ class PaperBroker(BaseBroker):
             self._save_trade_record(record)
             return record
 
+        # 校验接受可转换的数值，成交计算和持久化也必须使用规范化后的类型。
+        quantity = int(float(quantity))
+        price = float(price)
         amount = price * quantity
 
         if trade_action == TradeAction.BUY:

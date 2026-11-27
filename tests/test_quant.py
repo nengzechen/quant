@@ -2584,6 +2584,20 @@ class TestParsePriceStr:
 class TestExecutionNonFinite:
     """NaN/inf 价格、非正数量不能穿透执行层污染账户"""
 
+    @pytest.mark.parametrize("quantity,price", [("100", "10.0"), (100.0, "10"), ("100.0", 10.0)])
+    def test_paper_normalizes_valid_numeric_orders(self, paper_broker, tmp_account_path, quantity, price):
+        buy = paper_broker.place_order("000001", "BUY", quantity, price)
+        assert buy.status == TradeStatus.FILLED
+        assert type(buy.quantity) is int
+        assert type(buy.price) is float
+        reloaded = PaperBroker(account_path=tmp_account_path, t_plus_one=False)
+        assert reloaded.get_portfolio().available_cash == pytest.approx(998_995.0)
+        assert reloaded.get_positions()[0].quantity == 100
+        sell = reloaded.place_order("000001", "SELL", quantity, price)
+        assert sell.status == TradeStatus.FILLED
+        assert reloaded.get_positions() == []
+        assert reloaded.get_portfolio().available_cash == pytest.approx(999_989.5)
+
     @pytest.mark.parametrize("price", [float("nan"), float("inf"), -1.0, 0.0, None, "abc"])
     def test_paper_buy_rejects_invalid_price(self, paper_broker, price):
         cash_before = paper_broker.get_portfolio().available_cash
