@@ -2,6 +2,7 @@
 """Unit tests for BacktestEngine.compute_summary()."""
 
 import unittest
+import json
 from dataclasses import dataclass
 
 from src.core.backtest_engine import BacktestEngine
@@ -23,6 +24,26 @@ class FakeRow:
 
 
 class BacktestSummaryTestCase(unittest.TestCase):
+    def test_nonfinite_historical_returns_do_not_poison_summary(self):
+        for valid_returns, expected in (([4.0, -2.0], 1.0), ([], None)):
+            with self.subTest(valid_returns=valid_returns):
+                values = valid_returns + [None, float("nan"), float("inf"), -float("inf")]
+                rows = [
+                    FakeRow(stock_return_pct=value, simulated_return_pct=value)
+                    for value in values
+                ]
+                summary = BacktestEngine.compute_summary(
+                    results=rows,
+                    scope="stock",
+                    code="600519",
+                    eval_window_days=3,
+                    engine_version="v1",
+                )
+                self.assertEqual(summary["avg_stock_return_pct"], expected)
+                self.assertEqual(summary["avg_simulated_return_pct"], expected)
+                self.assertEqual(summary["completed_count"], len(rows))
+                json.dumps(summary, allow_nan=False)
+
     def test_trigger_rates_use_applicable_denominators(self) -> None:
         # One row has stop-loss configured, one row doesn't.
         rows = [

@@ -523,7 +523,7 @@ class BacktestEngine:
 
     @staticmethod
     def _average(values: Iterable[Optional[float]]) -> Optional[float]:
-        items = [float(v) for v in values if v is not None]
+        items = [float(v) for v in values if v is not None and isfinite(v)]
         if not items:
             return None
         return round(sum(items) / len(items), 4)
